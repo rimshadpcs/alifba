@@ -25,7 +25,7 @@ fun FillInTheBlanksExercise() {
     val sentencePart1 = "When we want to start doing something important, like reading or beginning a new task, it's recommended to say"
     val sentencePart2 = "to seek Allah's blessing."
     val options = listOf("Alhamdulillah", "Bismillah", "Insha'Allah", "Astaghfirullah")
-    val blankPart = if (selectedWord.isEmpty()) "___________" else selectedWord
+    val blankPart = selectedWord.ifEmpty { "___________" }
 
     // Assuming you have an image in your drawable
     val imageResId = R.drawable.lailatalkingkitchen // Replace with actual image resource
