@@ -1,7 +1,6 @@
-package com.alifba.alifba.presentation.lessonScreens
+package com.alifba.alifba.presentation.lessonScreens.lessonSegment.MCQLesson
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer

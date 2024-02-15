@@ -1,7 +1,5 @@
 package com.alifba.alifba.presentation.lessonScreens
 
-import android.os.Handler
-import android.os.Looper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,19 +9,20 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.alifba.alifba.R
 import com.alifba.alifba.models.LessonScreenViewModel
 import com.alifba.alifba.models.LessonSegment
 import com.alifba.alifba.presentation.dialogs.LottieAnimationDialog
 import com.alifba.alifba.presentation.lessonPath.LessonPathViewModel
+import com.alifba.alifba.presentation.lessonScreens.lessonSegment.CommonLesson.CommonLessonSegment
+import com.alifba.alifba.presentation.lessonScreens.lessonSegment.DragAndDropLesson.DragDropLessonScreen
+import com.alifba.alifba.presentation.lessonScreens.lessonSegment.MCQLesson.MCQSegment
 import com.alifba.alifba.utils.PlayAudio
 import kotlinx.coroutines.delay
 @Composable
@@ -72,6 +71,18 @@ fun LessonScreen(lessonId: Int, navigateToLessonPathScreen: () -> Unit,viewModel
                     )
                 }
 
+                is LessonSegment.DragAndDropExperiment->{
+                    DisposableEffect(currentSegment) {
+                        viewModel.stopAudio() // Stop any currently playing audio
+                        //viewModel.startAudio(currentSegment.speech) // Start new audio
+                        onDispose {
+                            viewModel.stopAudio()
+                        }
+                    }
+
+                    DragDropLessonScreen(segment = currentSegment)
+                }
+
                 is LessonSegment.MCQLessonItem -> {
                     DisposableEffect(currentSegment) {
                         viewModel.stopAudio() // Stop any currently playing audio
@@ -91,6 +102,8 @@ fun LessonScreen(lessonId: Int, navigateToLessonPathScreen: () -> Unit,viewModel
                         }
                     )
                 }
+
+                else -> {}
             }
             println("Current CommonLesson Segment: $currentCommonLessonSegment")
             //println("Current Segment: $currentSegment")

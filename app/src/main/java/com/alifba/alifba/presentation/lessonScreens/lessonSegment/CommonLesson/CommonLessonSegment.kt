@@ -1,4 +1,4 @@
-package com.alifba.alifba.presentation.lessonScreens
+package com.alifba.alifba.presentation.lessonScreens.lessonSegment.CommonLesson
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import com.alifba.alifba.ui.components.buttons.CommonButton
 import com.alifba.alifba.ui.components.texts.CommonExplanationText
-import com.alifba.alifba.utils.PlayAudio
 import com.alifba.alifba.models.LessonSegment
 
 @Composable
@@ -65,7 +64,7 @@ fun CommonLessonSegment(segment: LessonSegment.CommonLesson, onNextClicked: () -
 @Composable
 fun ImageDisplaySegmentPreview() {
     val sampleSegment = LessonSegment.CommonLesson(
-        image = R.drawable.river, // Replace with actual drawable resource IDs
+        image = R.drawable.rivers, // Replace with actual drawable resource IDs
         description = "Hello, little friends! Today, we're going on a fun adventure to see the beautiful world Allah has made. Let's find out how He created everything and how much He loves us and everything He made!",
         speech = R.raw.intro
     )

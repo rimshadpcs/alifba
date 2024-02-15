@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -46,9 +47,10 @@ fun LazyLessonPathColumn(
         // Header item
         item {
             Image(
-                painter = painterResource(id = R.drawable.footer), // Replace with your footer image resource
-                contentDescription = "Header",
-                modifier = Modifier.fillMaxWidth(),
+                painter = painterResource(id = R.drawable.footerimage), // Replace with your footer image resource
+                contentDescription = "Top",
+                modifier = Modifier.fillMaxWidth()
+                    .height(250.dp),
                 contentScale = ContentScale.FillWidth
             )
         }
@@ -64,10 +66,11 @@ fun LazyLessonPathColumn(
         // Footer item
         item {
             Image(
-                painter = painterResource(id = R.drawable.header), // Replace with your header image resource
-                contentDescription = "Footer",
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.Crop
+                painter = painterResource(id = R.drawable.headerimage),
+                contentDescription = "bottom",
+                modifier = Modifier.fillMaxWidth()
+                    .height(250.dp),
+                contentScale = ContentScale.FillWidth
             )
         }
     }
@@ -86,10 +89,11 @@ fun getMockLessonPathItems(): List<LessonPathItem> {
 
         )
 }
-//
-//@Preview(showBackground = true, widthDp = 320, heightDp = 640)
-//@Composable
-//fun LessonsPathScreenPreview() {
-//    val mockLessons = getMockLessonPathItems()
-//    LazyLessonPathColumn(lessons = mockLessons)
-//}
+
+@Preview(showBackground = true, widthDp = 320, heightDp = 640)
+@Composable
+fun LessonsPathScreenPreview() {
+    val navController= NavController(context = LocalContext.current)
+    val mockLessons = getMockLessonPathItems()
+    LazyLessonPathColumn(lessons = mockLessons,navController=navController)
+}
