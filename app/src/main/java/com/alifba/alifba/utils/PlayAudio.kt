@@ -13,7 +13,6 @@ fun PlayAudio(audioResId: Int) {
     val context = LocalContext.current
 
     if (!LocalInspectionMode.current) {
-        // Only play audio if not in preview mode
         val mediaPlayer = remember { MediaPlayer.create(context, audioResId) }
 
         DisposableEffect(Unit) {
@@ -24,7 +23,6 @@ fun PlayAudio(audioResId: Int) {
                     if (isPlaying) {
                         stop()
                         Log.d("PlayAudio", "Audio stopped")
-
                     }
                     release()
                     Log.d("PlayAudio", "MediaPlayer released")
