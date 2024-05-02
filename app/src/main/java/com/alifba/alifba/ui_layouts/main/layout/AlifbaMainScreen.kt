@@ -1,6 +1,7 @@
 package com.alifba.alifba.ui_layouts.main.layout
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,8 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,6 +24,10 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.alifba.alifba.R
 import com.alifba.alifba.models.LessonScreenViewModel
 import com.alifba.alifba.ui_layouts.lessonScreens.LessonScreen
@@ -40,12 +47,13 @@ fun HomeScreenWithScaffold(navController: NavController) {
         }
     }, content = { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
-            Image(
-                painter = painterResource(id = R.drawable.alifba_home),//background sky image
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+//            Image(
+//                painter = painterResource(id = R.drawable.alifba_home),//background sky image
+//                contentDescription = null,
+//                modifier = Modifier.fillMaxSize(),
+//                contentScale = ContentScale.Crop
+//            )
+            LottieAnimationScreen()
         }
         Column(
             modifier = Modifier
@@ -107,11 +115,32 @@ fun AlifbaMainScreenPreview() {
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    Spacer(modifier = Modifier.weight(1f))
+                    //Spacer(modifier = Modifier.weight(1f))
                     MockHomeScreen() // Mock version for preview
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
+        )
+    }
+}
+@Composable
+fun LottieAnimationScreen() {
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.skybackground))
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Background Image
+        Image(
+            painter = painterResource(id = R.drawable.alifba_homenew), // Ensure this resource is available
+            contentDescription = "Background Image",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop // This scales the image to fill the size of its container
+        )
+
+        // Lottie Animation
+        LottieAnimation(
+            composition = composition,
+            iterations = LottieConstants.IterateForever,
+            modifier = Modifier.fillMaxSize() // Ensures the Lottie animation covers the full area of the box
         )
     }
 }
