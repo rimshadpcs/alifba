@@ -10,6 +10,8 @@ data class Lesson(
 )
 
 sealed class LessonSegment {
+
+    data class LetterTracing(val speech: Int):LessonSegment()
     data class CommonLesson(val image: Int, val description: String, val speech: Int) :
         LessonSegment()
 
@@ -38,15 +40,17 @@ data class DragItem(val id: Int, val answer: String, @DrawableRes val image: Int
 data class DropItem(val id: Int, val name: String)
 
 val dragItems = listOf(
-    DragItem(1, "Allah",  R.drawable.moon),
-    DragItem(2, "Allah",  R.drawable.sun),
-    DragItem(3, "Allah",  R.drawable.animals),
-    DragItem(4, "Allah",  R.drawable.flower),
-    DragItem(5, "Allah",  R.drawable.rivers),
+    DragItem(1, "Everyday",  R.drawable.salah),
+    DragItem(2, "Occasionally",  R.drawable.umrah),
+    DragItem(3, "Occasionally",  R.drawable.iftar),
+    DragItem(4, "Everyday",  R.drawable.prayer),
+    DragItem(5, "Everyday",  R.drawable.brushing),
+    DragItem(6, "Occasionally",  R.drawable.eid),
 )
 
 val dropItems = listOf(
-    DropItem(1, "Allah"),
+    DropItem(1, "Everyday"),
+    DropItem(2,"Occasionally")
 )
 data class TextMcqItem(
     val choice: String,
@@ -76,43 +80,15 @@ val sampleLessons = listOf(
         title = "Allah's Creation and Love",
         segments =
 
+
         listOf(
-            LessonSegment.PictureMcqLesson(
-                question = "Which of this sunnah should we do after eating food ",
-                choices = listOf(
-                    PictureMcqItem(R.drawable.game,"Play video game"),
-                    PictureMcqItem(R.drawable.washhands,"Wash your hands"),
-                    PictureMcqItem(R.drawable.watchtv,"Watch Tv"),
-                    PictureMcqItem(R.drawable.leavefood,"leave food on plate")
 
-                ), image = R.drawable.food,
-                correctAnswer = "Wash your hands",
-                speech = R.raw.sunnah
-            ),
-
-            LessonSegment.FillInTheBlanks(
-                exercise = FillInTheBlanksExercise(
-                    imageResId = R.drawable.kindness,
-                    sentenceParts = listOf("Being ", "____", "to others", "and saying ", "____", " for their help"," are important" ,"values"," in Islam."),
-                    options = listOf(
-                        OptionsForFillInTheBlanks("angry"),
-                        OptionsForFillInTheBlanks("thank you"),
-                        OptionsForFillInTheBlanks("kind"),
-                        OptionsForFillInTheBlanks("sad"),
-                        OptionsForFillInTheBlanks("mad"),
-                        OptionsForFillInTheBlanks("hate")
-                    ),correctAnswers = listOf(2, 1),
-                    speech = R.raw.fillin
-                )
-            ),
-
-
+            LessonSegment.LetterTracing(speech = R.raw.letterbaa),
             LessonSegment.CommonLesson(
                 image = R.drawable.nature,
                 description = "Hello, little friends! Today, we're going on a fun adventure to see the beautiful world Allah has made. Let's find out how He created everything and how much He loves us and everything He made!",
                 speech = R.raw.intro
             ),
-
             LessonSegment.CommonLesson(
                 image = R.drawable.laila_butterfly,
                 description = "Nana, look at these tiny wonders!, the butterflies are so beautiful, Who made them so beautiful?",
@@ -138,6 +114,21 @@ val sampleLessons = listOf(
                 description = "Yes, dear. Imagine a being whose kindness is deeper than the oceans and whose power is higher than the mountains. He created everything you see, the sky above us, and the warmth of the sun on our skin.",
                 speech = R.raw.yes_dear
             ),
+            LessonSegment.FillInTheBlanks(
+                exercise = FillInTheBlanksExercise(
+                    imageResId = R.drawable.kindness,
+                    sentenceParts = listOf("Being ", "____", "to others", "and saying ", "____", " for their help"," are important" ,"values"," in Islam."),
+                    options = listOf(
+                        OptionsForFillInTheBlanks("angry"),
+                        OptionsForFillInTheBlanks("thank you"),
+                        OptionsForFillInTheBlanks("kind"),
+                        OptionsForFillInTheBlanks("sad"),
+                        OptionsForFillInTheBlanks("mad"),
+                        OptionsForFillInTheBlanks("hate")
+                    ),correctAnswers = listOf(2, 1),
+                    speech = R.raw.fillin
+                )
+            ),
             LessonSegment.CommonLesson(
                 image = R.drawable.laila_nana_juice,
                 description = "So, everything around us, the flowers, clouds, sunsets, and even the fizzy apple juice we love, are gifts from Allah?",
@@ -158,10 +149,33 @@ val sampleLessons = listOf(
                 speech = R.raw.mcq_sample
             ),
             LessonSegment.DragAndDropExperiment(
-                question = "Who created al these amazing things in this world drag and drop them to the right box below",
+                question = "drag and drop them to the right box below",
                 dragItems,
                 dropItemList = dropItems
             ),
+            LessonSegment.PictureMcqLesson(
+                question = "Wasting food is Haram or Halal ",
+                choices = listOf(
+                    PictureMcqItem(R.drawable.falsecross,"Haram"),
+                    PictureMcqItem(R.drawable.truetick,"Halal"),
+
+                ), image = R.drawable.food,
+                correctAnswer = "Haram",
+                speech = R.raw.haramorhalal
+            ),
+            LessonSegment.PictureMcqLesson(
+                question = "Which of this sunnah should we do after eating food ",
+                choices = listOf(
+                    PictureMcqItem(R.drawable.game,"Play video game"),
+                    PictureMcqItem(R.drawable.washhands,"Wash your hands"),
+                    PictureMcqItem(R.drawable.watchtv,"Watch Tv"),
+                    PictureMcqItem(R.drawable.leavefood,"leave food on plate")
+
+                ), image = R.drawable.food,
+                correctAnswer = "Wash your hands",
+                speech = R.raw.sunnah
+            ),
+
             LessonSegment.CommonLesson(
                 image = R.drawable.jaroperningkitchen,
                 description = "Nana, I can't open this!",
@@ -182,6 +196,17 @@ val sampleLessons = listOf(
                 description = "Yes, dear. Saying \"Bismillah\" is like asking for Allah’s help and blessing.\n",
                 speech = R.raw.yes_dear_saying
             ),
+
+            LessonSegment.TextMcqLessonItem(
+                question = "Laila could not open a jar. What did she say to get help?",
+                choices = listOf(
+                    TextMcqItem("Bismillah", true),
+                    TextMcqItem("Alhamdulillah", false),
+                    TextMcqItem("Nothing", false)
+                ),
+                speech = R.raw.laila_couldnot_open
+            ),
+
             LessonSegment.CommonLesson(
                 image = R.drawable.lailatalkingkitchen,
                 description = "Is that why you say \"Bismillah\" when cooking?",
@@ -207,6 +232,18 @@ val sampleLessons = listOf(
                 description = " Like, Alhamdulillah for this delicious breakfast!",
                 speech = R.raw.like_alham_dhulillah
             ),
+
+            LessonSegment.TextMcqLessonItem(
+                question = "What should you say after eating your food?",
+                choices = listOf(
+                    TextMcqItem("Bismillah", false),
+                    TextMcqItem("Alhamdulillah", true),
+                    TextMcqItem("Nothing", false)
+                ),
+                speech = R.raw.what_should_you_say_after
+            ),
+
+
             LessonSegment.CommonLesson(
                 image = R.drawable.lailananakitchenfinal,
                 description = " Very good! Remember, Laila, \"Bismillah\" before we start, and \"Alhamdulillah\" when we're thankful.",
@@ -218,34 +255,6 @@ val sampleLessons = listOf(
                 speech = R.raw.i_will_nana_bismi
             ),
             LessonSegment.TextMcqLessonItem(
-                question = "What should you say before starting to eat your food?",
-                choices = listOf(
-                    TextMcqItem("Alhamdulillah", false),
-                    TextMcqItem("Bismillah", true),
-                    TextMcqItem("Nothing", false)
-                ),
-                speech = R.raw.what_should_you_say
-            ),
-            LessonSegment.TextMcqLessonItem(
-                question = "Laila could not open a jar. What did she say to get help?",
-                choices = listOf(
-                    TextMcqItem("Bismillah", true),
-                    TextMcqItem("Alhamdulillah", false),
-                    TextMcqItem("Nothing", false)
-                ),
-                speech = R.raw.laila_couldnot_open
-            ),
-
-            LessonSegment.TextMcqLessonItem(
-                question = "What should you say after eating your food?",
-                choices = listOf(
-                    TextMcqItem("Bismillah", false),
-                    TextMcqItem("Alhamdulillah", true),
-                    TextMcqItem("Nothing", false)
-                ),
-                speech = R.raw.what_should_you_say_after
-            ),
-            LessonSegment.TextMcqLessonItem(
                 question = "What phrase should you say to thank Allah for a beautiful day?",
                 choices = listOf(
                     TextMcqItem("Alhamdulillah", true),
@@ -254,6 +263,9 @@ val sampleLessons = listOf(
                 ),
                 speech = R.raw.what_phrase_to_say
             ),
+
+
+
         )))
 //    Lesson(
 //        id = 102,

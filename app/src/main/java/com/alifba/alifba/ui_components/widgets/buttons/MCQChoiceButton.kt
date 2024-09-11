@@ -30,7 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Long, shadowColor: Long) {
+fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, shadowColor: Color) {
     val alifbaFont = FontFamily(
         Font(R.font.more_sugar_regular, FontWeight.SemiBold)
     )
@@ -56,7 +56,7 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Long, sh
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .background(Color(shadowColor)) // Shadow color
+                .background(shadowColor) // Shadow color
         )
 
         // Button face layer
@@ -66,7 +66,7 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Long, sh
                 .matchParentSize()
                 .padding(bottom = offsetY) // Apply the offset for the press effect
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color(mainColor)) // Button face color
+                .background(mainColor) // Button face color
                 .clickable(
                     onClick = {
                         coroutineScope.launch {
@@ -91,5 +91,5 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Long, sh
 @Preview(showBackground = true)
 @Composable
 fun PreviewMCQChoiceButton() {
-    MCQChoiceButton(onClick = {}, buttonText = "Next", mainColor =0xFFFF8AD1, shadowColor = 0xFFe57cbc)
+    MCQChoiceButton(onClick = {}, buttonText = "Next", mainColor =Color(0xFFFF8AD1), shadowColor = Color(0xFFe57cbc))
 }
