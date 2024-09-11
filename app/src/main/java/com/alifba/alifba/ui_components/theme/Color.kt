@@ -10,3 +10,20 @@ val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 val Beige = Color(0xFFF8E1BF)
+
+
+
+//core item colors
+val white = Color(0xFFFFFFFF)
+val darkPink = Color(0xFFe57cbc)
+val lightPink= Color(0xFFFF8AD1)
+val darkSkyBlue = Color(0xFF22ade2)
+val lightSkyBlue = Color(0xFF26c1fc)
+val darkCandyGreen = Color(0xFF7ebf47)
+val lightCandyGreen = Color(0xFF8DD54f)
+val lightYellow = Color(0xFFFFB525)
+val darkYellow = Color(0xFFe5a221)
+val lightPurple = Color(0xFFBF8FFD)
+val darkPurple = Color(0xFF852db0)
+val navyBlue = Color(0xFF526ff6)
+val lightNavyBlue = Color(0xFF738cff)
