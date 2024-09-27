@@ -2,16 +2,7 @@
 <project version="4">
   <component name="deploymentTargetDropDown">
     <value>
-      <entry key="DefaultPreview">
-        <State />
-      </entry>
-      <entry key="LetterTracing">
-        <State />
-      </entry>
-      <entry key="MCQSegmentPreview">
-        <State />
-      </entry>
-      <entry key="app">
+      <entry key="androidApp">
         <State />
       </entry>
     </value>

@@ -1,4 +1,5 @@
- pluginManagement {
+include(":shared")
+pluginManagement {
     repositories {
         google()
         mavenCentral()
@@ -14,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Alifba"
-include(":app")
+include(":androidApp")
