@@ -12,9 +12,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.alifba.alifba.models.LessonScreenViewModel
 import com.alifba.alifba.presenation.home.HomeViewModel
-import com.alifba.alifba.presenation.main.layout.AlifbaMainScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
+import com.alifba.shared.MainView
 
 class MainActivity : ComponentActivity() {
 
@@ -33,7 +33,8 @@ class MainActivity : ComponentActivity() {
             )
         }
         setContent {
-            AlifbaMainScreen(lessonScreenViewModel,homeViewModel)
+            MainView()
+//            AlifbaMainScreen(lessonScreenViewModel,homeViewModel)
         }
     }
 }

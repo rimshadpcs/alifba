@@ -19,7 +19,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alifba.alifba.R
 import com.alifba.alifba.models.LessonScreenViewModel
 import com.alifba.alifba.models.LessonSegment
-import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
 import com.alifba.alifba.presenation.lessonPath.LessonPathViewModel
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.CommonLesson.CommonLessonSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.DragAndDropLesson.DragDropLessonScreen
@@ -27,6 +26,7 @@ import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.pictureMcq.PictureMcqSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.TextMcq.TextMcqSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.fillInTheBlanks.FillInTheBlanksExerciseScreen
+import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
 import com.alifba.alifba.utils.PlayAudio
 import kotlinx.coroutines.delay
 
