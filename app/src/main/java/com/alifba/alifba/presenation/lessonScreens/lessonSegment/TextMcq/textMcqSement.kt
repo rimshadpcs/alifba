@@ -39,6 +39,7 @@ import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.lightSkyBlue
 import com.alifba.alifba.ui_components.theme.lightYellow
 import com.alifba.alifba.ui_components.theme.white
+import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText
 import kotlinx.coroutines.delay
 
 @Composable
@@ -52,13 +53,15 @@ fun TextMcqSegment(segment: LessonSegment.TextMcqLessonItem, onNextClicked: () -
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = segment.question,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray,
-            fontFamily = alifbaFont,
-            modifier = Modifier.padding(12.dp)
-        )
+//        Text(
+//            text = segment.question,
+//            style = MaterialTheme.typography.bodyLarge,
+//            color = Color.Gray,
+//            fontFamily = alifbaFont,
+//            modifier = Modifier.padding(12.dp)
+//        )
+        CommonExplanationText(text = segment.question,modifier =Modifier
+            .align(Alignment.CenterHorizontally) )
         Spacer(modifier = Modifier.height(16.dp))
 
         segment.choices.forEachIndexed { index, choices ->

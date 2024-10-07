@@ -8,7 +8,13 @@
       <entry key="LetterTracing">
         <State />
       </entry>
+      <entry key="LoginScreen">
+        <State />
+      </entry>
       <entry key="MCQSegmentPreview">
+        <State />
+      </entry>
+      <entry key="ProfileRegistration">
         <State />
       </entry>
       <entry key="app">

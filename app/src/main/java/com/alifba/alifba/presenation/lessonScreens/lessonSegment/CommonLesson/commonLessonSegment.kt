@@ -26,7 +26,6 @@ import com.alifba.alifba.ui_components.theme.white
 
 @Composable
 fun CommonLessonSegment(segment: LessonSegment.CommonLesson, onNextClicked: () -> Unit) {
-    //PlayAudio(audioResId = segment.speech)
 
     Column(modifier =
     Modifier.padding(16.dp)
