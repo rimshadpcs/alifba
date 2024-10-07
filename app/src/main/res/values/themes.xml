@@ -2,7 +2,6 @@
 <resources>
 
     <style name="Theme.Alifba" parent="Theme.MaterialComponents.DayNight.NoActionBar" >
-
-    <item name="android:statusBarColor">#045594</item>
+        <item name="android:statusBarColor">#045594</item>
     </style>
 </resources>

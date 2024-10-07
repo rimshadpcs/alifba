@@ -27,6 +27,8 @@ import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.pictureMcq.PictureMcqSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.TextMcq.TextMcqSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.fillInTheBlanks.FillInTheBlanksExerciseScreen
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.flashCard.FlashCardLessonSegment
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.flashCard.FlashCardScreen
 import com.alifba.alifba.utils.PlayAudio
 import kotlinx.coroutines.delay
 
@@ -78,7 +80,25 @@ fun LessonScreen(lessonId: Int, navigateToLessonPathScreen: () -> Unit,viewModel
                             }
                         })
                 }
+                is LessonSegment.FlashCardExercise -> {
+                    DisposableEffect(currentSegment) {
+                        //viewModel.stopAudio() // Stop any currently playing audio
+                        //viewModel.startAudio(currentSegment.speech) // Start new audio
+                        onDispose {
+                            viewModel.stopAudio()
+                        }
 
+                    }
+                    FlashCardLessonSegment(segment = currentSegment,
+                        onNextClicked = {
+                            if (currentSegmentIndex < lesson.segments.size - 1) {
+                                currentSegmentIndex++
+                            } else {
+                                showDialog.value = true
+                            }
+                        }
+                    )
+                }
                 is LessonSegment.CommonLesson -> {
                     DisposableEffect(currentSegment) {
                         viewModel.stopAudio() // Stop any currently playing audio

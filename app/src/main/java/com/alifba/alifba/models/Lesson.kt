@@ -19,6 +19,7 @@ sealed class LessonSegment {
         LessonSegment()
 
 
+    data class FlashCardExercise(val title: String, val description:String, val image: Int): LessonSegment()
     data class DragAndDropExperiment(
         val question:String,
         val dragItemList: List<DragItem>,
@@ -80,10 +81,21 @@ val sampleLessons = listOf(
         title = "Allah's Creation and Love",
         segments =
 
-
         listOf(
 
-            LessonSegment.LetterTracing(speech = R.raw.letterbaa),
+//            LessonSegment.LetterTracing(speech = R.raw.letterbaa),
+//            LessonSegment.CommonLesson(
+//                image = R.drawable.nature,
+//                description = "Hello, little friends! Today, we're going on a fun adventure to see the beautiful world Allah has made. Let's find out how He created everything and how much He loves us and everything He made!",
+//                speech = R.raw.intro
+//            ),
+
+            LessonSegment.FlashCardExercise(
+                title = "Allah's names",
+                description = "AR - RAHEEM \n\n(The most compassionate)",
+                image = R.drawable.wave
+            ),
+
             LessonSegment.CommonLesson(
                 image = R.drawable.nature,
                 description = "Hello, little friends! Today, we're going on a fun adventure to see the beautiful world Allah has made. Let's find out how He created everything and how much He loves us and everything He made!",

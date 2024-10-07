@@ -41,6 +41,7 @@ import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.PictureButton
 import com.alifba.alifba.utils.PlayAudio
 import kotlinx.coroutines.delay
+import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText as CommonExplanationText
 
 @Composable
 fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: () -> Unit) {
@@ -63,13 +64,10 @@ fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: ()
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
+        CommonExplanationText(
             text = segment.question,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray,
-            fontFamily = alifbaFont,
-            fontSize = 23.sp,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
         )
 
         LazyVerticalGrid(columns = GridCells.Fixed(2),

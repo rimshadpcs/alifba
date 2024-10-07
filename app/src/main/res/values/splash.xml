@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Background color of the splash screen -->
+        <item name="windowSplashScreenBackground">#FFF9F9</item> <!-- White background -->
+
+        <!-- The icon displayed in the center of the splash screen -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_splash</item> <!-- Your custom splash icon -->
+
+        <!-- The theme to switch to after the splash screen -->
+        <item name="postSplashScreenTheme">@style/Theme.Alifba</item> <!-- Your main app theme -->
+    </style>
+</resources>
