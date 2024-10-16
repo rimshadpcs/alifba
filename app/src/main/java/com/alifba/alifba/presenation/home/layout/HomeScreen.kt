@@ -58,7 +58,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
                     image = item.image,
                     name = item.name,
                     onClick = {
-                        navController.navigate("lessonPathScreen")
+                        navController.navigate("lessonPathScreen/${item.levelId}")  // Navigate with levelId
                     }
                 )
             }

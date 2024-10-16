@@ -16,10 +16,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberImagePainter
 import com.alifba.alifba.R
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText
-import com.alifba.alifba.models.LessonSegment
+import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.ui_components.theme.darkPurple
 import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.white
@@ -32,7 +33,14 @@ fun CommonLessonSegment(segment: LessonSegment.CommonLesson, onNextClicked: () -
     ) {
 
         Image(
-            painter = painterResource(id = segment.image),
+            painter = rememberImagePainter(
+                data = segment.image,
+                builder = {
+                    crossfade(true)
+                    placeholder(R.drawable.loading_bar)
+                    error(R.drawable.error)
+                }
+            ),
             contentDescription = "Image",
             modifier = Modifier
                 .fillMaxWidth()
@@ -41,8 +49,8 @@ fun CommonLessonSegment(segment: LessonSegment.CommonLesson, onNextClicked: () -
                 .align(Alignment.CenterHorizontally)
                 .clip(shape = RoundedCornerShape(64.dp)),
             contentScale = ContentScale.FillWidth
-
         )
+
 
         CommonExplanationText(
             text = segment.description,
@@ -65,14 +73,3 @@ fun CommonLessonSegment(segment: LessonSegment.CommonLesson, onNextClicked: () -
             )
         }
     }
-
-@Preview(showBackground = true, backgroundColor = 0xFFFFFF, widthDp = 412, heightDp = 892)
-@Composable
-fun ImageDisplaySegmentPreview() {
-    val sampleSegment = LessonSegment.CommonLesson(
-        image = R.drawable.rivers, // Replace with actual drawable resource IDs
-        description = "Hello, little friends! Today, we're going on a fun adventure to see the beautiful world Allah has made. Let's find out how He created everything and how much He loves us and everything He made!",
-        speech = R.raw.intro
-    )
-    CommonLessonSegment(segment = sampleSegment, onNextClicked = { /* Implement action */ })
-}

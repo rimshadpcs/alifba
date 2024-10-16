@@ -1,4 +1,4 @@
-package com.alifba.alifba.presenation.lessonPath.layout
+package com.alifba.alifba.presenation.chapters.layout
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,11 +16,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.alifba.alifba.presenation.lessonPath.models.LessonPathItem
+import com.alifba.alifba.presenation.chapters.models.Chapter
 
 @Composable
 fun LessonPathItems(
-    lesson: LessonPathItem,
+    lesson: Chapter,
     index: Int,
     onClick: () -> Unit,
 ) {

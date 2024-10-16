@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -19,11 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
-import com.alifba.alifba.models.LessonSegment
-import com.alifba.alifba.models.TextMcqItem
+import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.utils.PlayAudio
 import com.alifba.alifba.ui_components.widgets.buttons.MCQChoiceButton
@@ -43,13 +39,13 @@ import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText
 import kotlinx.coroutines.delay
 
 @Composable
-fun TextMcqSegment(segment: LessonSegment.TextMcqLessonItem, onNextClicked: () -> Unit) {
+fun TextMcqSegment(segment: LessonSegment.TextMcqLesson, onNextClicked: () -> Unit) {
     val context = LocalContext.current
     val showNextButton = remember { mutableStateOf(false) }
     val showDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }
 
-    PlayAudio(audioResId = segment.speech)
+    //PlayAudio(audioResId = segment.speech.toInt())
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
 
     Column(modifier = Modifier.padding(16.dp)) {
@@ -116,17 +112,17 @@ fun getButtonColors(index: Int): Pair<Color, Color> {
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFFFFF, widthDp = 320, heightDp = 640)
-@Composable
-fun TextMcqSegmentPreview() {
-    val sampleSegment = LessonSegment.TextMcqLessonItem(
-        question = "Who created this amazing world, the beautiful sky, the flowing river and the shining stars?",
-        choices = listOf(
-            TextMcqItem("Humans", false),
-            TextMcqItem("Allah", true),
-            TextMcqItem("Someone else", false)
-        ),
-        speech = R.raw.mcq_sample
-    )
-    TextMcqSegment(segment = sampleSegment, onNextClicked = { /* Implement action */ })
-}
+//@Preview(showBackground = true, backgroundColor = 0xFFFFFF, widthDp = 320, heightDp = 640)
+//@Composable
+//fun TextMcqSegmentPreview() {
+//    val sampleSegment = LessonSegment.TextMcqLesson(
+//        question = "Who created this amazing world, the beautiful sky, the flowing river and the shining stars?",
+//        choices = listOf(
+//            TextMcqItem("Humans", false),
+//            TextMcqItem("Allah", true),
+//            TextMcqItem("Someone else", false)
+//        ),
+//        speech = R.raw.mcq_sample
+//    )
+//    TextMcqSegment(segment = sampleSegment, onNextClicked = { /* Implement action */ })
+//}

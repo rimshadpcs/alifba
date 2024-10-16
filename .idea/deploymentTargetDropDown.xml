@@ -2,21 +2,6 @@
 <project version="4">
   <component name="deploymentTargetDropDown">
     <value>
-      <entry key="DefaultPreview">
-        <State />
-      </entry>
-      <entry key="LetterTracing">
-        <State />
-      </entry>
-      <entry key="LoginScreen">
-        <State />
-      </entry>
-      <entry key="MCQSegmentPreview">
-        <State />
-      </entry>
-      <entry key="ProfileRegistration">
-        <State />
-      </entry>
       <entry key="app">
         <State />
       </entry>

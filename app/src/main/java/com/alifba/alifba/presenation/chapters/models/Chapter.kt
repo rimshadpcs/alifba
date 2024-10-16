@@ -1,6 +1,6 @@
-package com.alifba.alifba.presenation.lessonPath.models
+package com.alifba.alifba.presenation.chapters.models
 
-data class LessonPathItem(
+data class Chapter(
     val id: Int,
     val title: String,
     var iconResId:Int,

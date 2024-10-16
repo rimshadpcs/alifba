@@ -26,8 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
-import com.alifba.alifba.models.DragItem
-import com.alifba.alifba.models.DropItem
+import com.alifba.alifba.data.models.DragItem
+import com.alifba.alifba.data.models.DropItem
 
 
 @Composable
