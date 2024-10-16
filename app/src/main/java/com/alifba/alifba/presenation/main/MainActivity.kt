@@ -5,14 +5,11 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.window.SplashScreen
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -25,38 +22,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alifba.alifba.R
-import com.alifba.alifba.models.LessonScreenViewModel
+import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.Login.AuthViewModel
 import com.alifba.alifba.presenation.Login.LoginScreen
 import com.alifba.alifba.presenation.Login.ProfileRegistration
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.main.layout.AlifbaMainScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
-import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
-import com.alifba.alifba.ui_components.theme.navyBlue
-import com.alifba.alifba.ui_components.theme.white
-import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.time.delay
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

@@ -37,7 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
-import com.alifba.alifba.models.LessonSegment
+import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createBaaPath
 import com.alifba.alifba.ui_components.theme.darkPurple

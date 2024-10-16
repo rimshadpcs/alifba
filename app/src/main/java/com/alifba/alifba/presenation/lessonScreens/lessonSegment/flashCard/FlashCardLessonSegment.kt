@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.alifba.alifba.models.LessonSegment
+import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.ui_components.theme.darkPink
 import com.alifba.alifba.ui_components.theme.darkPurple
 import com.alifba.alifba.ui_components.theme.lightPink
@@ -31,7 +31,7 @@ fun FlashCardLessonSegment(segment: LessonSegment.FlashCardExercise, onNextClick
         FlashCard(
             title = segment.title,
             description = segment.description,
-            imageResId = segment.image,
+            imageResId = segment.image.toInt(),
             modifier = Modifier
                 .padding(bottom = 16.dp) // Bottom padding for spacing
                 .weight(1f) // Allow FlashCard to take available space but not overflow

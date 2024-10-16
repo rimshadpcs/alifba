@@ -20,14 +20,14 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.alifba.alifba.models.OptionsForFillInTheBlanks
+import com.alifba.alifba.data.models.OptionsForFillInTheBlanks
 
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun InteractiveSentence(
     sentenceParts: List<String>,
-    blanksState: MutableState<Map<Int, OptionsForFillInTheBlanks?>>,
+    blanksState: Map<Int, OptionsForFillInTheBlanks?>,
     fontFamily: FontFamily,
     onBlankClicked: (Int) -> Unit
 ) {
@@ -38,8 +38,8 @@ fun InteractiveSentence(
     ) {
         sentenceParts.forEachIndexed { index, part ->
             Box(modifier = Modifier.padding(bottom = 2.dp)) {
-                if (part.trim() == "____") {
-                    val selectedOption = blanksState.value[index]
+                if (part.trim().all { it == '_' }) {
+                    val selectedOption = blanksState[index]
                     Text(
                         text = selectedOption?.option ?: "____",
                         style = LocalTextStyle.current.merge(

@@ -29,11 +29,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
-import com.alifba.alifba.models.DragItem
-import com.alifba.alifba.models.DropItem
-import com.alifba.alifba.models.LessonSegment
-import com.alifba.alifba.models.dragItems
-import com.alifba.alifba.models.dropItems
+import com.alifba.alifba.data.models.DragItem
+import com.alifba.alifba.data.models.DropItem
+import com.alifba.alifba.data.models.LessonSegment
+import com.alifba.alifba.data.models.dragItems
+import com.alifba.alifba.data.models.dropItems
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
 import kotlinx.coroutines.delay
 

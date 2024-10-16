@@ -16,7 +16,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,13 +25,13 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.alifba.alifba.R
-import com.alifba.alifba.models.LessonScreenViewModel
+import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreen
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.presenation.home.layout.HomeTopBar
 import com.alifba.alifba.presenation.home.layout.ProfileScreen
-import com.alifba.alifba.presenation.lessonPath.layout.LessonsPathScreen
+import com.alifba.alifba.presenation.chapters.layout.ChaptersScreen
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
 
 
@@ -72,15 +71,24 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             composable("profile") {
                 ProfileScreen()
             }
-            composable("lessonPathScreen") {
-                LessonsPathScreen(navController)
+            composable("lessonPathScreen/{levelId}") { backStackEntry ->
+                val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
+                ChaptersScreen(navController, levelId) // Pass the levelId to the ChaptersScreen
             }
-            composable("lessonScreen/{lessonId}") { backStackEntry ->
+            composable("lessonScreen/{lessonId}/{levelId}") { backStackEntry ->
                 val lessonId = backStackEntry.arguments?.getString("lessonId")?.toIntOrNull() ?: return@composable
-                LessonScreen(lessonId, navigateToLessonPathScreen = {
-                    navController.navigate("lessonPathScreen")
-                }, viewModel = lessonViewModel) // Pass the viewModel instance here
+                val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
+                LessonScreen(
+                    lessonId = lessonId,
+                    levelId = levelId, // Pass levelId to LessonScreen
+                    navController = navController, // Pass navController to LessonScreen
+                    navigateToChapterScreen = {
+                        navController.navigate("lessonPathScreen/$levelId")
+                    },
+                    viewModel = lessonViewModel
+                )
             }
+
         }
     }
 }

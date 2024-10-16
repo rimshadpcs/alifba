@@ -68,6 +68,7 @@ dependencies {
     implementation("com.android.volley:volley:1.2.1")
     implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -97,6 +98,8 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:1.7.2")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.6")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
+
     //implementation ("com.google.firebase:firebase-firestore-ktx:24.0.1")
 
 
