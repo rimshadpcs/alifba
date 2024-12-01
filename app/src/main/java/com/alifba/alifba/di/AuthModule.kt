@@ -46,22 +46,5 @@ object AuthModule {
     fun provideSignInWithGoogleUseCase(repository: AuthRepository): SignInWithGoogleUseCase {
         return SignInWithGoogleUseCase(repository)
     }
-    fun createDataStore(context: Context): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(
-            produceFile = { context.preferencesDataStoreFile("user_prefs") }
-        )
-    }
-    @Provides
-    @Singleton
-    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(
-            produceFile = { context.preferencesDataStoreFile("user_prefs") }
-        )
-    }
-
-    @Provides
-    @Singleton
-    fun provideDataStoreManager(dataStore: DataStore<Preferences>, @ApplicationContext context: Context): DataStoreManager {
-        return DataStoreManager(dataStore, CoroutineScope(Dispatchers.IO)) // Use a CoroutineScope
-    }
+//
 }

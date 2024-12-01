@@ -4,11 +4,15 @@ import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alifba.alifba.data.models.Lesson
+import com.alifba.alifba.features.authentication.DataStoreManager
+import com.alifba.alifba.presenation.chapters.ChaptersViewModel
+//import com.alifba.alifba.features.authentication.dataStore
 import com.alifba.alifba.presenation.lessonScreens.usecases.GetLessonUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -19,7 +23,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LessonScreenViewModel  @Inject constructor(
-    private val getLessonsUseCase :GetLessonUseCase
+    private val getLessonsUseCase :GetLessonUseCase,
+    private val dataStoreManager: DataStoreManager,
 ): ViewModel() {
     private val mediaPlayer: MediaPlayer? by lazy { MediaPlayer() }
     private var currentAudioResId: String? = null
@@ -47,37 +52,72 @@ class LessonScreenViewModel  @Inject constructor(
     }
     fun startAudio(audioUrl: String) {
         mediaPlayer?.let { player ->
-            if (player.isPlaying) {
-                player.stop()
-                player.reset()
-            }
-
-            applicationContext?.let { context ->
-                try {
-                    val audioUri = Uri.parse(audioUrl)  // Use URL or Firebase path directly
-                    player.setDataSource(context, audioUri)
-                    player.prepareAsync() // Prepare asynchronously to avoid blocking the main thread
-                    player.setOnPreparedListener {
-                        player.start()
-                    }
-                    currentAudioResId = audioUrl
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                    // Handle the exception as needed
+            try {
+                // Stop and reset only if the player is already in use
+                if (player.isPlaying) {
+                    player.stop()
+                    player.reset()
                 }
+
+                // Verify URL and context before attempting to set the data source
+                if (audioUrl.isBlank() || applicationContext == null) {
+                    Log.e("LessonScreenViewModel", "Invalid audio URL or context not set.")
+                    return
+                }
+
+                val audioUri = Uri.parse(audioUrl)
+                player.setDataSource(applicationContext!!, audioUri)
+
+                // Asynchronously prepare the player, so it doesn't block the main thread
+                player.prepareAsync()
+                player.setOnPreparedListener {
+                    player.start()
+                    Log.d("LessonScreenViewModel", "Streaming audio started: $audioUrl")
+                }
+                currentAudioResId = audioUrl
+
+            } catch (e: IllegalStateException) {
+                Log.e("LessonScreenViewModel", "MediaPlayer is in an invalid state", e)
+                player.reset()
+            } catch (e: IOException) {
+                Log.e("LessonScreenViewModel", "Error setting data source for audio URL", e)
             }
         }
     }
+
+    fun startLocalAudio(audioResId: Int) {
+        mediaPlayer?.let { player ->
+            try {
+                // Stop and reset only if the player is already in use
+                if (player.isPlaying) {
+                    player.stop()
+                    player.reset()
+                }
+
+                applicationContext?.let { context ->
+                    val afd = context.resources.openRawResourceFd(audioResId)
+                    player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                    afd.close()
+
+                    player.prepare()
+                    player.start()
+                    Log.d("LessonScreenViewModel", "Local audio started: $audioResId")
+                }
+
+            } catch (e: IllegalStateException) {
+                Log.e("LessonScreenViewModel", "Error in MediaPlayer state for local audio", e)
+                player.reset()
+            } catch (e: IOException) {
+                Log.e("LessonScreenViewModel", "Error setting data source for local audio", e)
+            }
+        }
+    }
+
     fun stopAudio() {
         mediaPlayer?.stop()
         mediaPlayer?.reset()
         currentAudioResId = null
     }
-
-//    fun getLessonContentById(id: Int): Lesson? {
-//        // Fetch the lesson content by ID from the static list
-//        return sampleLessons.find { it.id == id }
-//    }
 
     fun loadLessons() {
         _loading.value = true
@@ -98,8 +138,7 @@ class LessonScreenViewModel  @Inject constructor(
         }
     }
 
-
-    fun getLessonContentByID(id:Int):Lesson?{
+    fun getLessonContentByID(id: Int): Lesson? {
         val lesson = _lessons.value?.find { it.id == id }
         if (lesson != null) {
             Log.d("LessonScreenViewModel", "Found lesson with ID: $id")
@@ -113,4 +152,13 @@ class LessonScreenViewModel  @Inject constructor(
         mediaPlayer?.release()
         super.onCleared()
     }
+
+    fun markLessonCompleted(lessonId: Int, nextLessonId: Int?) {
+        viewModelScope.launch {
+            dataStoreManager.markCompletedChapters(lessonId, nextLessonId)
+        }
+    }
+
+
+
 }

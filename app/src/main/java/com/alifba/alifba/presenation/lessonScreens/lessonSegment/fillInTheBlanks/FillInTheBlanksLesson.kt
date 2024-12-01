@@ -27,7 +27,6 @@ import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.OptionButton
-import com.alifba.alifba.utils.PlayAudio
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)

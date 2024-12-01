@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.window.Dialog
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -18,8 +19,8 @@ fun LottieAnimationDialog(showDialog: MutableState<Boolean>, @RawRes lottieFileR
             LottieAnimationComposition(lottieFileRes)
         }
 
-
-        LaunchedEffect(key1 = true) {
+        val currentShowDialog by rememberUpdatedState(showDialog.value)
+        LaunchedEffect(key1 = currentShowDialog) {
             delay(2000)
             showDialog.value = false
         }
@@ -28,6 +29,7 @@ fun LottieAnimationDialog(showDialog: MutableState<Boolean>, @RawRes lottieFileR
 
 @Composable
 fun LottieAnimationComposition(@RawRes lottieFileRes: Int) {
+
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(lottieFileRes))
     LottieAnimation(composition)
 }

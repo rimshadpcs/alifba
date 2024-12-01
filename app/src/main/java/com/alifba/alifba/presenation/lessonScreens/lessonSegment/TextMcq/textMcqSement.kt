@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
-import com.alifba.alifba.utils.PlayAudio
 import com.alifba.alifba.ui_components.widgets.buttons.MCQChoiceButton
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
 import com.alifba.alifba.ui_components.theme.darkCandyGreen

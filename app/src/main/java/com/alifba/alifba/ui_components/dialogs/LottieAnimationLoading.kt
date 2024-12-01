@@ -28,27 +28,30 @@ fun LottieAnimationLoading(showDialog: MutableState<Boolean>, @RawRes lottieFile
         Dialog(
             onDismissRequest = { showDialog.value = false },
             properties = DialogProperties(
-                usePlatformDefaultWidth = false, // Prevent default width to avoid excess dimming
+                usePlatformDefaultWidth = false
             )
         ) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(32.dp),
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 LottieAnimationCompos(lottieFileRes, Modifier.size(150.dp))
             }
         }
 
-        LaunchedEffect(key1 = true) {
-            delay(2000)
-            showDialog.value = false
+        // Delay to automatically dismiss the dialog after 2 seconds
+        LaunchedEffect(key1 = showDialog.value) {
+            if (showDialog.value) {
+                delay(2000)
+                showDialog.value = false
+            }
         }
     }
-
-
 }
+
 @Composable
 fun LottieAnimationCompos(@RawRes lottieFileRes: Int, modifier: Modifier = Modifier) {
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(lottieFileRes))
