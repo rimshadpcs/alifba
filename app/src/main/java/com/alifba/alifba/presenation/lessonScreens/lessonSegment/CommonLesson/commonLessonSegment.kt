@@ -1,6 +1,7 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment.CommonLesson
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -56,6 +57,7 @@ fun CommonLessonSegment(segment: LessonSegment.CommonLesson, onNextClicked: () -
             text = segment.description,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
+
         )
     }
         Box(

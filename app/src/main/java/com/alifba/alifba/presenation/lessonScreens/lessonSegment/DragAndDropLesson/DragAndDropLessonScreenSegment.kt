@@ -32,7 +32,6 @@ import com.alifba.alifba.R
 import com.alifba.alifba.data.models.DragItem
 import com.alifba.alifba.data.models.DropItem
 import com.alifba.alifba.data.models.LessonSegment
-import com.alifba.alifba.data.models.dragItems
 import com.alifba.alifba.data.models.dropItems
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
 import kotlinx.coroutines.delay
@@ -160,8 +159,8 @@ fun BoxScope.DropCardContainer(dropItems: List<DropItem>, onItemDropped: (DragIt
         DragDropLessonScreen(
             LessonSegment.DragAndDropExperiment(
                 question = "Who created al these amazing things in this world drag and drop them to the right box below",
-                dragItems,
-                dropItems,
+                //dragItems,
+                //dropItems,
             ),
             onNextClicked = {}
         )

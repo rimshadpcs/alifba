@@ -1,12 +1,10 @@
 package com.alifba.alifba.presenation.Login
 
-import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
@@ -17,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import androidx.compose.ui.graphics.graphicsLayer
@@ -36,27 +33,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.util.lerp
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.alifba.alifba.features.authentication.DataStoreManager
+import com.alifba.alifba.ui_components.theme.black
 import com.alifba.alifba.ui_components.theme.darkPink
 import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalFoundationApi::class)
-
 @Composable
 fun ProfileRegistration(
     navController: NavController
 ) {
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val halfScreenHeight = screenHeight / 2
-    val alifbaFont = FontFamily(
+    val alifbaFont: FontFamily = FontFamily(
         Font(R.font.more_sugar_regular, FontWeight.SemiBold)
     )
     val authViewModel: AuthViewModel = hiltViewModel()
@@ -102,7 +97,7 @@ fun ProfileRegistration(
         ) {
             // Background Image
             Image(
-                painter = painterResource(id = R.drawable.prof),
+                painter = painterResource(id = R.drawable.ufo_background),
                 contentDescription = "Background",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -115,13 +110,9 @@ fun ProfileRegistration(
             ) {
 
 
-                AvatarCarousel(onAvatarSelected = { avatarName ->
-                    selectedAvatarName = avatarName
-                }, onPageChanged = {avatarName->
+                AvatarCarousel { avatarName ->
                     selectedAvatarName = avatarName
                 }
-
-                    )
             }
         }
 
@@ -181,98 +172,141 @@ fun ProfileRegistration(
 data class Avatar(val id: Int, val name: String)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AvatarCarousel(onAvatarSelected: (String) -> Unit,onPageChanged: (String) -> Unit) {
-
+fun AvatarCarousel(
+    onAvatarSelected: (String) -> Unit
+) {
     val avatars = listOf(
-        Avatar(R.drawable.avatar1, "Avatar 1"),
-        Avatar(R.drawable.avatar2, "Avatar 2"),
-        Avatar(R.drawable.avatar3, "Avatar 3"),
-        Avatar(R.drawable.avatar4, "Avatar 4"),
-        Avatar(R.drawable.avatar5, "Avatar 5"),
-        Avatar(R.drawable.avatar6, "Avatar 6"),
-        Avatar(R.drawable.avatar7, "Avatar 7"),
-        Avatar(R.drawable.avatar8, "Avatar 8"),
-        Avatar(R.drawable.avatar9, "Avatar 9"),
-        Avatar(R.drawable.avatar10, "Avatar 10")
+        Avatar(R.drawable.deenasaur, "Deenasaur"),
+        Avatar(R.drawable.duallama, "Duallama"),
+        Avatar(R.drawable.firdawsaur, "Firdawsaur"),
+        Avatar(R.drawable.ihsaninguin, "Ihsaninguin"),
+        Avatar(R.drawable.imamoth, "Imamoth"),
+        Avatar(R.drawable.khilafox, "Khilafox"),
+        Avatar(R.drawable.shukraf, "Shukraf"),
+        Avatar(R.drawable.jannahbee, "Jannah Bee"),
+        Avatar(R.drawable.qadragon, "Qadragon"),
+        Avatar(R.drawable.sabracorn, "Sabracorn"),
+        Avatar(R.drawable.sadiqling, "Sadiqling"),
+        Avatar(R.drawable.sidqhog, "Sidqhog")
     )
 
-
-    val repeatedCount = 1000  // Adjust as needed
-    val infiniteAvatars = List(avatars.size * repeatedCount) { index ->
-        avatars[index % avatars.size]
-    }
-
-    val initialPage = infiniteAvatars.size / 2
-
-    val pagerState = rememberPagerState(
-        initialPage = initialPage,
-        pageCount = { infiniteAvatars.size }
+    val alifbaFont: FontFamily = FontFamily(
+        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
     )
 
+    val repeatedCount = 1000
+    val infiniteAvatars = List(avatars.size * repeatedCount) { index -> avatars[index % avatars.size] }
 
+    // Set initial page to the middle position where Deenasaur is the visible item
+    val middlePosition = (infiniteAvatars.size / 2) - (infiniteAvatars.size / 2 % avatars.size)
+    val pagerState = rememberPagerState(initialPage = middlePosition, pageCount = { infiniteAvatars.size })
+
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(pagerState.currentPage) {
-        onAvatarSelected(avatars[pagerState.currentPage % avatars.size].name)
+        // Update selected avatar name on page change
+        onAvatarSelected(infiniteAvatars[pagerState.currentPage % avatars.size].name)
+
+        // If at the start or end, jump to the middle of the list to simulate infinite scrolling
+        if (pagerState.currentPage == 0 || pagerState.currentPage == infiniteAvatars.size - 1) {
+            val newPage = middlePosition + (pagerState.currentPage % avatars.size)
+            coroutineScope.launch {
+                pagerState.scrollToPage(newPage)  // Use scrollToPage for a seamless jump
+            }
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .graphicsLayer {
-                clip = false  // Disable clipping at the parent level
-            },
+            .height(250.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Display the avatars in the HorizontalPager
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
-                .graphicsLayer {
-                    clip = false  // Disable clipping in the pager
-                },
-            contentPadding = PaddingValues(horizontal = 0.dp),  // Set to zero
-            pageSpacing = (-60).dp,  // Use negative spacing for overlap
-            verticalAlignment = Alignment.CenterVertically,
-            beyondViewportPageCount = 2
+                .height(200.dp),
+            contentPadding = PaddingValues(horizontal = 88.dp),
+            pageSpacing = (-30).dp,
         ) { page ->
             val actualPage = page % avatars.size
-            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
-
             val scale = lerp(
                 start = 0.8f,
                 stop = 1f,
-                fraction = 1f - pageOffset.absoluteValue.coerceIn(0f, 1f)
+                fraction = 1f - pagerState.currentPageOffsetFraction.absoluteValue.coerceIn(0f, 1f)
             )
-
-            var alpha = lerp(
-                start = 0.5f,
-                stop = 1f,
-                fraction = 1f - pageOffset.absoluteValue.coerceIn(0f, 1f)
-            )
-
-            // Use Modifier.offset for positioning
-            val horizontalOffsetDp = (-30).dp * pageOffset  // Adjust as needed
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(x = horizontalOffsetDp)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        alpha = alpha
-                        clip = false
-                    },
+                modifier = Modifier.graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = avatars[actualPage].id),
                     contentDescription = "Avatar $actualPage",
+                    modifier = Modifier.size(250.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = avatars[actualPage].name,
                     modifier = Modifier
-                        .size(140.dp)
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-30).dp),
+                    fontFamily = alifbaFont,
+                    color = black,
+                    fontSize = 30.sp,
 
+                    )
+
+            }
+        }
+
+        // Bottom Row for navigation buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .align(Alignment.BottomCenter),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Arrow Button
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
+                elevation = ButtonDefaults.elevation(0.dp),
+                modifier = Modifier.size(64.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.leftarrow),
+                    contentDescription = "Scroll Left",
+                    modifier = Modifier.size(64.dp)
+                )
+            }
+
+            // Right Arrow Button
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
+                elevation = ButtonDefaults.elevation(0.dp),
+                modifier = Modifier.size(64.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.rightarrow),
+                    contentDescription = "Scroll Right",
+                    modifier = Modifier.size(64.dp)
                 )
             }
         }
@@ -332,4 +366,5 @@ fun AgeSelectionButtons(onAgeSelected: (Int) -> Unit) {
         }
     }
 }
+
 

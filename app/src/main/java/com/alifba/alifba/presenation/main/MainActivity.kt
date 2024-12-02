@@ -34,6 +34,7 @@ import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.Login.AuthViewModel
 import com.alifba.alifba.presenation.Login.LoginScreen
 import com.alifba.alifba.presenation.Login.ProfileRegistration
+import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.main.layout.AlifbaMainScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
     private val lessonScreenViewModel: LessonScreenViewModel by viewModels()
     private val homeViewModel: HomeViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
+    private val chaptersViewModel : ChaptersViewModel by viewModels()
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,7 +119,7 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(viewModel = authViewModel, navController = navController)
                         }
                         composable("home") {
-                            AlifbaMainScreen(lessonScreenViewModel, homeViewModel)
+                            AlifbaMainScreen(lessonScreenViewModel, homeViewModel,chaptersViewModel)
                         }
                         composable("createProfile") {
                             ProfileRegistration(navController)

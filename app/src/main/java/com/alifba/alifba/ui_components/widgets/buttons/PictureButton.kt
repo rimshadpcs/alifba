@@ -35,12 +35,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberImagePainter
 import com.alifba.alifba.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun PictureButton(onClick: () -> Unit,buttonImage: Int, buttonText : String) {
+fun PictureButton(onClick: () -> Unit, buttonImage: String, buttonText: String) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -51,7 +52,6 @@ fun PictureButton(onClick: () -> Unit,buttonImage: Int, buttonText : String) {
     val alifbaFont = FontFamily(
         Font(R.font.more_sugar_regular, FontWeight.SemiBold)
     )
-
 
     Box(
         modifier = Modifier
@@ -66,7 +66,6 @@ fun PictureButton(onClick: () -> Unit,buttonImage: Int, buttonText : String) {
                 .background(Color.Black)
         )
         Box(
-
             modifier = Modifier
                 .matchParentSize()
                 .padding(bottom = offsetY) // Apply the offset for the press effect
@@ -85,41 +84,39 @@ fun PictureButton(onClick: () -> Unit,buttonImage: Int, buttonText : String) {
             contentAlignment = Alignment.Center
         ) {
             Column(
-                modifier =
-                Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
-
                 Image(
-                    painter = painterResource(id = buttonImage),
+                    painter = if (buttonImage.startsWith("http")) {
+                        rememberImagePainter(buttonImage)
+                    } else {
+                        painterResource(id = buttonImage.toIntOrNull() ?: R.drawable.error)
+                    },
                     contentDescription = "Image",
                     modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight(.7f)
                         .padding(8.dp)
-
                         .clip(shape = RoundedCornerShape(32.dp)),
                     contentScale = ContentScale.Inside
                 )
 
                 Text(
-                    text =buttonText,
+                    text = buttonText,
                     color = Color.Black,
                     fontFamily = alifbaFont,
                     fontSize = 17.sp
                 )
-
             }
-
-
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewPictureButton() {
-    PictureButton(onClick = {}, buttonImage = R.drawable.flower, buttonText = "Flowers")
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewPictureButton() {
+//    PictureButton(onClick = {}, buttonImage = R.drawable.flower, buttonText = "Flowers")
+//}

@@ -33,6 +33,8 @@ class AuthViewModel @Inject constructor(
     private val _profileCreationState = MutableStateFlow<ProfileCreationState>(ProfileCreationState.Idle)
     val profileCreationState: StateFlow<ProfileCreationState> get() = _profileCreationState
 
+    private val _userProfileState = MutableStateFlow<UserProfile?>(null)
+    val userProfileState: StateFlow<UserProfile?> get() = _userProfileState
     val authState: StateFlow<AuthState> get() = _authState
 
     private val fireStore: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -70,6 +72,7 @@ class AuthViewModel @Inject constructor(
                         val userId = userDocument.getString("userId")
                         if (userId != null) {
                             dataStoreManager.saveUserDetails(email, password, userId)
+                            //fetchUserProfile()
                             _authState.value = AuthState.Success
                         } else {
                             // User ID not found, navigate to profile registration
@@ -224,10 +227,50 @@ class AuthViewModel @Inject constructor(
                 ProfileCreationState.Error(e.localizedMessage ?: "Unknown error")
         }
     }
+    fun fetchUserProfile() {
+        viewModelScope.launch {
+            val userId = dataStoreManager.userId.first()
+            if (!userId.isNullOrEmpty()) {
+                try {
+                    val documentSnapshot = fireStore.collection("users")
+                        .document(userId)
+                        .get()
+                        .await()
+
+                    if (documentSnapshot.exists()) {
+                        val parentName = documentSnapshot.getString("parentName") ?: ""
+                        val childProfiles = documentSnapshot.get("childProfiles") as? List<Map<String, Any>> ?: emptyList()
+
+                        if (childProfiles.isNotEmpty()) {
+                            val childProfile = childProfiles[0] // Assuming one child profile for simplicity
+                            val childName = childProfile["childName"] as? String ?: ""
+                            val age = (childProfile["age"] as? Long)?.toInt() ?: 0
+                            val avatar = childProfile["avatar"] as? String ?: ""
+
+                            _userProfileState.value = UserProfile(parentName, childName, age, avatar)
+                        }
+                    } else {
+                        Log.d("AuthViewModel", "User document does not exist")
+                    }
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Error fetching user profile: ${e.localizedMessage}")
+                }
+            }
+        }
+    }
+
 
 }
 
-    private val _profileCreationState = MutableStateFlow<ProfileCreationState>(ProfileCreationState.Idle)
+
+data class UserProfile(
+    val parentName: String,
+    val childName: String,
+    val age: Int,
+    val avatar: String
+)
+
+private val _profileCreationState = MutableStateFlow<ProfileCreationState>(ProfileCreationState.Idle)
     val profileCreationState: StateFlow<ProfileCreationState> get() = _profileCreationState
 
 sealed class ProfileCreationState {

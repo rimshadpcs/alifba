@@ -103,10 +103,10 @@ fun FlashCardScreen() {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        FlashCard(
-            title = "Allah's names",
-            description = "Ar -Raheem (The most compassionate)",
-            imageResId = R.drawable.wave
-        )
+//        FlashCard(
+//            title = "Allah's names",
+//            description = "Ar -Raheem (The most compassionate)",
+//            imageResId = R.drawable.wave
+//        )
     }
 }

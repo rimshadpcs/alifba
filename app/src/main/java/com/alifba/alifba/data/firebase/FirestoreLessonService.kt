@@ -5,6 +5,7 @@ import com.alifba.alifba.data.models.FillInTheBlanksExercise
 import com.alifba.alifba.data.models.Lesson
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.data.models.OptionsForFillInTheBlanks
+import com.alifba.alifba.data.models.PictureMcqItem
 import com.alifba.alifba.data.models.TextMcqItem
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -60,14 +61,43 @@ class FireStoreLessonService(
                                 speech = segmentData["speech"] as? String ?: ""
                             )
                         }
-                        else -> null // Unknown type, skip this segment
+                        "pictureMcqLesson" -> {
+                            val choices = (segmentData["pictureChoices"] as? List<Map<String, Any>>)?.map { choice ->
+                                PictureMcqItem(
+                                    image = choice["image"].toString(),
+                                    choice = choice["choice"].toString(),
+                                    answer = choice["answer"] as? Boolean ?: false
+                                )
+                            } ?: emptyList()
+
+                            val question = segmentData["question"] as? String ?: ""
+                            val image = segmentData["image"].toString()  // Convert to String
+                            val correctAnswer = segmentData["correctAnswer"] as? String ?: ""
+                            val speech = segmentData["speech"].toString()
+
+                            Log.d("FirestoreLessonService", "Loaded PictureMcqLesson: image=$image, question=$question")
+
+                            LessonSegment.PictureMcqLesson(
+                                question = question,
+                                //image = image,
+                                pictureChoices = choices,
+                                correctAnswer = correctAnswer,
+                                speech = speech
+                            )
+                        }
+
+
+
+
+                        else -> null
                     }
                 } ?: emptyList()
 
                 Lesson(
                     id = (lessonData["id"] as? Long)?.toInt() ?: 0,
                     title = lessonData["title"] as? String ?: "",
-                    segments = segments
+                    segments = segments,
+                    chapterType = lessonData["chapterType"] as? String ?: "",
                 )
             }
 

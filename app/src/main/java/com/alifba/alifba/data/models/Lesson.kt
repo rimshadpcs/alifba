@@ -6,7 +6,8 @@ import com.alifba.alifba.R
 data class Lesson(
     val id: Int = 0,
     val title: String = "",
-    val segments: List<LessonSegment> = emptyList()  // Default value
+    val segments: List<LessonSegment> = emptyList(),
+    val chapterType:String = ""// Default value
 )
 
 
@@ -35,7 +36,7 @@ sealed class LessonSegment {
     data class FillInTheBlanks(
         val exercise: FillInTheBlanksExercise
     ): LessonSegment()
-    data class PictureMcqLesson(val question: String = "", val image: Int = 0, val choices: List<PictureMcqItem> = emptyList(), val correctAnswer:String="", val speech:Int =0) :
+    data class PictureMcqLesson(val question: String = "", val pictureChoices: List<PictureMcqItem> = emptyList(), val correctAnswer:String="", val speech:String ="") :
 
         LessonSegment()
 
@@ -47,14 +48,14 @@ data class DragItem(val id: Int=0, val answer: String="", @DrawableRes val image
 
 data class DropItem(val id: Int=0, val name: String="")
 
-val dragItems = listOf(
-    DragItem(1, "Everyday",  R.drawable.salah),
-    DragItem(2, "Occasionally",  R.drawable.umrah),
-    DragItem(3, "Occasionally",  R.drawable.iftar),
-    DragItem(4, "Everyday",  R.drawable.prayer),
-    DragItem(5, "Everyday",  R.drawable.brushing),
-    DragItem(6, "Occasionally",  R.drawable.eid),
-)
+//val dragItems = listOf(
+//    DragItem(1, "Everyday",  R.drawable.salah),
+//    DragItem(2, "Occasionally",  R.drawable.umrah),
+//    DragItem(3, "Occasionally",  R.drawable.iftar),
+//    DragItem(4, "Everyday",  R.drawable.prayer),
+//    DragItem(5, "Everyday",  R.drawable.brushing),
+//    DragItem(6, "Occasionally",  R.drawable.eid),
+//)
 
 val dropItems = listOf(
     DropItem(1, "Everyday"),
@@ -65,8 +66,10 @@ data class TextMcqItem(
     val answer: Boolean=false
 )
 data class PictureMcqItem(
-    val image:Int=0,
-    val answer: String=""
+    val image:String,
+    val choice: String = "",
+    val answer: Boolean = false
+
 )
 
 data class FillInTheBlanksExercise(

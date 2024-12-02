@@ -1,5 +1,7 @@
 package com.alifba.alifba.presenation.main.layout
 
+import ChaptersScreen
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,12 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,22 +29,26 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.alifba.alifba.R
+import com.alifba.alifba.presenation.Login.AuthViewModel
+import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreen
 import com.alifba.alifba.presenation.home.HomeViewModel
+import com.alifba.alifba.presenation.home.layout.ChangeAvatarScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.presenation.home.layout.HomeTopBar
 import com.alifba.alifba.presenation.home.layout.ProfileScreen
-import com.alifba.alifba.presenation.chapters.layout.ChaptersScreen
+import com.alifba.alifba.presenation.home.layout.ProfileViewModel
+import com.alifba.alifba.presenation.home.layout.SettingsScreen
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
 
 
 @Composable
-fun HomeScreenWithScaffold(navController: NavController,homeViewModel: HomeViewModel) {
+fun HomeScreenWithScaffold(navController: NavController,homeViewModel: HomeViewModel, chaptersViewModel: ChaptersViewModel,authViewModel: AuthViewModel) {
     Scaffold(topBar = {
         Column {
-            Spacer(modifier = Modifier.height(8.dp)) // Spacer on top of the TopAppBar
-            HomeTopBar(navController)
+            Spacer(modifier = Modifier.height(2.dp)) // Spacer on top of the TopAppBar
+            HomeTopBar(navController,authViewModel)
         }
     }, content = { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -60,16 +68,26 @@ fun HomeScreenWithScaffold(navController: NavController,homeViewModel: HomeViewM
 }
 //main screen containing home screen
 @Composable
-fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: HomeViewModel) {
+fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: HomeViewModel,chaptersViewModel: ChaptersViewModel,authViewModel: AuthViewModel = hiltViewModel(),profileViewModel: ProfileViewModel= hiltViewModel()) {
    // val viewModel: LessonScreenViewModel = viewModel() // Create or obtain the viewModel instance
+    LaunchedEffect(Unit) {
+        authViewModel.fetchUserProfile()
+    }
+
     val navController = rememberNavController()
     AlifbaTheme {
         NavHost(navController, startDestination = "homeScreen") {
             composable("homeScreen") {
-                HomeScreenWithScaffold(navController,homeViewModel)
+                HomeScreenWithScaffold(navController,homeViewModel, chaptersViewModel = chaptersViewModel,authViewModel)
             }
             composable("profile") {
-                ProfileScreen()
+                ProfileScreen(navController,profileViewModel)
+            }
+            composable("changeAvatar") {
+                ChangeAvatarScreen(navController = navController)
+            }
+            composable("settings") {
+                SettingsScreen()
             }
             composable("lessonPathScreen/{levelId}") { backStackEntry ->
                 val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
@@ -85,7 +103,8 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                     navigateToChapterScreen = {
                         navController.navigate("lessonPathScreen/$levelId")
                     },
-                    viewModel = lessonViewModel
+                    viewModel = lessonViewModel,
+                    chaptersViewModel =chaptersViewModel
                 )
             }
 
@@ -93,16 +112,15 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun AlifbaMainScreenPreview() {
+fun AlifbaMainScreenPreview(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     AlifbaTheme {
         Scaffold(
             topBar = {
                 Column {
                     Spacer(modifier = Modifier.height(8.dp))
-                    HomeTopBar(navController) // Assuming HomeTopBar is defined somewhere in your code.
+                    HomeTopBar(navController,authViewModel) // Assuming HomeTopBar is defined somewhere in your code.
                 }
             },
             content = { paddingValues ->
