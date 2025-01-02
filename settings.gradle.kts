@@ -4,14 +4,15 @@
         mavenCentral()
         gradlePluginPortal()
     }
+
 }
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+ dependencyResolutionManagement {
+     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS) // Change to PREFER_SETTINGS or PREFER_PROJECT
+     repositories {
+         google()
+         mavenCentral()
+     }
+ }
 
 rootProject.name = "Alifba"
 include(":app")
