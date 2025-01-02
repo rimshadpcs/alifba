@@ -1,7 +1,6 @@
 package com.alifba.alifba.presenation.home.layout
 
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
@@ -27,14 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.Login.AuthViewModel
+import com.alifba.alifba.presenation.home.layout.profile.getAvatarDrawable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

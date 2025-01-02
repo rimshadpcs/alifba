@@ -1,6 +1,7 @@
 package com.alifba.alifba.ui_components.widgets.texts
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,8 +37,10 @@ fun SettingsButton(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically // Center-align Text and Image vertically
+            .padding(16.dp)
+            .clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically
+
     ) {
         // Text
         Text(
@@ -63,7 +66,7 @@ fun SettingsButton(
 
         // Right Arrow Icon
         Image(
-            painter = painterResource(id = R.drawable.rightarrowbutton),
+            painter = painterResource(id = R.drawable.rightarrowsettings),
             contentDescription = "Right Arrow",
             modifier = Modifier.size(24.dp) // Adjust size as needed
         )

@@ -1,7 +1,6 @@
 package com.alifba.alifba.presenation.main.layout
 
 import ChaptersScreen
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -34,12 +32,13 @@ import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreen
 import com.alifba.alifba.presenation.home.HomeViewModel
-import com.alifba.alifba.presenation.home.layout.ChangeAvatarScreen
+import com.alifba.alifba.presenation.home.layout.profile.ChangeAvatarScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.presenation.home.layout.HomeTopBar
-import com.alifba.alifba.presenation.home.layout.ProfileScreen
+import com.alifba.alifba.presenation.home.layout.profile.ProfileScreen
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
-import com.alifba.alifba.presenation.home.layout.SettingsScreen
+import com.alifba.alifba.presenation.home.layout.settings.AccountScreen
+import com.alifba.alifba.presenation.home.layout.settings.SettingsScreen
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
 
 
@@ -87,7 +86,10 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                 ChangeAvatarScreen(navController = navController)
             }
             composable("settings") {
-                SettingsScreen()
+                SettingsScreen(navController)
+            }
+            composable("accountScreen") { // New route for AccountScreen
+                AccountScreen()
             }
             composable("lessonPathScreen/{levelId}") { backStackEntry ->
                 val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
@@ -107,6 +109,7 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                     chaptersViewModel =chaptersViewModel
                 )
             }
+
 
         }
     }
