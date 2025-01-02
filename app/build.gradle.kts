@@ -1,3 +1,5 @@
+import org.gradle.internal.impldep.org.junit.experimental.categories.Categories.CategoryFilter.include
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -22,6 +24,9 @@ android {
             useSupportLibrary = true
         }
     }
+    sourceSets {
+        getByName("main").java.srcDirs("build/generated/source/kapt/main")
+    }
 
     buildTypes {
         release {
@@ -32,23 +37,41 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.2"
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
+//    packaging {
+//        resources {
+//            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+//        }
+//    }
+}
+kapt {
+    correctErrorTypes = true
+    useBuildCache = true
+    arguments {
+        arg("jvmTarget", "17")
+    }
+    // Add compiler options for Kapt here
+    javacOptions {
+        option("-XaddExports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED")
+    }
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
@@ -115,6 +138,8 @@ dependencies {
     // ExoPlayer
     implementation("com.google.android.exoplayer:exoplayer:2.19.1")
 
+    implementation ("androidx.compose.compiler:compiler:1.5.3")
+
     // Testing dependencies
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -124,3 +149,4 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
