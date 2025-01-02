@@ -1,4 +1,4 @@
-package com.alifba.alifba.presenation.home.layout
+package com.alifba.alifba.presenation.home.layout.profile
 
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -20,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
@@ -29,18 +28,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.R
-import com.alifba.alifba.presenation.Login.AuthViewModel
+import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.ui_components.theme.darkPink
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.StripedProgressIndicator
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 
 @Composable
