@@ -137,4 +137,9 @@ class DataStoreManager @Inject constructor(
             unlockedChapters.associateWith { false } + completedChapters.associateWith { true }
         }
     }
+    suspend fun clearUserDetails() {
+        dataStore.edit { preferences ->
+            preferences.clear() // Clear all keys
+        }
+    }
 }

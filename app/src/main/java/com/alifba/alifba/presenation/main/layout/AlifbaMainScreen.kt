@@ -65,7 +65,7 @@ fun HomeScreenWithScaffold(navController: NavController,homeViewModel: HomeViewM
         }
     })
 }
-//main screen containing home screen
+
 @Composable
 fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: HomeViewModel,chaptersViewModel: ChaptersViewModel,authViewModel: AuthViewModel = hiltViewModel(),profileViewModel: ProfileViewModel= hiltViewModel()) {
    // val viewModel: LessonScreenViewModel = viewModel() // Create or obtain the viewModel instance
@@ -89,7 +89,7 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                 SettingsScreen(navController)
             }
             composable("accountScreen") { // New route for AccountScreen
-                AccountScreen()
+                AccountScreen(authViewModel)
             }
             composable("lessonPathScreen/{levelId}") { backStackEntry ->
                 val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
@@ -169,6 +169,7 @@ fun LottieAnimationScreen() {
         )
     }
 }
+
 
 @Composable
 fun MockHomeScreen() {

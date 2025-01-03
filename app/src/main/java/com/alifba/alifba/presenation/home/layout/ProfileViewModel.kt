@@ -38,6 +38,8 @@ class ProfileViewModel @Inject constructor(
                     if (documentSnapshot.exists()) {
                         val parentName = documentSnapshot.getString("parentName") ?: ""
                         val childProfiles = documentSnapshot.get("childProfiles") as? List<Map<String, Any>> ?: emptyList()
+                        val email = documentSnapshot.getString("email") ?: ""
+                        val userId = documentSnapshot.getString("userId") ?: ""
 
                         if (childProfiles.isNotEmpty()) {
                             val childProfile = childProfiles[0] // Assuming one child profile for simplicity
@@ -45,7 +47,7 @@ class ProfileViewModel @Inject constructor(
                             val age = (childProfile["age"] as? Long)?.toInt() ?: 0
                             val avatar = childProfile["avatar"] as? String ?: ""
 
-                            _userProfileState.value = UserProfile(parentName, childName, age, avatar)
+                            _userProfileState.value = UserProfile(parentName, childName, age, avatar, email, userId)
                         }
                     } else {
                         Log.d("ChildProfileViewModel", "User document does not exist")
