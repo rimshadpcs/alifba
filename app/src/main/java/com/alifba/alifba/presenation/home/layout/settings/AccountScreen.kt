@@ -1,5 +1,6 @@
 package com.alifba.alifba.presenation.home.layout.settings
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -45,8 +47,7 @@ import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun AccountScreen(authViewModel: AuthViewModel) {
-
+fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
     val userProfile = authViewModel.userProfileState.collectAsState().value
     val alifbaFont = FontFamily(
         Font(R.font.more_sugar_regular, FontWeight.SemiBold)
@@ -137,17 +138,19 @@ fun AccountScreen(authViewModel: AuthViewModel) {
                     .padding(horizontal = 16.dp) // Optional padding
             )
 
-            // Logout Button
             CommonButton(
-                modifier = Modifier
-                    .fillMaxWidth(0.8f) // Optional: Makes the button narrower
-                    .padding(16.dp), // Add some padding
-                onClick = { authViewModel.logout()},
+                onClick = {
+                    authViewModel.logout() // Clears user data and signs out
+                    navController.navigate("login") {
+                        popUpTo("homeScreen") { inclusive = true } // Clear back stack
+                    }
+                },
                 buttonText = "Logout",
                 shadowColor = darkPink,
                 mainColor = lightPink,
                 textColor = white
             )
+
         }
     }
 }
