@@ -41,23 +41,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
 import com.alifba.alifba.ui_components.widgets.textFields.PasswordInputField
-
+import kotlinx.coroutines.flow.first
 @Composable
-fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(),navController: NavController) {
+fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavController) {
     val context = LocalContext.current
     val authState by viewModel.authState.collectAsState()
     var isSignUpVisible by remember { mutableStateOf(false) }
     var isLoginVisible by remember { mutableStateOf(false) }
 
-    val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
-    )
-
-
-
     var email by remember { mutableStateOf("") }
-    var userId by remember { mutableStateOf("") }
-
     var password by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -75,7 +67,7 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(),navController: NavCon
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween, // For top form and bottom buttons
+            verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Form Section (Top of the screen)
@@ -94,25 +86,24 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(),navController: NavCon
                         text = if (isSignUpVisible) "Sign Up" else "Log In",
                         fontSize = 24.sp,
                         color = navyBlue,
-                        fontFamily = alifbaFont
+                        fontFamily = FontFamily(
+                            Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+                        )
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Custom Input Field for Email
                     CustomInputField(
                         value = email,
                         onValueChange = { email = it },
                         labelText = "Enter Email"
                     )
 
-                    // Custom Input Field for Password
                     PasswordInputField(
                         value = password,
                         onValueChange = { password = it },
                         labelText = "Enter Password"
                     )
 
-                    // Show repeat password field only for sign-up
                     if (isSignUpVisible) {
                         PasswordInputField(
                             value = repeatPassword,
@@ -126,8 +117,6 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(),navController: NavCon
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-
-                   // GoogleAndAppleSignInButtons()
                 }
             }
 
@@ -178,16 +167,41 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(),navController: NavCon
                     CommonButton(
                         onClick = {
                             if (isSignUpVisible) {
-                                // Handle sign-up logic
                                 if (password == repeatPassword) {
-                                    viewModel.signUp(email, password)
-                                    Toast.makeText(context, "Sign Up Successful!", Toast.LENGTH_SHORT).show()
+                                    viewModel.signUp(
+                                        email,
+                                        password,
+                                        onSuccess = {
+                                            navController.navigate("onboarding") {
+                                                popUpTo("login") { inclusive = true }
+                                            }
+                                        },
+                                        onError = { error ->
+                                            Toast.makeText(context, "Sign Up Failed: $error", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
                                 } else {
                                     Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
                                 }
                             } else {
-                                // Handle sign-in logic
-                                viewModel.signIn(email, password)
+                                viewModel.signIn(
+                                    email,
+                                    password,
+                                    onResult = { hasProfiles ->
+                                        if (!hasProfiles) {
+                                            navController.navigate("createProfile") {
+                                                popUpTo("login") { inclusive = true }
+                                            }
+                                        } else {
+                                            navController.navigate("home") {
+                                                popUpTo("login") { inclusive = true }
+                                            }
+                                        }
+                                    },
+                                    onError = { error ->
+                                        Toast.makeText(context, "Login Failed: $error", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
                             }
                         },
                         buttonText = if (isSignUpVisible) "Sign Up" else "Log In",
@@ -196,30 +210,24 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(),navController: NavCon
                         textColor = white
                     )
 
+
                     // Handle the auth state changes
                     LaunchedEffect(authState) {
                         when (authState) {
                             is AuthState.Success -> {
                                 Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
-                                // Navigate to the home screen
-                                navController.navigate("home") {
-                                    popUpTo("login") { inclusive = true }
-                                }
                             }
                             is AuthState.NeedsProfile -> {
-                                Toast.makeText(context, "Please complete your profile.", Toast.LENGTH_SHORT).show()
-                                // Navigate to the profile registration screen
                                 navController.navigate("createProfile") {
                                     popUpTo("login") { inclusive = true }
                                 }
                             }
                             is AuthState.Error -> {
-                                Toast.makeText(context, "Login Failed: ${(authState as AuthState.Error).message}", Toast.LENGTH_SHORT).show()
+                                errorMessage = (authState as AuthState.Error).message
                             }
                             else -> {}
                         }
                     }
-
 
                     Spacer(modifier = Modifier.height(8.dp))
                     CommonButton(

@@ -28,6 +28,7 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.Login.AuthViewModel
+import com.alifba.alifba.presenation.Login.LoginScreen
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreen
@@ -77,10 +78,15 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
     AlifbaTheme {
         NavHost(navController, startDestination = "homeScreen") {
             composable("homeScreen") {
-                HomeScreenWithScaffold(navController,homeViewModel, chaptersViewModel = chaptersViewModel,authViewModel)
+                HomeScreenWithScaffold(
+                    navController,
+                    homeViewModel,
+                    chaptersViewModel = chaptersViewModel,
+                    authViewModel
+                )
             }
             composable("profile") {
-                ProfileScreen(navController,profileViewModel)
+                ProfileScreen(navController, profileViewModel)
             }
             composable("changeAvatar") {
                 ChangeAvatarScreen(navController = navController)
@@ -88,29 +94,32 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             composable("settings") {
                 SettingsScreen(navController)
             }
-            composable("accountScreen") { // New route for AccountScreen
-                AccountScreen(authViewModel)
+            composable("accountScreen") {
+                AccountScreen(authViewModel = authViewModel, navController = navController)
             }
             composable("lessonPathScreen/{levelId}") { backStackEntry ->
                 val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
-                ChaptersScreen(navController, levelId) // Pass the levelId to the ChaptersScreen
+                ChaptersScreen(navController, levelId)
             }
             composable("lessonScreen/{lessonId}/{levelId}") { backStackEntry ->
-                val lessonId = backStackEntry.arguments?.getString("lessonId")?.toIntOrNull() ?: return@composable
+                val lessonId = backStackEntry.arguments?.getString("lessonId")?.toIntOrNull()
+                    ?: return@composable
                 val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
                 LessonScreen(
                     lessonId = lessonId,
-                    levelId = levelId, // Pass levelId to LessonScreen
-                    navController = navController, // Pass navController to LessonScreen
+                    levelId = levelId,
+                    navController = navController,
                     navigateToChapterScreen = {
                         navController.navigate("lessonPathScreen/$levelId")
                     },
                     viewModel = lessonViewModel,
-                    chaptersViewModel =chaptersViewModel
+                    chaptersViewModel = chaptersViewModel
                 )
             }
-
-
+            // Add login screen route
+            composable("login") {
+                LoginScreen(viewModel = authViewModel, navController = navController)
+            }
         }
     }
 }

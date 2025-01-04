@@ -4,12 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alifba.alifba.features.authentication.DataStoreManager
+import com.alifba.alifba.features.authentication.OnboardingDataStoreManager
 import com.alifba.alifba.features.authentication.usecase.SignInUseCase
 import com.alifba.alifba.features.authentication.usecase.SignUpUseCase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -19,17 +21,17 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
+    private val onboardingDataStoreManager: OnboardingDataStoreManager,
     private val signUpUseCase: SignUpUseCase,
     private val signInUseCase: SignInUseCase,
     private val dataStoreManager: DataStoreManager,
 ) : ViewModel() {
 
-
     val email: StateFlow<String?> = dataStoreManager.email
     val password: StateFlow<String?> = dataStoreManager.password
     val userId: StateFlow<String?> = dataStoreManager.userId
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
-
+    private val fireStore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val _profileCreationState = MutableStateFlow<ProfileCreationState>(ProfileCreationState.Idle)
     val profileCreationState: StateFlow<ProfileCreationState> get() = _profileCreationState
 
@@ -37,29 +39,30 @@ class AuthViewModel @Inject constructor(
     val userProfileState: StateFlow<UserProfile?> get() = _userProfileState
     val authState: StateFlow<AuthState> get() = _authState
 
-    private val fireStore: FirebaseFirestore = FirebaseFirestore.getInstance()
-    fun signUp(email: String, password: String) {
+    val hasCompletedOnboarding: Flow<Boolean> = onboardingDataStoreManager.hasCompletedOnboarding
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        onboardingDataStoreManager.setOnboardingCompleted(completed)
+    }
+    fun signUp(email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             val result = signUpUseCase(email, password)
             if (result.isSuccess) {
-                // Save email and password to DataStore
                 dataStoreManager.saveUserDetails(email, password, "")
-                _authState.value = AuthState.Success
+                onboardingDataStoreManager.setOnboardingCompleted(false) // Ensure onboarding starts
+                onSuccess() // Notify success
             } else {
-                _authState.value =
-                    AuthState.Error(result.exceptionOrNull()?.localizedMessage ?: "Unknown error")
+                onError(result.exceptionOrNull()?.localizedMessage ?: "Unknown error")
             }
         }
     }
 
-
-    fun signIn(email: String, password: String) {
+    fun signIn(email: String, password: String, onResult: (Boolean) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             val result = signInUseCase(email, password)
             if (result.isSuccess) {
-                // After successful sign-in, retrieve the userId from Firestore
                 val db = FirebaseFirestore.getInstance()
                 try {
                     val querySnapshot = db.collection("users")
@@ -72,25 +75,23 @@ class AuthViewModel @Inject constructor(
                         val userId = userDocument.getString("userId")
                         if (userId != null) {
                             dataStoreManager.saveUserDetails(email, password, userId)
-                            //fetchUserProfile()
-                            _authState.value = AuthState.Success
+                            val hasProfiles = checkForChildProfiles()
+                            onResult(hasProfiles) // Notify with the profile status
                         } else {
-                            // User ID not found, navigate to profile registration
-                            _authState.value = AuthState.NeedsProfile
+                            onError("User ID not found.")
                         }
                     } else {
-                        // User document not found, navigate to profile registration
-                        _authState.value = AuthState.NeedsProfile
+                        onError("User not found.")
                     }
                 } catch (e: Exception) {
-                    _authState.value = AuthState.Error(e.localizedMessage ?: "Unknown error")
+                    onError(e.localizedMessage ?: "Unknown error")
                 }
             } else {
-                _authState.value =
-                    AuthState.Error(result.exceptionOrNull()?.localizedMessage ?: "Unknown error")
+                onError(result.exceptionOrNull()?.localizedMessage ?: "Unknown error")
             }
         }
     }
+
 
 
     suspend fun checkForChildProfiles(): Boolean {
