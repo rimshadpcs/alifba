@@ -71,19 +71,35 @@ class MainActivity : ComponentActivity() {
             var isSplashScreenVisible by remember { mutableStateOf(true) }
 
             LaunchedEffect(firebaseUser) {
-                val hasCompletedOnboarding = onboardingDataStore.hasCompletedOnboarding.first()
-                val hasProfiles = if (firebaseUser != null) authViewModel.checkForChildProfiles() else false
+                // 1) If the user is null, they must log in
+                if (firebaseUser == null) {
+                    startDestination = "login"
+                } else {
+                    // 2) Wait until userId is *not* null or empty in DataStore
+                    var userId: String? = null
+                    // We'll poll or read from DataStore until we get a real userId
+                    while (userId.isNullOrEmpty()) {
+                        userId = authViewModel.dataStoreManager.userId.first()
+                        delay(100) // Wait a bit, or you can do a more sophisticated approach
+                    }
 
-                startDestination = when {
-                    firebaseUser == null -> "login" // Show Login/Signup combined screen
-                    !hasCompletedOnboarding -> "onboarding" // Show onboarding for new users
-                    !hasProfiles -> "createProfile" // No profiles, go to profile registration
-                    else -> "home" // All set, go to Home
+                    // 3) Now userId is definitely not null or empty
+                    val hasCompletedOnboarding = onboardingDataStore.hasCompletedOnboarding.first()
+                    val hasProfiles = authViewModel.checkForChildProfiles()  // safely reads userId from DataStore
+
+                    // 4) Decide the start destination
+                    startDestination = when {
+                        !hasCompletedOnboarding -> "onboarding"
+                        !hasProfiles -> "createProfile"
+                        else -> "home"
+                    }
                 }
 
-                delay(1000) // Ensure splash screen shows for 1 second
+                // 5) Give your splash screen at least 1 second, if desired
+                delay(1000)
                 isSplashScreenVisible = false
             }
+
 
             Box(modifier = Modifier.fillMaxSize()) {
                 if (startDestination != null && !isSplashScreenVisible) {

@@ -24,7 +24,7 @@ class AuthViewModel @Inject constructor(
     private val onboardingDataStoreManager: OnboardingDataStoreManager,
     private val signUpUseCase: SignUpUseCase,
     private val signInUseCase: SignInUseCase,
-    private val dataStoreManager: DataStoreManager,
+    val dataStoreManager: DataStoreManager,
 ) : ViewModel() {
 
     val email: StateFlow<String?> = dataStoreManager.email
@@ -49,14 +49,18 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthState.Loading
             val result = signUpUseCase(email, password)
             if (result.isSuccess) {
-                dataStoreManager.saveUserDetails(email, password, "")
-                onboardingDataStoreManager.setOnboardingCompleted(false) // Ensure onboarding starts
-                onSuccess() // Notify success
+                // Store just email/password for now (or skip storing password if not needed)
+                dataStoreManager.saveUserDetails(email, password, userId = "")
+
+                // Mark user as partially set up, or proceed to next step...
+                onboardingDataStoreManager.setOnboardingCompleted(false)
+                onSuccess()
             } else {
                 onError(result.exceptionOrNull()?.localizedMessage ?: "Unknown error")
             }
         }
     }
+
 
     fun signIn(email: String, password: String, onResult: (Boolean) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
@@ -71,13 +75,14 @@ class AuthViewModel @Inject constructor(
                         .await()
 
                     if (!querySnapshot.isEmpty) {
-                        val userDocument = querySnapshot.documents[0]
-                        val userId = userDocument.getString("userId")
+                        val userDoc = querySnapshot.documents[0]
+                        val userId = userDoc.getString("userId")
                         if (userId != null) {
                             dataStoreManager.saveUserDetails(email, password, userId)
                             val hasProfiles = checkForChildProfiles()
-                            onResult(hasProfiles) // Notify with the profile status
-                        } else {
+                            onResult(hasProfiles)
+                        }
+                        else {
                             onError("User ID not found.")
                         }
                     } else {
@@ -105,6 +110,7 @@ class AuthViewModel @Inject constructor(
                     .get()
                     .await()
 
+                Log.d("AuthViewModel", "Doc exists? ${documentSnapshot.exists()} childProfiles? ${documentSnapshot.get("childProfiles")}")
                 if (documentSnapshot.exists()) {
                     val childProfiles = documentSnapshot.get("childProfiles") as? List<*>
                     val hasProfiles = childProfiles != null && childProfiles.isNotEmpty()
@@ -123,7 +129,6 @@ class AuthViewModel @Inject constructor(
             return false
         }
     }
-
 
     fun sendProfileDataToFireStore(
         parentName: String,
@@ -184,50 +189,54 @@ class AuthViewModel @Inject constructor(
         selectedAvatarName: String
     ) {
         db.runTransaction { transaction ->
-            val snapshot = transaction.get(settingsRef)
-            val currentId = snapshot.getLong("currentId") ?: 10000L
+            val currentId = transaction.get(settingsRef).getLong("currentId") ?: 10000L
             val newUserId = currentId + 1
 
-            // Update the counter
+            // 1) Increment the userCounter
             transaction.update(settingsRef, "currentId", newUserId)
 
-            // Create the child profile
-            val childProfile = hashMapOf(
+            // 2) Build the user doc with numeric ID
+            val userRef = db.collection("users").document(newUserId.toString())
+            val childProfile = mapOf(
                 "childName" to childName,
                 "age" to selectedAge,
                 "avatar" to selectedAvatarName
             )
 
-            // Create user data
-            val userData = hashMapOf(
+            val userData = mapOf(
+                "parentName" to parentName,
                 "email" to email,
                 "userId" to newUserId.toString(),
-                "parentName" to parentName,
+                "xp" to 0,
+                "chapters_completed" to emptyList<String>(), // Empty array
+                "earned_badges" to emptyList<String>(), // Empty array
+                "quizzes_attended" to 0,
+                "streak" to 0,
                 "childProfiles" to listOf(childProfile)
             )
 
-            // Set the user document with newUserId as the document ID
-            val userRef = db.collection("users").document(newUserId.toString())
             transaction.set(userRef, userData)
 
-            // Return the new user ID
+            // Return the new userId from the transaction so addOnSuccessListener can use it
             newUserId
-        }.addOnSuccessListener { newUserId ->
-            Log.d(
-                "Firestore",
-                "User and child profile successfully written with userId: $newUserId"
-            )
+        }.addOnSuccessListener { createdUserId ->
             viewModelScope.launch {
-                dataStoreManager.saveUserProfileExists(true)
-                dataStoreManager.saveUserId(newUserId.toString())
+                dataStoreManager.saveUserDetails(
+                    email = email,
+                    password = "", // or keep original password if you want
+                    userId = createdUserId.toString()
+                )
             }
+
+            // Notify success
             _profileCreationState.value = ProfileCreationState.Success
         }.addOnFailureListener { e ->
-            Log.w("Firestore", "Transaction failure.", e)
-            _profileCreationState.value =
-                ProfileCreationState.Error(e.localizedMessage ?: "Unknown error")
+            Log.w("Firestore", "Transaction failed.", e)
+            _profileCreationState.value = ProfileCreationState.Error(e.localizedMessage ?: "Unknown error")
         }
     }
+
+
     fun fetchUserProfile() {
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first() // Get userId from DataStore
@@ -244,6 +253,8 @@ class AuthViewModel @Inject constructor(
                         val userId = documentSnapshot.getString("userId") ?: "N/A"
 
                         val childProfiles = documentSnapshot.get("childProfiles") as? List<Map<String, Any>> ?: emptyList()
+                        val xpFromDoc = (documentSnapshot.getLong("xp") ?: 0).toInt()
+                        val chaptersFromDoc = documentSnapshot.get("chapters_completed") as? List<String> ?: emptyList()
 
                         if (childProfiles.isNotEmpty()) {
                             val childProfile = childProfiles[0]
@@ -251,11 +262,27 @@ class AuthViewModel @Inject constructor(
                             val age = (childProfile["age"] as? Long)?.toInt() ?: 0
                             val avatar = childProfile["avatar"] as? String ?: "N/A"
 
-
-
-                            _userProfileState.value = UserProfile(parentName, childName, age, avatar,email,userId)
+                            _userProfileState.value = UserProfile(
+                                parentName,
+                                childName,
+                                age,
+                                avatar,
+                                email,
+                                userId,
+                                xp = xpFromDoc,
+                                chaptersCompleted = chaptersFromDoc
+                            )
                         } else {
-                            _userProfileState.value = UserProfile(parentName, "", 0, "",email,userId)
+                            _userProfileState.value = UserProfile(
+                                parentName,
+                                "",
+                                0,
+                                "",
+                                email,
+                                userId,
+                                xp = xpFromDoc,
+                                chaptersCompleted = chaptersFromDoc
+                            )
                         }
                     } else {
                         Log.d("AuthViewModel", "User document does not exist")
@@ -266,6 +293,7 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
+
     fun logout() {
         viewModelScope.launch {
             // Sign out from Firebase
@@ -290,8 +318,14 @@ data class UserProfile(
     val age: Int,
     val avatar: String,
     val email: String,
-    val userId: String
+    val userId: String,
+    val xp: Int = 0,
+    val earnedBadges: List<String> = emptyList(),
+    val chaptersCompleted: List<String> = emptyList(),
+    val quizzesAttended : Int = 0,
+    val dayStreak : Int = 0,
 )
+
 
 private val _profileCreationState = MutableStateFlow<ProfileCreationState>(ProfileCreationState.Idle)
     val profileCreationState: StateFlow<ProfileCreationState> get() = _profileCreationState

@@ -1,6 +1,5 @@
 package com.alifba.alifba.presenation.main.layout
 
-import ChaptersScreen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +28,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.Login.AuthViewModel
 import com.alifba.alifba.presenation.Login.LoginScreen
+import com.alifba.alifba.presenation.chapters.ChaptersScreen
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreen
@@ -99,7 +99,12 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             }
             composable("lessonPathScreen/{levelId}") { backStackEntry ->
                 val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
-                ChaptersScreen(navController, levelId)
+                // PASS THE SAME chaptersViewModel HERE
+                ChaptersScreen(
+                    navController = navController,
+                    levelId = levelId,
+                    chaptersViewModel = chaptersViewModel
+                )
             }
             composable("lessonScreen/{lessonId}/{levelId}") { backStackEntry ->
                 val lessonId = backStackEntry.arguments?.getString("lessonId")?.toIntOrNull()

@@ -30,14 +30,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.alifba.alifba.R
+import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
-import com.alifba.alifba.ui_components.theme.darkPink
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
-import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 
 @Composable
 fun ProfileScreen(
@@ -47,7 +46,7 @@ fun ProfileScreen(
     val userProfile by profileViewModel.userProfileState.collectAsState()
 
     LaunchedEffect(Unit) {
-        profileViewModel.fetchUserProfile()
+        profileViewModel.startProfileListener()
     }
 
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
@@ -93,12 +92,11 @@ fun ProfileScreen(
                     painter = painterResource(id = R.drawable.pencil),
                     contentDescription = "Edit Avatar",
                     modifier = Modifier
-                        .align(Alignment.BottomEnd) // Position at bottom-right corner
-                        .size(24.dp) // Adjust size of the pencil icon
-                        .background(white, CircleShape) // Add a white circular background
+                        .align(Alignment.BottomEnd)
+                        .size(24.dp)
+                        .background(white, CircleShape)
                 )
             }
-
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -130,12 +128,30 @@ fun ProfileScreen(
             modifier = Modifier.padding(vertical = 8.dp)
         )
 
+        // User Cards with Dynamic Data
         val userCards = listOf(
-            UserCardData(R.drawable.lessonslearnt_new, "Lessons Learnt", "12"),
-            UserCardData(R.drawable.quizzesnew, "Quizzes Attended", "35"),
-            UserCardData(R.drawable.streaknew, "Day Streak", "7"),
-            UserCardData(R.drawable.xpnew, "Total XP", "99")
+            UserCardData(
+                R.drawable.lessonslearnt_new,
+                "Chapters Completed",
+                "${userProfile?.chaptersCompleted?.size ?: 0}"
+            ),
+            UserCardData(
+                R.drawable.quizzesnew,
+                "Quizzes Attended",
+                "${userProfile?.quizzesAttended ?: 0}"
+            ),
+            UserCardData(
+                R.drawable.streaknew,
+                "Day Streak",
+                "${userProfile?.dayStreak ?: 0}"
+            ),
+            UserCardData(
+                R.drawable.xpnew,
+                "Total XP",
+                "${userProfile?.xp ?: 0}"
+            )
         )
+
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -145,7 +161,7 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             items(userCards) { card ->
-                UserCard(card, elevation = 4.dp) // Reduced elevation
+                UserCard(card, elevation = 4.dp)
             }
         }
 
@@ -172,39 +188,23 @@ fun ProfileScreen(
                 modifier = Modifier.clickable { /* Navigate to achievements */ },
                 fontFamily = alifbaFont,
             )
-        }
 
-        val badgeCards = listOf(
-            BadgeCardData(R.drawable.noor_saber, "Noor Saber"),
-            BadgeCardData(R.drawable.iman_inspirer, "Iman Inspirer"),
-            BadgeCardData(R.drawable.salam_spreader, "Salam Spreader")
-        )
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(badgeCards) { card ->
-                BadgeCard(card)
-            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Detailed Report Button
-        CommonButton(
-            onClick = { /* Navigate to detailed report */ },
-            buttonText = "Detailed Report for Parents",
-            shadowColor = darkPink,
-            mainColor = lightPink,
-            textColor = white,
-            modifier = Modifier.fillMaxWidth()
-        )
+//        CommonButton(
+//            onClick = { /* Navigate to detailed report */ },
+//            buttonText = "Detailed Report for Parents",
+//            shadowColor = darkPink,
+//            mainColor = lightPink,
+//            textColor = white,
+//            modifier = Modifier.fillMaxWidth()
+//        )
     }
 }
+
 
 @Composable
 fun UserCard(cardData: UserCardData, elevation: Dp) {
@@ -233,13 +233,13 @@ fun UserCard(cardData: UserCardData, elevation: Dp) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = cardData.title,
-                fontSize = 16.sp,
+                fontSize = 12.sp,
                 fontFamily = alifbaFont,
                 textAlign = TextAlign.Center
             )
             Text(
                 text = cardData.description,
-                fontSize = 22.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = alifbaFont,
                 textAlign = TextAlign.Center
@@ -248,8 +248,9 @@ fun UserCard(cardData: UserCardData, elevation: Dp) {
     }
 }
 
+
 @Composable
-fun BadgeCard(badgeCardData: BadgeCardData) {
+fun BadgeCard(badgeCardData: Badge) {
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
 
     Card(
@@ -265,7 +266,7 @@ fun BadgeCard(badgeCardData: BadgeCardData) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = badgeCardData.imageRes),
+                painter = rememberAsyncImagePainter(badgeCardData.imageUrl),
                 contentDescription = badgeCardData.title,
                 modifier = Modifier
                     .height(75.dp)
@@ -284,16 +285,12 @@ fun BadgeCard(badgeCardData: BadgeCardData) {
     }
 }
 
-
 data class UserCardData(
     val imageRes: Int,
     val title: String,
     val description: String
 )
-data class BadgeCardData(
-    val imageRes: Int,
-    val title: String,
-)
+
 fun getAvatarDrawable(avatarName: String): Int {
     return when (avatarName) {
         "Deenasaur" -> R.drawable.deenasaur_head
