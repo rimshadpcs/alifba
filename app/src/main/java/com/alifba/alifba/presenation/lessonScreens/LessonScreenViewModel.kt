@@ -14,10 +14,16 @@ import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 //import com.alifba.alifba.features.authentication.dataStore
 import com.alifba.alifba.presenation.lessonScreens.usecases.GetLessonUseCase
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 //import com.alifba.alifba.data.models.sampleLessons
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 
@@ -25,6 +31,8 @@ import javax.inject.Inject
 class LessonScreenViewModel  @Inject constructor(
     private val getLessonsUseCase :GetLessonUseCase,
     private val dataStoreManager: DataStoreManager,
+    private val fireStore: FirebaseFirestore = FirebaseFirestore.getInstance()
+
 ): ViewModel() {
     private val mediaPlayer: MediaPlayer? by lazy { MediaPlayer() }
     private var currentAudioResId: String? = null
@@ -50,66 +58,42 @@ class LessonScreenViewModel  @Inject constructor(
     fun initContext(context: Context) {
         applicationContext = context
     }
-    fun startAudio(audioUrl: String) {
+    private fun configureMediaPlayer(dataSource: () -> Unit) {
         mediaPlayer?.let { player ->
             try {
-                // Stop and reset only if the player is already in use
                 if (player.isPlaying) {
                     player.stop()
                     player.reset()
                 }
-
-                // Verify URL and context before attempting to set the data source
-                if (audioUrl.isBlank() || applicationContext == null) {
-                    Log.e("LessonScreenViewModel", "Invalid audio URL or context not set.")
-                    return
-                }
-
-                val audioUri = Uri.parse(audioUrl)
-                player.setDataSource(applicationContext!!, audioUri)
-
-                // Asynchronously prepare the player, so it doesn't block the main thread
+                dataSource()
                 player.prepareAsync()
-                player.setOnPreparedListener {
-                    player.start()
-                    Log.d("LessonScreenViewModel", "Streaming audio started: $audioUrl")
-                }
-                currentAudioResId = audioUrl
-
-            } catch (e: IllegalStateException) {
-                Log.e("LessonScreenViewModel", "MediaPlayer is in an invalid state", e)
+                player.setOnPreparedListener { player.start() }
+            } catch (e: Exception) {
+                Log.e("LessonScreenViewModel", "Error configuring MediaPlayer", e)
                 player.reset()
-            } catch (e: IOException) {
-                Log.e("LessonScreenViewModel", "Error setting data source for audio URL", e)
             }
         }
     }
 
+    fun startAudio(audioUrl: String) {
+        if (applicationContext == null || audioUrl.isBlank()) {
+            Log.e("LessonScreenViewModel", "Invalid audio URL or context")
+            return
+        }
+        configureMediaPlayer {
+            mediaPlayer?.setDataSource(applicationContext!!, Uri.parse(audioUrl))
+        }
+    }
+
     fun startLocalAudio(audioResId: Int) {
-        mediaPlayer?.let { player ->
-            try {
-                // Stop and reset only if the player is already in use
-                if (player.isPlaying) {
-                    player.stop()
-                    player.reset()
-                }
-
-                applicationContext?.let { context ->
-                    val afd = context.resources.openRawResourceFd(audioResId)
-                    player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                    afd.close()
-
-                    player.prepare()
-                    player.start()
-                    Log.d("LessonScreenViewModel", "Local audio started: $audioResId")
-                }
-
-            } catch (e: IllegalStateException) {
-                Log.e("LessonScreenViewModel", "Error in MediaPlayer state for local audio", e)
-                player.reset()
-            } catch (e: IOException) {
-                Log.e("LessonScreenViewModel", "Error setting data source for local audio", e)
-            }
+        if (applicationContext == null) {
+            Log.e("LessonScreenViewModel", "Context not set for local audio")
+            return
+        }
+        configureMediaPlayer {
+            val afd = applicationContext!!.resources.openRawResourceFd(audioResId)
+            mediaPlayer?.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
         }
     }
 
@@ -153,12 +137,66 @@ class LessonScreenViewModel  @Inject constructor(
         super.onCleared()
     }
 
-    fun markLessonCompleted(lessonId: Int, nextLessonId: Int?) {
+//    fun markLessonCompleted(lessonId: Int, nextLessonId: Int?) {
+//        viewModelScope.launch {
+//            dataStoreManager.markCompletedChapters(lessonId, nextLessonId)
+//        }
+//    }
+
+    fun updateLessonProgress(lessonId: Int, levelId: String, chapterId: String, earnedXP: Int) {
         viewModelScope.launch {
-            dataStoreManager.markCompletedChapters(lessonId, nextLessonId)
+            val userId = dataStoreManager.userId.first()
+            if (userId != null) {
+                try {
+                    val userRef = fireStore.collection("users").document(userId)
+                    val userDoc = userRef.get().await()
+
+                    if (userDoc.exists()) {
+                        val currentProgress = userDoc.get("current_chapter_progress") as? Map<String, Any> ?: mapOf()
+
+                        val updatedProgress = currentProgress.toMutableMap()
+                        val chapterProgress = updatedProgress[chapterId] as? Map<String, Any> ?: mapOf()
+                        val lessonsCompleted =
+                            (chapterProgress["lessons_completed"] as? List<String> ?: emptyList()).toMutableList()
+
+                        // Avoid duplicate entries
+                        if (!lessonsCompleted.contains(lessonId.toString())) {
+                            lessonsCompleted.add(lessonId.toString())
+                            val totalXP = (chapterProgress["total_xp"] as? Int ?: 0) + earnedXP
+
+                            // Update progress for this chapter
+                            updatedProgress[chapterId] = mapOf(
+                                "lessons_completed" to lessonsCompleted,
+                                "total_xp" to totalXP
+                            )
+
+                            // Commit the update to Firestore
+                            userRef.update("current_chapter_progress", updatedProgress).await()
+                            Log.d("LessonScreenViewModel", "Lesson $lessonId progress updated with $earnedXP XP.")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("LessonScreenViewModel", "Error updating lesson progress: ${e.localizedMessage}")
+                }
+            }
         }
     }
-
-
+    fun incrementQuizzesAttended() {
+        viewModelScope.launch {
+            val userId = dataStoreManager.userId.first()
+            if (!userId.isNullOrEmpty()) {
+                try {
+                    val userRef = fireStore.collection("users").document(userId)
+                    fireStore.runTransaction { transaction ->
+                        val snapshot = transaction.get(userRef)
+                        val currentQuizzesAttended = snapshot.getLong("quizzes_attended") ?: 0
+                        transaction.update(userRef, "quizzes_attended", currentQuizzesAttended + 1)
+                    }.await()
+                } catch (e: Exception) {
+                    Log.e("LessonScreenViewModel", "Error incrementing quizzes_attended: ${e.localizedMessage}")
+                }
+            }
+        }
+    }
 
 }
