@@ -208,8 +208,10 @@ class AuthViewModel @Inject constructor(
                 "email" to email,
                 "userId" to newUserId.toString(),
                 "xp" to 0,
-                "chapters_completed" to emptyList<String>(), // Empty array
-                "earned_badges" to emptyList<String>(), // Empty array
+                "chapters_completed" to emptyList<String>(),
+                "stories_completed" to emptyList<String>(), // New field
+                "levels_completed" to emptyList<String>(),  // New field
+                "earned_badges" to emptyList<String>(),
                 "quizzes_attended" to 0,
                 "streak" to 0,
                 "childProfiles" to listOf(childProfile)
@@ -322,8 +324,10 @@ data class UserProfile(
     val xp: Int = 0,
     val earnedBadges: List<String> = emptyList(),
     val chaptersCompleted: List<String> = emptyList(),
-    val quizzesAttended : Int = 0,
-    val dayStreak : Int = 0,
+    val storiesCompleted: List<String> = emptyList(), // New field
+    val levelsCompleted: List<String> = emptyList(),  // New field
+    val quizzesAttended: Int = 0,
+    val dayStreak: Int = 0,
 )
 
 

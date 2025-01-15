@@ -342,11 +342,13 @@ fun LessonScreen(
                             )
 
                             // (B) Mark the chapter as complete in Firestore
+                            // In LessonScreen.kt
                             chaptersViewModel.checkAndMarkChapterCompletion(
                                 chapterId = lesson.id.toString(),
                                 totalLessons = totalSegments,
                                 levelId = levelId,
-                                earnedXP = accumulatedXp.value
+                                earnedXP = accumulatedXp.value,
+                                chapterType = lesson.chapterType
                             )
 
                             // Then navigate
