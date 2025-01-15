@@ -43,31 +43,44 @@ class ChaptersViewModel @Inject constructor(
     fun loadChapters(levelId: String) {
         val levelPath = "lessons/level$levelId/chapters"
 
-        fireStore.collection(levelPath)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot != null && !snapshot.isEmpty) {
-                    val chapters = snapshot.documents.mapIndexed { index, doc ->
-                        Chapter(
-                            id = doc.getLong("id")?.toInt() ?: 0,
-                            title = doc.getString("title") ?: "",
-                            iconResId = R.drawable.start,
-                            isCompleted = false, // Default; will be overridden by DataStore
-                            isLocked = index != 0, // Initial lock state
-                            isUnlocked = index == 0, // Only first chapter is initially unlocked
-                            chapterType = doc.getString("chapterType") ?: ""
-                        )
-                    }
-                    _chapters.value = chapters
-                } else {
-                    Log.e("ChaptersViewModel", "No chapters found for levelID: $levelId")
-                }
-            }
-            .addOnFailureListener {
-                Log.e("ChaptersViewModel", "Error loading chapters for levelID: $levelId", it)
-            }
-    }
+        viewModelScope.launch {
+            try {
+                val userId = dataStoreManager.userId.first()
+                if (!userId.isNullOrEmpty()) {
+                    // First get the chapters
+                    val snapshot = fireStore.collection(levelPath).get().await()
 
+                    // Then get the user's completed chapters
+                    val userDoc = fireStore.collection("users").document(userId).get().await()
+                    val completedChapters = userDoc.get("chapters_completed") as? List<String> ?: emptyList()
+                    val completedStories = userDoc.get("stories_completed") as? List<String> ?: emptyList()
+
+                    // Combine both types of completed content
+                    val allCompleted = completedChapters + completedStories
+
+                    if (!snapshot.isEmpty) {
+                        val chapters = snapshot.documents.mapIndexed { index, doc ->
+                            Chapter(
+                                id = doc.getLong("id")?.toInt() ?: 0,
+                                title = doc.getString("title") ?: "",
+                                iconResId = R.drawable.start,
+                                isCompleted = false,
+                                isLocked = index != 0,
+                                isUnlocked = index == 0,
+                                chapterType = doc.getString("chapterType") ?: ""
+                            )
+                        }
+
+                        // Update states based on completion status
+                        val updatedChapters = updateChapterStates(allCompleted, chapters)
+                        _chapters.value = updatedChapters
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ChaptersViewModel", "Error loading chapters for levelID: $levelId")
+            }
+        }
+    }
     fun markChapterCompleted(chapterId: Int, nextChapterId: Int?) {
         viewModelScope.launch {
             dataStoreManager.markCompletedChapters(chapterId, nextChapterId)
@@ -115,6 +128,7 @@ class ChaptersViewModel @Inject constructor(
     fun clearBadgeEvent() {
         _badgeEarnedEvent.value = null
     }
+
     private fun updateStreak() {
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first()
@@ -155,11 +169,35 @@ class ChaptersViewModel @Inject constructor(
     }
 
 
+    private fun updateChapterStates(completedChapters: List<String>, chapters: List<Chapter>): List<Chapter> {
+        return chapters.mapIndexed { index, chapter ->
+            chapter.copy(
+                isCompleted = completedChapters.contains(chapter.id.toString()),
+                isLocked = when {
+                    // First chapter is never locked
+                    index == 0 -> false
+                    // If previous chapter is completed, unlock this one
+                    index > 0 && completedChapters.contains(chapters[index - 1].id.toString()) -> false
+                    // Otherwise keep it locked
+                    else -> true
+                },
+                isUnlocked = when {
+                    // First chapter is always unlocked
+                    index == 0 -> true
+                    // If previous chapter is completed, unlock this one
+                    index > 0 && completedChapters.contains(chapters[index - 1].id.toString()) -> true
+                    // Otherwise keep it locked
+                    else -> false
+                }
+            )
+        }
+    }
     fun checkAndMarkChapterCompletion(
         chapterId: String,
         totalLessons: Int,
         levelId: String,
-        earnedXP: Int
+        earnedXP: Int,
+        chapterType: String
     ) {
         viewModelScope.launch {
             try {
@@ -170,13 +208,47 @@ class ChaptersViewModel @Inject constructor(
                     fireStore.runTransaction { transaction ->
                         val snapshot = transaction.get(userRef)
 
-                        // Update completed chapters
-                        val completedChapters =
-                            snapshot.get("chapters_completed") as? MutableList<String>
+                        // Update based on chapter type
+                        when (chapterType) {
+                            "Lesson" -> {
+                                val completedChapters = snapshot.get("chapters_completed") as? MutableList<String>
+                                    ?: mutableListOf()
+                                if (!completedChapters.contains(chapterId)) {
+                                    completedChapters.add(chapterId)
+                                    transaction.update(userRef, "chapters_completed", completedChapters)
+                                }
+                            }
+                            "Story" -> {
+                                val completedStories = snapshot.get("stories_completed") as? MutableList<String>
+                                    ?: mutableListOf()
+                                if (!completedStories.contains(chapterId)) {
+                                    completedStories.add(chapterId)
+                                    transaction.update(userRef, "stories_completed", completedStories)
+                                }
+                            }
+                        }
+
+                        // Check if level is completed
+                        val allChaptersInLevel = _chapters.value ?: emptyList()
+                        val completedChapters = snapshot.get("chapters_completed") as? List<String> ?: emptyList()
+                        val completedStories = snapshot.get("stories_completed") as? List<String> ?: emptyList()
+
+                        val isLevelCompleted = allChaptersInLevel.all { chapter ->
+                            when (chapter.chapterType) {
+                                "Lesson" -> completedChapters.contains(chapter.id.toString())
+                                "Story" -> completedStories.contains(chapter.id.toString())
+                                else -> false
+                            }
+                        }
+
+                        // Update completed levels if necessary
+                        if (isLevelCompleted) {
+                            val completedLevels = snapshot.get("levels_completed") as? MutableList<String>
                                 ?: mutableListOf()
-                        if (!completedChapters.contains(chapterId)) {
-                            completedChapters.add(chapterId)
-                            transaction.update(userRef, "chapters_completed", completedChapters)
+                            if (!completedLevels.contains(levelId)) {
+                                completedLevels.add(levelId)
+                                transaction.update(userRef, "levels_completed", completedLevels)
+                            }
                         }
 
                         // Add XP
@@ -186,6 +258,7 @@ class ChaptersViewModel @Inject constructor(
 
                     // Update streak after marking the chapter as completed
                     updateStreak()
+                    loadChapters(levelId)
                 }
             } catch (e: Exception) {
                 Log.e("ChaptersViewModel", "Error marking chapter complete: ${e.localizedMessage}")

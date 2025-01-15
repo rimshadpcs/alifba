@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
@@ -131,8 +132,18 @@ fun ProfileScreen(
         // User Cards with Dynamic Data
         val userCards = listOf(
             UserCardData(
+                R.drawable.levels,
+                "Levels Completed",
+                "${userProfile?.chaptersCompleted?.size ?: 0}"
+            ),
+            UserCardData(
                 R.drawable.lessonslearnt_new,
                 "Chapters Completed",
+                "${userProfile?.chaptersCompleted?.size ?: 0}"
+            ),
+            UserCardData(
+                R.drawable.stories,
+                "Stories Completed",
                 "${userProfile?.chaptersCompleted?.size ?: 0}"
             ),
             UserCardData(
@@ -154,18 +165,21 @@ fun ProfileScreen(
 
 
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(2), // 2 columns
             contentPadding = PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp), // Adjust vertical spacing
+            horizontalArrangement = Arrangement.spacedBy(8.dp), // Adjust horizontal spacing
             modifier = Modifier.fillMaxWidth()
         ) {
             items(userCards) { card ->
-                UserCard(card, elevation = 4.dp)
+                UserCard(card, elevation = 2.dp) // Slightly reduce elevation
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+
+
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Achievements Section
         Row(
@@ -212,41 +226,51 @@ fun UserCard(cardData: UserCardData, elevation: Dp) {
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(elevation), // Dynamic elevation
+        elevation = CardDefaults.cardElevation(elevation),
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f),
+            .height(120.dp), // Set a fixed height for the card
         colors = CardDefaults.cardColors(white)
     ) {
         Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center // Align content centrally
         ) {
             Image(
                 painter = painterResource(id = cardData.imageRes),
                 contentDescription = cardData.title,
                 modifier = Modifier
-                    .height(100.dp)
+                    .height(60.dp) // Adjust image height
                     .fillMaxWidth(),
                 contentScale = ContentScale.Inside
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp)) // Smaller spacer
             Text(
                 text = cardData.title,
                 fontSize = 12.sp,
                 fontFamily = alifbaFont,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = cardData.description,
-                fontSize = 18.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = alifbaFont,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
 }
+
+
+
 
 
 @Composable
@@ -258,7 +282,7 @@ fun BadgeCard(badgeCardData: Badge) {
         elevation = CardDefaults.cardElevation(2.dp), // Subtle elevation for badges
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f),
+            .aspectRatio(.6f),
         colors = CardDefaults.cardColors(white)
     ) {
         Column(
