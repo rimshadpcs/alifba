@@ -1,12 +1,9 @@
 package com.alifba.alifba.presenation.home.layout
 
 import android.util.Log
-import androidx.compose.material.Badge
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.features.authentication.DataStoreManager
-import com.alifba.alifba.presenation.Login.ProfileCreationState
 import com.alifba.alifba.presenation.Login.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,6 +57,8 @@ class ProfileViewModel @Inject constructor(
                         val chaptersCompleted = documentSnapshot.get("chapters_completed") as? List<String> ?: emptyList()
                         val quizzesAttended = (documentSnapshot.getLong("quizzes_attended") ?: 0).toInt()
                         val dayStreak = (documentSnapshot.getLong("day_streak") ?: 0).toInt()
+                        val storiesCompleted = documentSnapshot.get("stories_completed") as? List<String> ?: emptyList()
+                        val levelsCompleted = documentSnapshot.get("levels_completed") as? List<String> ?: emptyList()
 
                         // Update local state
                         _userProfileState.value = UserProfile(
@@ -72,7 +71,9 @@ class ProfileViewModel @Inject constructor(
                             xp = xp,
                             quizzesAttended = quizzesAttended,
                             dayStreak = dayStreak,
-                            chaptersCompleted = chaptersCompleted
+                            chaptersCompleted = chaptersCompleted,
+                            storiesCompleted = storiesCompleted,
+                            levelsCompleted = levelsCompleted
                         )
                     } else {
                         Log.d("ProfileViewModel", "User document does not exist in Firestore.")
@@ -113,6 +114,8 @@ class ProfileViewModel @Inject constructor(
                             val chaptersCompleted = snapshot.get("chapters_completed") as? List<String> ?: emptyList()
                             val quizzesAttended = (snapshot.getLong("quizzes_attended") ?: 0).toInt()
                             val dayStreak = (snapshot.getLong("day_streak") ?: 0).toInt()
+                            val storiesCompleted = snapshot.get("stories_completed") as? List<String> ?: emptyList()
+                            val levelsCompleted = snapshot.get("levels_completed") as? List<String> ?: emptyList()
 
                             // Update local state
                             _userProfileState.value = UserProfile(
@@ -125,7 +128,10 @@ class ProfileViewModel @Inject constructor(
                                 xp = xp,
                                 quizzesAttended = quizzesAttended,
                                 dayStreak = dayStreak,
-                                chaptersCompleted = chaptersCompleted
+                                chaptersCompleted = chaptersCompleted,
+                                storiesCompleted = storiesCompleted,
+                                levelsCompleted = levelsCompleted
+
                             )
                         } else {
                             Log.d("ProfileViewModel", "Snapshot is null or user document doesn't exist.")

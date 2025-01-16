@@ -345,7 +345,7 @@ fun LessonScreen(
                             // In LessonScreen.kt
                             chaptersViewModel.checkAndMarkChapterCompletion(
                                 chapterId = lesson.id.toString(),
-                                totalLessons = totalSegments,
+//                                totalLessons = totalSegments,
                                 levelId = levelId,
                                 earnedXP = accumulatedXp.value,
                                 chapterType = lesson.chapterType

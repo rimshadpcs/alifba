@@ -257,6 +257,8 @@ class AuthViewModel @Inject constructor(
                         val childProfiles = documentSnapshot.get("childProfiles") as? List<Map<String, Any>> ?: emptyList()
                         val xpFromDoc = (documentSnapshot.getLong("xp") ?: 0).toInt()
                         val chaptersFromDoc = documentSnapshot.get("chapters_completed") as? List<String> ?: emptyList()
+                        val storiesFromDoc = documentSnapshot.get("stories_completed") as? List<String> ?: emptyList()
+                        val levelsFromDoc = documentSnapshot.get("levels_completed") as? List<String> ?: emptyList()
 
                         if (childProfiles.isNotEmpty()) {
                             val childProfile = childProfiles[0]
@@ -272,7 +274,9 @@ class AuthViewModel @Inject constructor(
                                 email,
                                 userId,
                                 xp = xpFromDoc,
-                                chaptersCompleted = chaptersFromDoc
+                                chaptersCompleted = chaptersFromDoc,
+                                storiesCompleted = storiesFromDoc,
+                                levelsCompleted = levelsFromDoc
                             )
                         } else {
                             _userProfileState.value = UserProfile(
@@ -283,7 +287,9 @@ class AuthViewModel @Inject constructor(
                                 email,
                                 userId,
                                 xp = xpFromDoc,
-                                chaptersCompleted = chaptersFromDoc
+                                chaptersCompleted = chaptersFromDoc,
+                                storiesCompleted = storiesFromDoc,
+                                levelsCompleted = levelsFromDoc
                             )
                         }
                     } else {
@@ -324,8 +330,8 @@ data class UserProfile(
     val xp: Int = 0,
     val earnedBadges: List<String> = emptyList(),
     val chaptersCompleted: List<String> = emptyList(),
-    val storiesCompleted: List<String> = emptyList(), // New field
-    val levelsCompleted: List<String> = emptyList(),  // New field
+    val storiesCompleted: List<String> = emptyList(),
+    val levelsCompleted: List<String> = emptyList(),
     val quizzesAttended: Int = 0,
     val dayStreak: Int = 0,
 )
