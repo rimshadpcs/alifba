@@ -134,17 +134,17 @@ fun ProfileScreen(
             UserCardData(
                 R.drawable.levels,
                 "Levels Completed",
-                "${userProfile?.chaptersCompleted?.size ?: 0}"
+                "${userProfile?.levelsCompleted?.size ?: 0}"
             ),
             UserCardData(
-                R.drawable.lessonslearnt_new,
-                "Chapters Completed",
+                R.drawable.chapters,
+                "Lessons Completed",
                 "${userProfile?.chaptersCompleted?.size ?: 0}"
             ),
             UserCardData(
                 R.drawable.stories,
                 "Stories Completed",
-                "${userProfile?.chaptersCompleted?.size ?: 0}"
+                "${userProfile?.storiesCompleted?.size ?: 0}"
             ),
             UserCardData(
                 R.drawable.quizzesnew,

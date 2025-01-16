@@ -29,6 +29,7 @@ class ChaptersViewModel @Inject constructor(
     private val dataStoreManager: DataStoreManager
 ) : ViewModel() {
 
+    
     private val fireStore = FirebaseFirestore.getInstance()
 
     private val _chapters = MutableLiveData<List<Chapter>>()
@@ -194,7 +195,6 @@ class ChaptersViewModel @Inject constructor(
     }
     fun checkAndMarkChapterCompletion(
         chapterId: String,
-        totalLessons: Int,
         levelId: String,
         earnedXP: Int,
         chapterType: String
@@ -202,69 +202,95 @@ class ChaptersViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val userId = dataStoreManager.userId.first()
-                if (!userId.isNullOrEmpty()) {
-                    val userRef = fireStore.collection("users").document(userId)
+                if (userId.isNullOrEmpty()) return@launch
 
-                    fireStore.runTransaction { transaction ->
-                        val snapshot = transaction.get(userRef)
+                val userRef = fireStore.collection("users").document(userId)
+                val levelPath = "lessons/$levelId/chapters"
 
-                        // Update based on chapter type
-                        when (chapterType) {
-                            "Lesson" -> {
-                                val completedChapters = snapshot.get("chapters_completed") as? MutableList<String>
-                                    ?: mutableListOf()
-                                if (!completedChapters.contains(chapterId)) {
-                                    completedChapters.add(chapterId)
-                                    transaction.update(userRef, "chapters_completed", completedChapters)
-                                }
-                            }
-                            "Story" -> {
-                                val completedStories = snapshot.get("stories_completed") as? MutableList<String>
-                                    ?: mutableListOf()
-                                if (!completedStories.contains(chapterId)) {
-                                    completedStories.add(chapterId)
-                                    transaction.update(userRef, "stories_completed", completedStories)
-                                }
-                            }
-                        }
-
-                        // Check if level is completed
-                        val allChaptersInLevel = _chapters.value ?: emptyList()
-                        val completedChapters = snapshot.get("chapters_completed") as? List<String> ?: emptyList()
-                        val completedStories = snapshot.get("stories_completed") as? List<String> ?: emptyList()
-
-                        val isLevelCompleted = allChaptersInLevel.all { chapter ->
-                            when (chapter.chapterType) {
-                                "Lesson" -> completedChapters.contains(chapter.id.toString())
-                                "Story" -> completedStories.contains(chapter.id.toString())
-                                else -> false
-                            }
-                        }
-
-                        // Update completed levels if necessary
-                        if (isLevelCompleted) {
-                            val completedLevels = snapshot.get("levels_completed") as? MutableList<String>
-                                ?: mutableListOf()
-                            if (!completedLevels.contains(levelId)) {
-                                completedLevels.add(levelId)
-                                transaction.update(userRef, "levels_completed", completedLevels)
-                            }
-                        }
-
-                        // Add XP
-                        val currentXP = snapshot.getLong("xp") ?: 0
-                        transaction.update(userRef, "xp", currentXP + earnedXP)
-                    }.await()
-
-                    // Update streak after marking the chapter as completed
-                    updateStreak()
-                    loadChapters(levelId)
+                // Fetch all chapters and stories for the level
+                val levelContentsSnapshot = fireStore.collection(levelPath).get().await()
+                val levelContents = levelContentsSnapshot.documents.mapNotNull { doc ->
+                    val type = doc.getString("chapterType") ?: return@mapNotNull null
+                    val id = doc.getLong("id")?.toString() ?: return@mapNotNull null
+                    id to type
                 }
+
+                fireStore.runTransaction { transaction ->
+                    val userSnapshot = transaction.get(userRef)
+
+                    // Update completed chapters or stories
+                    when (chapterType) {
+                        "Lesson" -> {
+                            val completedChapters = userSnapshot.get("chapters_completed") as? MutableList<String>
+                                ?: mutableListOf()
+                            if (!completedChapters.contains(chapterId)) {
+                                completedChapters.add(chapterId)
+                                transaction.update(userRef, "chapters_completed", completedChapters)
+                                val currentXP = userSnapshot.getLong("xp") ?: 0
+                                transaction.update(userRef, "xp", currentXP + earnedXP)
+                            }
+                        }
+                        "Story" -> {
+                            val completedStories = userSnapshot.get("stories_completed") as? MutableList<String>
+                                ?: mutableListOf()
+                            if (!completedStories.contains(chapterId)) {
+                                completedStories.add(chapterId)
+                                transaction.update(userRef, "stories_completed", completedStories)
+                                val currentXP = userSnapshot.getLong("xp") ?: 0
+                                transaction.update(userRef, "xp", currentXP + earnedXP)
+                            }
+                        }
+                    }
+
+                    // Count required and completed chapters and stories
+                    val requiredChapters = levelContents.count { it.second == "Lesson" }
+                    val requiredStories = levelContents.count { it.second == "Story" }
+
+                    val completedChapters = userSnapshot.get("chapters_completed") as? List<String> ?: emptyList()
+                    val completedStories = userSnapshot.get("stories_completed") as? List<String> ?: emptyList()
+
+                    val completedChaptersInLevel = levelContents
+                        .filter { it.second == "Lesson" }
+                        .count { completedChapters.contains(it.first) }
+
+                    val completedStoriesInLevel = levelContents
+                        .filter { it.second == "Story" }
+                        .count { completedStories.contains(it.first) }
+
+                    // Check if the level is fully completed
+                    if (completedChaptersInLevel >= requiredChapters && completedStoriesInLevel >= requiredStories) {
+                        val completedLevels = userSnapshot.get("levels_completed") as? MutableList<String>
+                            ?: mutableListOf()
+
+                        if (!completedLevels.contains(levelId)) {
+                            completedLevels.add(levelId)
+                            transaction.update(userRef, "levels_completed", completedLevels)
+
+                            // Add bonus XP
+                            val currentXP = userSnapshot.getLong("xp") ?: 0
+                            transaction.update(userRef, "xp", currentXP + earnedXP + 100) // Assuming 100 as bonus XP
+
+                            Log.d("LevelCompletion", """
+                            Level $levelId completed!
+                            Required Chapters: $requiredChapters
+                            Completed Chapters: $completedChaptersInLevel
+                            Required Stories: $requiredStories
+                            Completed Stories: $completedStoriesInLevel
+                            Bonus XP: 100
+                        """.trimIndent())
+                        }
+                    }
+                }.await()
+
+                // Update streak and reload chapters
+                updateStreak()
+                loadChapters(levelId)
             } catch (e: Exception) {
-                Log.e("ChaptersViewModel", "Error marking chapter complete: ${e.localizedMessage}")
+                Log.e("ChaptersViewModel", "Error marking completion: ${e.localizedMessage}")
             }
         }
     }
+
 
 
     fun getNextChapterId(currentChapterId: Int): Int? {
