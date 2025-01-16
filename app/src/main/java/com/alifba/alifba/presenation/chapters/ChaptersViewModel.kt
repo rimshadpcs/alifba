@@ -42,7 +42,7 @@ class ChaptersViewModel @Inject constructor(
     val badgeEarnedEvent: StateFlow<Badge?> get() = _badgeEarnedEvent
 
     fun loadChapters(levelId: String) {
-        val levelPath = "lessons/level$levelId/chapters"
+        val levelPath = "lessons/$levelId/chapters"
 
         viewModelScope.launch {
             try {
