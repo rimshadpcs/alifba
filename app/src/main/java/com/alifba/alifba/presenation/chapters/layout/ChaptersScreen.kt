@@ -1,7 +1,9 @@
 package com.alifba.alifba.presenation.chapters
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -16,12 +18,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.work.*
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.chapters.layout.LazyChapterColumn
 import com.alifba.alifba.presenation.chapters.models.Chapter
+import com.alifba.alifba.presenation.home.HomeViewModel
+import com.alifba.alifba.presenation.home.layout.TopBarIcons
 import com.alifba.alifba.ui_components.dialogs.BadgeEarnedSnackBar
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -35,13 +38,20 @@ import java.util.UUID
 fun ChaptersScreen(
     navController: NavController,
     levelId: String,
-    // We assume you’re already passing the same instance from NavGraph
-    chaptersViewModel: ChaptersViewModel
+    chaptersViewModel: ChaptersViewModel,
+    homeViewModel: HomeViewModel
 ) {
     // For the bottom sheet
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     val context = LocalContext.current
+
+//    val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId.toIntOrNull() }
+//    val levelImage = levelItem?.levelImage ?: R.drawable.default_level_image // Provide a default image
+
+    val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId.toIntOrNull() }
+    val levelImage = levelItem?.image ?: R.drawable.levelone
+//
 
     // 1) Load chapters on first display
     LaunchedEffect(levelId) {
@@ -84,8 +94,7 @@ fun ChaptersScreen(
 
     // 4) Main UI container
     Box(modifier = Modifier.fillMaxSize()) {
-
-        // A) Background image
+        // Background image
         Image(
             painter = painterResource(id = R.drawable.lesson_path_bg),
             contentDescription = "Background",
@@ -93,25 +102,76 @@ fun ChaptersScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // B) Chapter list
-        LazyChapterColumn(
-            lessons = chapters,
-            modifier = Modifier.fillMaxSize(),
-            navController = navController,
-            onChapterClick = { chapter ->
-                if (chapter.isUnlocked || chapter.isCompleted) {
-                    selectedChapter = chapter
-                    coroutineScope.launch { sheetState.show() }
-                }
-            }
-        )
+        // Content Column to ensure proper layering
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Top bar with fixed syntax
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
 
-        // C) If a badge is earned, show the new “snack bar” near the top
+            ) {
+                Row(
+                    modifier = Modifier
+                        .background(Color.Transparent)
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Go Back Icon
+                    TopBarIcons(
+                        painter = painterResource(id = R.drawable.goback),
+                        contentDescription = "Go Back",
+                        onClick = {
+                            Log.d("GoBackIcon", "Clicked")
+                            navController.popBackStack()
+                        },
+                        shadowColor = Color.Gray,
+                        mainColor = Color.White
+                    )
+
+                    TopBarIcons(
+                        painter = painterResource(id = R.drawable.clipboard),
+                        contentDescription = "Level Info",
+                        onClick = {
+                            navController.navigate("levelInfo/$levelId/$levelImage")
+                        },
+                        shadowColor = Color.Gray,
+                        mainColor = Color.White
+                    )
+
+                }
+
+            }
+            // Chapter list with adjusted padding
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                LazyChapterColumn(
+                    lessons = chapters,
+                    modifier = Modifier.fillMaxSize(),
+                    navController = navController,
+                    onChapterClick = { chapter ->
+                        if (chapter.isUnlocked || chapter.isCompleted) {
+                            selectedChapter = chapter
+                            coroutineScope.launch { sheetState.show() }
+                        }
+                    }
+                )
+            }
+        }
+
+        // Badge earned snackbar with highest z-index
         earnedBadge?.let { badge ->
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopCenter) // Align top
-                    .zIndex(1f)                 // Draw above other elements
+                    .align(Alignment.TopCenter)
+                    .zIndex(2f)
             ) {
                 BadgeEarnedSnackBar(
                     badge = badge,
@@ -201,6 +261,8 @@ fun ChapterDownloadBottomSheetContent(
         }
     }
 }
+
+
 
 /**
  * Enqueue your worker for downloading.

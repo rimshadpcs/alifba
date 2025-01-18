@@ -18,9 +18,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -30,6 +32,7 @@ import com.alifba.alifba.presenation.Login.AuthViewModel
 import com.alifba.alifba.presenation.Login.LoginScreen
 import com.alifba.alifba.presenation.chapters.ChaptersScreen
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
+import com.alifba.alifba.presenation.chapters.layout.LevelInfoScreen
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreen
 import com.alifba.alifba.presenation.home.HomeViewModel
@@ -38,6 +41,7 @@ import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.presenation.home.layout.HomeTopBar
 import com.alifba.alifba.presenation.home.layout.profile.ProfileScreen
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
+import com.alifba.alifba.presenation.home.layout.profile.AllBadgesScreen
 import com.alifba.alifba.presenation.home.layout.settings.AccountScreen
 import com.alifba.alifba.presenation.home.layout.settings.SettingsScreen
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
@@ -91,11 +95,34 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             composable("changeAvatar") {
                 ChangeAvatarScreen(navController = navController)
             }
+            composable(
+                route = "levelInfo/{levelId}/{levelImage}",
+                arguments = listOf(
+                    navArgument("levelId") { type = NavType.StringType },
+                    navArgument("levelImage") { type = NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val levelId = backStackEntry.arguments?.getString("levelId") ?: ""
+                val levelImage = backStackEntry.arguments?.getInt("levelImage") ?: R.drawable.levelone
+
+                LevelInfoScreen(
+                    chaptersViewModel = chaptersViewModel,
+                    levelId = levelId,
+                    levelImage = levelImage,
+                    navController = navController
+                )
+            }
+
+
+
             composable("settings") {
                 SettingsScreen(navController)
             }
             composable("accountScreen") {
                 AccountScreen(authViewModel = authViewModel, navController = navController)
+            }
+            composable("allBadges") {
+                AllBadgesScreen(navController = navController, profileViewModel = profileViewModel)
             }
             composable("lessonPathScreen/{levelId}") { backStackEntry ->
                 val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
@@ -103,7 +130,9 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                 ChaptersScreen(
                     navController = navController,
                     levelId = levelId,
-                    chaptersViewModel = chaptersViewModel
+                    chaptersViewModel = chaptersViewModel,
+                    homeViewModel = HomeViewModel()
+
                 )
             }
             composable("lessonScreen/{lessonId}/{levelId}") { backStackEntry ->
@@ -128,6 +157,8 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
         }
     }
 }
+
+
 
 @Composable
 fun AlifbaMainScreenPreview(authViewModel: AuthViewModel) {

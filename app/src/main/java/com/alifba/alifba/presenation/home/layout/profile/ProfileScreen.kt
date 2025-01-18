@@ -10,16 +10,26 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.Badge
@@ -38,6 +49,7 @@ import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
+import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 
 @Composable
 fun ProfileScreen(
@@ -49,6 +61,8 @@ fun ProfileScreen(
     LaunchedEffect(Unit) {
         profileViewModel.startProfileListener()
     }
+    val earnedBadges by profileViewModel.earnedBadges.collectAsState()
+
 
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
 
@@ -58,6 +72,30 @@ fun ProfileScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.goback),
+                contentDescription = "Back",
+                modifier = Modifier
+                    .clickable { navController.popBackStack() }
+                    .size(36.dp),
+            )
+            Text(
+                text = "My Profile",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = navyBlue,
+                fontFamily = alifbaFont
+            )
+            // Empty box for symmetry
+            Box(modifier = Modifier.size(24.dp))
+        }
         // Top Row with Avatar and Profile Info
         Row(
             modifier = Modifier
@@ -179,13 +217,13 @@ fun ProfileScreen(
 
 
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         // Achievements Section
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
@@ -199,10 +237,42 @@ fun ProfileScreen(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Normal,
                 color = navyBlue,
-                modifier = Modifier.clickable { /* Navigate to achievements */ },
+                modifier = Modifier.clickable {
+                    navController.navigate(
+                        "allBadges"
+                    ) },
                 fontFamily = alifbaFont,
-            )
 
+            )
+        }
+
+        if (earnedBadges.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Complete activities to earn badges!",
+                    fontSize = 16.sp,
+                    fontFamily = alifbaFont,
+                    color = navyBlue,
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                contentPadding = PaddingValues(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.height(140.dp) // Reduced height for 1 row of 3 badges
+            ) {
+                items(earnedBadges.take(3)) { badge ->
+                    BadgeCard(badge)
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -272,42 +342,67 @@ fun UserCard(cardData: UserCardData, elevation: Dp) {
 
 
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BadgeCard(badgeCardData: Badge) {
+fun BadgeCard(badge: Badge) {
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    var showBottomSheet by remember { mutableStateOf(false) }
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(2.dp), // Subtle elevation for badges
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(.6f),
-        colors = CardDefaults.cardColors(white)
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showBottomSheet = false },
+            containerColor = white,
+            sheetState = rememberModalBottomSheetState()
         ) {
-            Image(
-                painter = rememberAsyncImagePainter(badgeCardData.imageUrl),
-                contentDescription = badgeCardData.title,
-                modifier = Modifier
-                    .height(75.dp)
-                    .fillMaxWidth(),
-                contentScale = ContentScale.Inside
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = badgeCardData.title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                fontFamily = alifbaFont,
-                textAlign = TextAlign.Center
+            BadgeDetailsBottomSheet(
+                badge = badge,
+                onDismiss = { showBottomSheet = false }
             )
         }
     }
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(140.dp)
+            .aspectRatio(.8f)
+            .clickable { showBottomSheet = true },
+        colors = CardDefaults.cardColors(white)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(badge.imageUrl),
+                    contentDescription = badge.title,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .padding(4.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                Text(
+                    text = badge.name,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = alifbaFont,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
 }
+
 
 data class UserCardData(
     val imageRes: Int,
@@ -333,8 +428,167 @@ fun getAvatarDrawable(avatarName: String): Int {
         else -> R.drawable.avatar9
     }
 }
-//@Preview(showBackground = true)
-//@Composable
-//fun UserProgressScreenPreview() {
-//    ProfileScreen()
-//}
+
+@Composable
+fun BadgeDetailsBottomSheet(
+    badge: Badge,
+    onDismiss: () -> Unit
+) {
+    val alifbaFont = FontFamily(
+        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Badge Title
+        Text(
+            text = badge.name,
+            fontFamily = alifbaFont,
+            color = navyBlue,
+            fontSize = 23.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 16.dp)
+        )
+
+        // Badge Image
+        Image(
+            painter = rememberAsyncImagePainter(badge.imageUrl),
+            contentDescription = badge.title,
+            modifier = Modifier
+                .size(150.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Fit
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Badge Description
+        Text(
+            text = badge.description,
+            fontFamily = alifbaFont,
+            color = navyBlue,
+            fontSize = 16.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Optional: Add a close button
+        CommonButton(
+            buttonText = "Close",
+            mainColor = lightNavyBlue,
+            shadowColor = navyBlue,
+            textColor = white,
+            onClick = onDismiss
+        )
+    }
+}
+
+@Composable
+fun AllBadgesScreen(
+    navController: NavController,
+    profileViewModel: ProfileViewModel
+) {
+    val earnedBadges by profileViewModel.earnedBadges.collectAsState()
+    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(white)
+            .padding(16.dp)
+    ) {
+        // Top Bar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.goback),
+                contentDescription = "Back",
+                modifier = Modifier
+                    .clickable { navController.popBackStack() }
+                    .size(36.dp),
+            )
+            Text(
+                text = "My Achievements",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = navyBlue,
+                fontFamily = alifbaFont
+            )
+            // Empty box for symmetry
+            Box(modifier = Modifier.size(24.dp))
+        }
+
+        // Stats Section
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            colors = CardDefaults.cardColors(lightNavyBlue.copy(alpha = 0.1f)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${earnedBadges.size}",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = navyBlue,
+                        fontFamily = alifbaFont
+                    )
+                    Text(
+                        text = "Earned",
+                        fontSize = 14.sp,
+                        color = navyBlue,
+                        fontFamily = alifbaFont
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        //text = "${12 - earnedBadges.size}", // Assuming total badges is 12
+                        text = "many more",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = navyBlue,
+                        fontFamily = alifbaFont
+                    )
+                    Text(
+                        text = "Remaining",
+                        fontSize = 14.sp,
+                        color = navyBlue,
+                        fontFamily = alifbaFont
+                    )
+                }
+            }
+        }
+
+        // All Badges Grid
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            contentPadding = PaddingValues(vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(earnedBadges) { badge ->
+                BadgeCard(badge)
+            }
+        }
+    }
+}

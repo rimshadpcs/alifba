@@ -14,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -40,6 +41,11 @@ class ChaptersViewModel @Inject constructor(
 
     private val _badgeEarnedEvent = MutableStateFlow<Badge?>(null)
     val badgeEarnedEvent: StateFlow<Badge?> get() = _badgeEarnedEvent
+
+    private val _levelSummary = MutableStateFlow<LevelSummary?>(null)
+    val levelSummary: StateFlow<LevelSummary?> = _levelSummary.asStateFlow()
+
+    private val _levelName = MutableStateFlow<String?>(null)
 
     fun loadChapters(levelId: String) {
         val levelPath = "lessons/level$levelId/chapters"
@@ -152,7 +158,9 @@ class ChaptersViewModel @Inject constructor(
                             transaction.update(userRef, "last_activity_date", currentDate)
                             transaction.update(userRef, "day_streak", newStreak)
                         }
+
                     }.await()
+                    checkAndAwardBadges(userId)
                 } catch (e: Exception) {
                     Log.e("AuthViewModel", "Error updating streak: ${e.localizedMessage}")
                 }
@@ -204,6 +212,7 @@ class ChaptersViewModel @Inject constructor(
                 val userId = dataStoreManager.userId.first()
                 if (userId.isNullOrEmpty()) return@launch
 
+                checkAndAwardBadges(userId)
                 val userRef = fireStore.collection("users").document(userId)
                 val levelPath = "lessons/$levelId/chapters"
 
@@ -287,6 +296,161 @@ class ChaptersViewModel @Inject constructor(
                 loadChapters(levelId)
             } catch (e: Exception) {
                 Log.e("ChaptersViewModel", "Error marking completion: ${e.localizedMessage}")
+            }
+        }
+    }
+    private suspend fun checkAndAwardBadges(userId: String) {
+        try {
+            val userRef = fireStore.collection("users").document(userId)
+            val userDoc = userRef.get().await()
+
+            // Get current earned badges
+            val earnedBadges = userDoc.get("earned_badges") as? List<String> ?: emptyList()
+
+            // Get all available badges
+            val badgesSnapshot = fireStore.collection("badges").get().await()
+            val badges = badgesSnapshot.documents.mapNotNull { it.toObject(Badge::class.java) }
+
+            // Get user stats
+            val quizzesAttended = userDoc.getLong("quizzes_attended") ?: 0
+            val storiesCompleted = (userDoc.get("stories_completed") as? List<*>)?.size ?: 0
+            val chaptersCompleted = (userDoc.get("chapters_completed") as? List<*>)?.size ?: 0
+            val levelsCompleted = (userDoc.get("levels_completed") as? List<*>)?.size ?: 0
+            val dayStreak = userDoc.getLong("day_streak") ?: 0
+            val xp = userDoc.getLong("xp") ?: 0
+
+            badges.forEach { badge ->
+                // Skip if already earned
+                if (!earnedBadges.contains(badge.id)) {
+                    val shouldAward = when (badge.criteria.type) {
+                        "quiz_completion" -> quizzesAttended >= (badge.criteria.count ?: 0)
+                        "story_completion" -> storiesCompleted >= (badge.criteria.count ?: 0)
+                        "chapter_completion" -> chaptersCompleted >= (badge.criteria.count ?: 0)
+                        "level_completion" -> levelsCompleted >= (badge.criteria.count ?: 0)
+                        "streak" -> dayStreak >= (badge.criteria.count ?: 0)
+                        "xp_earned" -> xp >= (badge.criteria.count ?: 0)
+                        else -> false
+                    }
+
+                    if (shouldAward) {
+                        // Add to earned_badges array
+                        userRef.update("earned_badges", earnedBadges + badge.id).await()
+
+                        // Notify UI about earned badge
+                        _badgeEarnedEvent.value = badge
+
+                        Log.d("BadgeCheck", "Badge earned: ${badge.title}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("BadgeCheck", "Error checking badges: ${e.localizedMessage}")
+        }
+    }
+
+//    fun getLevelSummary(levelId: String) {
+//        viewModelScope.launch {
+//            try {
+//                val userId = dataStoreManager.userId.first()
+//                if (!userId.isNullOrEmpty()) {
+//                    val levelPath = "lessons/level$levelId"
+//
+//                    // Fetch the level document
+//                    val levelDoc = fireStore.document(levelPath).get().await()
+//
+//                    if (levelDoc.exists()) {
+//                        val levelName = levelDoc.getString("name") ?: "Level $levelId"
+//                        val levelDescription = levelDoc.getString("description") ?: "Basic concepts of Islam and stories from the Quran"
+//
+//                        // Fetch chapters for the level
+//                        val chaptersSnapshot = fireStore.collection("$levelPath/chapters").get().await()
+//
+//                        if (!chaptersSnapshot.isEmpty) {
+//                            var totalChapters = 0
+//                            var totalStories = 0
+//                            var totalQuizzes = 0
+//                            var totalActivities = 0
+//
+//                            chaptersSnapshot.documents.forEach { doc ->
+//                                when (doc.getString("chapterType")) {
+//                                    "Lesson" -> totalChapters++
+//                                    "Story" -> totalStories++
+//                                    "Quiz" -> totalQuizzes++
+//                                    "Activity" -> totalActivities++
+//                                }
+//                            }
+//
+//                            val summary = LevelSummary(
+//                                levelName = levelName,
+//                                levelDescription = levelDescription,
+//                                totalChapters = totalChapters,
+//                                totalStories = totalStories,
+//                                totalQuizzes = totalQuizzes,
+//                                totalActivities = totalActivities
+//                            )
+//
+//                            _levelSummary.value = summary
+//                        } else {
+//                            Log.e("LevelSummary", "No chapters found for level $levelId")
+//                            _levelSummary.value = null
+//                        }
+//                    } else {
+//                        Log.e("LevelSummary", "Level document not found for levelId: $levelId")
+//                        _levelSummary.value = null
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                Log.e("LevelSummary", "Error getting level summary for levelID: $levelId", e)
+//                _levelSummary.value = null
+//            }
+//        }
+//    }
+
+    fun getLevelSummary(levelId: String) {
+        viewModelScope.launch {
+            try {
+                val userId = dataStoreManager.userId.first()
+                if (userId.isNullOrEmpty()) return@launch
+
+                val levelPath = "lessons/level$levelId"
+                val levelDoc = fireStore.document(levelPath).get().await()
+                val description = levelDoc.getString("description") ?: "No description available"
+                // Fetch all chapters for the level
+                val chaptersSnapshot = fireStore.collection("$levelPath/chapters").get().await()
+
+                if (!chaptersSnapshot.isEmpty) {
+                    var totalLessons = 0
+                    var totalStories = 0
+                    var totalQuizzes = 0
+                    var totalActivities = 0
+
+                    // Calculate totals based on chapter type
+                    chaptersSnapshot.documents.forEach { doc ->
+                        when (doc.getString("chapterType")) {
+                            "Lesson" -> totalLessons++
+                            "Story" -> totalStories++
+                            "Quiz" -> totalQuizzes++
+                            "Activity" -> totalActivities++
+                        }
+                    }
+
+                    // Update LevelSummary
+                    val summary = LevelSummary(
+                        levelName = "Level $levelId",
+                        levelDescription = description,
+                        totalChapters = totalLessons,
+                        totalStories = totalStories,
+                        totalQuizzes = totalQuizzes,
+                        totalActivities = totalActivities
+                    )
+
+                    _levelSummary.value = summary
+                } else {
+                    _levelSummary.value = null
+                }
+            } catch (e: Exception) {
+                Log.e("LevelSummary", "Error fetching level summary: ${e.localizedMessage}")
+                _levelSummary.value = null
             }
         }
     }

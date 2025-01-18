@@ -3,6 +3,7 @@ package com.alifba.alifba.presenation.home.layout
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.presenation.Login.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
@@ -24,12 +25,15 @@ class ProfileViewModel @Inject constructor(
 
     private val _userProfileState = MutableStateFlow<UserProfile?>(null)
     val userProfileState: StateFlow<UserProfile?> get() = _userProfileState
+    private val _earnedBadges = MutableStateFlow<List<Badge>>(emptyList())
+    val earnedBadges: StateFlow<List<Badge>> get() = _earnedBadges
+
 
     /**
      * Fetches all relevant user data (XP, chaptersCompleted, badges, child profile, etc.)
      * from Firestore and updates the _userProfileState.
      */
-    fun fetchUserProfile() {
+    private fun fetchUserProfile() {
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first()
             if (!userId.isNullOrEmpty()) {
@@ -87,6 +91,30 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    private suspend fun fetchEarnedBadges(earnedBadgeIds: List<String>) {
+        try {
+            if (earnedBadgeIds.isEmpty()) {
+                _earnedBadges.value = emptyList()
+                return
+            }
+
+            val badgesCollection = fireStore.collection("badges")
+            val badges = earnedBadgeIds.mapNotNull { badgeId ->
+                try {
+                    badgesCollection.document(badgeId).get().await().toObject(Badge::class.java)
+                } catch (e: Exception) {
+                    Log.e("ProfileViewModel", "Error fetching badge $badgeId: ${e.localizedMessage}")
+                    null
+                }
+            }
+            _earnedBadges.value = badges
+
+        } catch (e: Exception) {
+            Log.e("ProfileViewModel", "Error fetching badges: ${e.localizedMessage}")
+            _earnedBadges.value = emptyList()
+        }
+    }
+
     fun startProfileListener() {
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first()
@@ -117,6 +145,11 @@ class ProfileViewModel @Inject constructor(
                             val storiesCompleted = snapshot.get("stories_completed") as? List<String> ?: emptyList()
                             val levelsCompleted = snapshot.get("levels_completed") as? List<String> ?: emptyList()
 
+
+                            val earnedBadgeIds = snapshot.get("earned_badges") as? List<String> ?: emptyList()
+                            viewModelScope.launch {
+                                fetchEarnedBadges(earnedBadgeIds)
+                            }
                             // Update local state
                             _userProfileState.value = UserProfile(
                                 parentName = parentName,

@@ -3,11 +3,17 @@ package com.alifba.alifba.presenation.home.layout.settings
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -33,6 +40,7 @@ import androidx.navigation.NavController
 import com.alifba.alifba.R
 import com.alifba.alifba.ui_components.theme.darkPink
 import com.alifba.alifba.ui_components.theme.lightPink
+import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.texts.SettingsButton
@@ -94,26 +102,30 @@ fun SettingsScreen(navController: NavController){
                     .align(Alignment.CenterHorizontally)
             ) {
 
-                Text(
-                    text = "Settings",
-                    style = LocalTextStyle.current.merge(
-                        TextStyle(
-                            lineHeight = 1.5.em,
-                            platformStyle = PlatformTextStyle(
-                                includeFontPadding = false
-                            ),
-                            lineHeightStyle = LineHeightStyle(
-                                alignment = LineHeightStyle.Alignment.Center,
-                                trim = LineHeightStyle.Trim.None
-                            )
-                        )
-                    ),
-                    color = Color.Gray,
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(12.dp),
-                    fontFamily = alifbaFont
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.goback),
+                        contentDescription = "Back",
+                        modifier = Modifier
+                            .clickable { navController.popBackStack() }
+                            .size(48.dp),
+                    )
+                    Text(
+                        text = "Settings",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = navyBlue,
+                        fontFamily = alifbaFont
+                    )
+                    // Empty box for symmetry
+                    Box(modifier = Modifier.size(24.dp))
+                }
             }
 
             SettingsButton(

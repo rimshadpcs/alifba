@@ -51,8 +51,8 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            items(viewModel.lessonMenuItemList.size) { index ->
-                val item = viewModel.lessonMenuItemList[index]
+            items(viewModel.levelItemList.size) { index ->
+                val item = viewModel.levelItemList[index]
                 Box(modifier = Modifier.padding(horizontal = 8.dp)) {
                 LessonMenuItems(
                     image = item.image,
@@ -75,11 +75,11 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Left arrow for scrolling to show more items on the left
-            if (scrollState.firstVisibleItemIndex + scrollState.layoutInfo.visibleItemsInfo.size < viewModel.lessonMenuItemList.size) {
+            if (scrollState.firstVisibleItemIndex + scrollState.layoutInfo.visibleItemsInfo.size < viewModel.levelItemList.size) {
                 Button(
                     onClick = {
                         coroutineScope.launch {
-                            val itemIndex = (scrollState.firstVisibleItemIndex + 1).coerceAtMost(viewModel.lessonMenuItemList.size - 1)
+                            val itemIndex = (scrollState.firstVisibleItemIndex + 1).coerceAtMost(viewModel.levelItemList.size - 1)
                             scrollState.animateScrollToItem(itemIndex)
                         }
                     },
@@ -118,47 +118,47 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    // Creating a mock NavController
-    val navController = rememberNavController()
-
-    // Creating a mock ViewModel with sample data
-    val mockViewModel = viewModel<HomeViewModel>(factory = MockViewModelFactory())
-
-    // Invoking the HomeScreen with the mock data and NavController
-    HomeScreen(viewModel = mockViewModel, navController = navController)
-}
-
-// This will be your ViewModel class modified to fit preview needs
-class MockViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MockHomeViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return MockHomeViewModel() as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-class MockHomeViewModel : HomeViewModel() {
-    init {
-        // Populate the lessonMenuItemList with sample data
-        val lessonMenuItemList = listOf(
-            LessonMenuItem(image = R.drawable.levelone, name = "Lesson 1"),
-            LessonMenuItem(image = R.drawable.leveltwo, name = "Lesson 2")
-            // Add more items as needed
-        )
-    }
-}
-
-// Assuming you have a simple data model
-data class LessonMenuItem(val image: Int, val name: String)
-
-// This should match the real ViewModel used in your actual composable if it's different
-open class HomeViewModel : ViewModel() {
-    // Replace with actual type of list and data handling
-    var lessonMenuItemList = listOf<LessonMenuItem>()
-}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun HomeScreenPreview() {
+//    // Creating a mock NavController
+//    val navController = rememberNavController()
+//
+//    // Creating a mock ViewModel with sample data
+//    val mockViewModel = viewModel<HomeViewModel>(factory = MockViewModelFactory())
+//
+//    // Invoking the HomeScreen with the mock data and NavController
+//    HomeScreen(viewModel = mockViewModel, navController = navController)
+//}
+//
+//// This will be your ViewModel class modified to fit preview needs
+//class MockViewModelFactory : ViewModelProvider.Factory {
+//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//        if (modelClass.isAssignableFrom(MockHomeViewModel::class.java)) {
+//            @Suppress("UNCHECKED_CAST")
+//            return MockHomeViewModel() as T
+//        }
+//        throw IllegalArgumentException("Unknown ViewModel class")
+//    }
+//}
+//
+//class MockHomeViewModel : HomeViewModel() {
+//    init {
+//        // Populate the lessonMenuItemList with sample data
+//        val lessonMenuItemList = listOf(
+//            LessonMenuItem(image = R.drawable.levelone, name = "Lesson 1", levelId = 1),
+//            LessonMenuItem(image = R.drawable.leveltwo, name = "Lesson 2", levelId =2)
+//            // Add more items as needed
+//        )
+//    }
+//}
+//
+//// Assuming you have a simple data model
+//data class LessonMenuItem(val image: Int, val name: String, val levelId:Int)
+//
+//// This should match the real ViewModel used in your actual composable if it's different
+//open class HomeViewModel : ViewModel() {
+//    // Replace with actual type of list and data handling
+//    var lessonMenuItemList = listOf<LessonMenuItem>()
+//}

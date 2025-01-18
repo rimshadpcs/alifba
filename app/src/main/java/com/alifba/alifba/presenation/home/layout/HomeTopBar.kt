@@ -79,41 +79,41 @@ fun TopBarIcons(
     painter: Painter,
     contentDescription: String,
     onClick: () -> Unit,
-    shadowColor: Color = Color.Gray,
-    mainColor: Color = Color.White
+    shadowColor: Color = Color(0xFFAAAAAA), // Subtle shadow color
+    mainColor: Color = Color.White // Main background color
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Animate the offset for the press effect
+    // Press animation: shadow offset
     val offsetY by animateDpAsState(
         targetValue = if (isPressed) 0.dp else 5.dp,
         animationSpec = spring(),
-        label = ""
+        label = "IconOffset"
     )
 
     Box(
-        contentAlignment = Alignment.TopCenter,
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(84.dp) // Total size including the shadow
-            .padding(8.dp)
+            .size(84.dp) // Ensure equal width and height for a perfect circle
+            .padding(8.dp) // Padding around the entire box
     ) {
         // Shadow layer
         Box(
             modifier = Modifier
-                .matchParentSize()
+                .size(74.dp) // Shadow size
                 .clip(CircleShape)
-                .background(shadowColor) // Apply shadow color
+                .background(shadowColor) // Shadow color
         )
 
         // Icon layer with press effect
         Box(
             modifier = Modifier
-                .matchParentSize()
+                .size(74.dp) // Same size as the shadow layer
                 .padding(bottom = offsetY) // Apply offset for press effect
                 .clip(CircleShape)
-                .background(mainColor) // Apply main color
+                .background(mainColor) // Main color of the icon
                 .clickable(
                     onClick = {
                         coroutineScope.launch {
@@ -129,8 +129,11 @@ fun TopBarIcons(
             Image(
                 painter = painter,
                 contentDescription = contentDescription,
-                modifier = Modifier.size(50.dp) // Adjust size of the image inside
+                modifier = Modifier.size(50.dp) // Icon size within the circle
             )
         }
     }
 }
+
+
+
