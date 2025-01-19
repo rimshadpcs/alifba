@@ -276,16 +276,6 @@ fun ProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Detailed Report Button
-//        CommonButton(
-//            onClick = { /* Navigate to detailed report */ },
-//            buttonText = "Detailed Report for Parents",
-//            shadowColor = darkPink,
-//            mainColor = lightPink,
-//            textColor = white,
-//            modifier = Modifier.fillMaxWidth()
-//        )
     }
 }
 
@@ -363,45 +353,46 @@ fun BadgeCard(badge: Badge) {
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
-            .aspectRatio(.8f)
+            .aspectRatio(1f) // Ensures all cards have a square aspect ratio
+            .padding(2.dp) // Adds internal padding for spacing
             .clickable { showBottomSheet = true },
         colors = CardDefaults.cardColors(white)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center // Center content within the card
         ) {
-            Column(
-                modifier = Modifier.padding(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(badge.imageUrl),
-                    contentDescription = badge.title,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .padding(4.dp),
-                    contentScale = ContentScale.Fit
-                )
+            // Badge Image
+            Image(
+                painter = rememberAsyncImagePainter(badge.imageUrl),
+                contentDescription = badge.title,
+                modifier = Modifier
+                    .size(60.dp) // Adjust size of the badge image
+                    .padding(bottom = 2.dp), // Adds space below the image
+                contentScale = ContentScale.Fit
+            )
 
-                Text(
-                    text = badge.name,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = alifbaFont,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
+            // Badge Name
+            Text(
+                text = badge.name,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = alifbaFont,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
         }
     }
 }
+
 
 
 data class UserCardData(
@@ -508,7 +499,7 @@ fun AllBadgesScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 4.dp),
+                .padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -580,15 +571,16 @@ fun AllBadgesScreen(
 
         // All Badges Grid
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            columns = GridCells.Fixed(3), // 3 items per row
+            contentPadding = PaddingValues(4.dp), // Padding around the entire grid
+            horizontalArrangement = Arrangement.spacedBy(4.dp), // Space between columns
+            verticalArrangement = Arrangement.spacedBy(4.dp), // Space between rows
             modifier = Modifier.fillMaxSize()
         ) {
             items(earnedBadges) { badge ->
                 BadgeCard(badge)
             }
         }
+
     }
 }
