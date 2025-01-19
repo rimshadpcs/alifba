@@ -1,23 +1,31 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment.TextMcq
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberImagePainter
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
@@ -73,8 +81,21 @@ fun TextMcqSegment(segment: LessonSegment.TextMcqLesson, onNextClicked: () -> Un
                 mainColor = mainColor,
                 shadowColor = shadowColor
             )
-        }
 
+
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Image(
+            painter = painterResource(R.drawable.qna),
+            contentDescription = "Image",
+            modifier = Modifier
+                .fillMaxWidth()
+//                .fillMaxHeight(0.5f)
+                .padding(8.dp)
+                .align(Alignment.CenterHorizontally)
+                .clip(shape = RoundedCornerShape(64.dp)),
+            contentScale = ContentScale.FillWidth
+        )
         if (showDialog.value) {
             LottieAnimationDialog(showDialog = showDialog, lottieFileRes = R.raw.tick)
             LaunchedEffect(showDialog.value) {
