@@ -59,9 +59,11 @@ import kotlin.math.atan2
 
 @Composable
 fun LetterTracing(segment: LessonSegment.LetterTracing, onNextClicked: () -> Unit) {
-    // State to track whether to show the animation or the next composable
+    // Decide which shape to use based on the segment
+    // For demo, let's pick createBaaShape() always:
+    val shape = createBaaShape()
+
     var showAnimation by remember { mutableStateOf(true) }
-    //PlayAudio(audioResId = segment.speech)
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (showAnimation) {
@@ -69,26 +71,83 @@ fun LetterTracing(segment: LessonSegment.LetterTracing, onNextClicked: () -> Uni
                 onContinueClicked = { showAnimation = false }
             )
         } else {
-            LetterTracingExercise( onNextClicked)
+            // Now we pass BOTH the shape and the onNextClicked
+            LetterTracingExercise(
+                letterShape = shape,
+                onNextClicked = onNextClicked
+            )
         }
     }
 }
 
-//fun createLargerAlifPath(): Path {
-//    return Path().apply {
-//        moveTo(80f, 100f) // Start at the top of the Alif
-//        cubicTo(120f, 500f, 80f, 500f, 100f, 700f) // Draw the main body of the Alif downwards
-//    }
-//}
-//fun createBaaPath(): Path {
-//    return Path().apply {
-//        moveTo(100f, 130f) // Start at the beginning of the curve (left side of "Baa")
-//        cubicTo(150f, 300f, 100f, 400f, 450f, 300f) // First curve segment
-//        cubicTo(500f, 280f, 600f, 200f, 500f, 100f) // Second curve segment
-//
-//
-//    }
-//}
+
+
+/**
+ * Data class that holds the main letter path and a list of dot data.
+ * You can expand this if you have multiple sub-paths, but for now
+ * we’ll assume one main path plus zero or more dots.
+ */
+data class LetterShape(
+    val mainPath: Path,
+    val dots: List<DotData>
+)
+
+/**
+ * Represents a tappable dot in the letter (e.g. the dot in ب or two dots in ت).
+ * [center] is where the dot is placed.
+ * [radius] is its radius for both drawing and tap detection.
+ * [isTouched] indicates whether the user has tapped it.
+ */
+data class DotData(
+    val center: Offset,
+    val radius: Float,
+    var isTouched: Boolean = false
+)
+
+
+private const val DOT_RADIUS = 24f
+
+fun createBaaShape(): LetterShape {
+    val mainPath = Path().apply {
+        moveTo(100f, 130f)
+        cubicTo(150f, 300f, 100f, 400f, 450f, 300f)
+        cubicTo(500f, 280f, 600f, 200f, 500f, 100f)
+    }
+
+    val dot = DotData(
+        center = Offset(420f, 450f),
+        radius = DOT_RADIUS
+    )
+
+    return LetterShape(mainPath = mainPath, dots = listOf(dot))
+}
+
+fun createTaaShape(): LetterShape {
+    val mainPath = Path().apply {
+        moveTo(50f, 180f)
+        cubicTo(100f, 300f, 100f, 400f, 450f, 300f)
+        cubicTo(500f, 280f, 600f, 200f, 500f, 100f)
+    }
+
+    val dot1 = DotData(center = Offset(330f, 120f), radius = DOT_RADIUS)
+    val dot2 = DotData(center = Offset(250f, 120f), radius = DOT_RADIUS)
+
+    return LetterShape(mainPath = mainPath, dots = listOf(dot1, dot2))
+}
+
+fun createThaaShape(): LetterShape {
+    val mainPath = Path().apply {
+        moveTo(50f, 180f)
+        cubicTo(100f, 300f, 100f, 400f, 450f, 300f)
+        cubicTo(500f, 280f, 600f, 200f, 500f, 100f)
+    }
+
+    val dot1 = DotData(center = Offset(290f, 60f), radius = DOT_RADIUS)
+    val dot2 = DotData(center = Offset(330f, 120f), radius = DOT_RADIUS)
+    val dot3 = DotData(center = Offset(250f, 120f), radius = DOT_RADIUS)
+
+    return LetterShape(mainPath = mainPath, dots = listOf(dot1, dot2, dot3))
+}
 
 fun createAlifPath(): Path {
     return Path().apply {
@@ -128,6 +187,7 @@ fun createBaaPath(): Path {
         )
     }
 }
+
 fun createTaaPath(): Path {
     return Path().apply {
         // Start to the right and curve leftwards (approx. shape of ت)
@@ -181,122 +241,6 @@ fun createThaaPath(): Path {
 }
 
 
-fun createJeemPath(): Path {
-    return Path().apply {
-        // Start near top-right
-        moveTo(450f, 150f)
-
-        // First curve: sweeping downward and left
-        cubicTo(
-            400f, 220f,  // Control point 1
-            300f, 300f,  // Control point 2
-            220f, 320f   // End point
-        )
-
-        // Second curve: hooking back up to form the top
-        cubicTo(
-            170f, 280f,
-            160f, 180f,
-            220f, 150f
-        )
-
-        // Add the single dot near the bottom portion (Jeem has one dot typically)
-        // Adjust position & size as needed
-        addOval(
-            Rect(
-                center = Offset(250f, 340f),
-                radius = 6f
-            )
-        )
-    }
-}
-
-
-        // Add the dot below
-//        addOval(
-//            Rect(
-//                center = Offset(250f, 290f), // Positioned below the main line
-//                radius = 8f
-//            )
-//        )
-//    }
-//}
-
-//fun createBaaPath(): Path {
-//    return Path().apply {
-//        // Start from the right side higher up
-//        moveTo(400f, 200f)
-//
-//        // First curve sweeping down and left
-//        cubicTo(
-//            350f, 250f,  // First control point - controls the initial descent
-//            250f, 280f,  // Second control point - controls the middle curve
-//            150f, 270f   // End point - where the curve starts to flatten
-//        )
-//
-//        // Second curve continuing left and slightly up for the tail
-//        cubicTo(
-//            100f, 265f,  // First control point - controls the tail's curve
-//            80f, 250f,   // Second control point - controls the tail's end
-//            100f, 240f   // End point - slight upward flick at the end
-//        )
-//
-//        // Add the dot below
-//        addOval(
-//            Rect(
-//                center = Offset(250f, 320f), // Positioned below the main curve
-//                radius = 8f
-//            )
-//        )
-//    }
-//}
-
-
-
-//fun createTaaPath(): Path {
-//    return Path().apply {
-//        // Use the same base shape as Baa
-//        moveTo(400f, 200f)
-//
-//        // First curve sweeping down and left
-//        cubicTo(
-//            350f, 250f,
-//            250f, 280f,
-//            150f, 270f
-//        )
-//
-//        // Second curve continuing left and slightly up for the tail
-//        cubicTo(
-//            100f, 265f,
-//            80f, 250f,
-//            100f, 240f
-//        )
-//
-//        // Add two dots above the main curve
-//        addOval(
-//            Rect(
-//                center = Offset(240f, 200f), // First dot above the curve
-//                radius = 8f
-//            )
-//        )
-//        addOval(
-//            Rect(
-//                center = Offset(270f, 200f), // Second dot above the curve
-//                radius = 8f
-//            )
-//        )
-//    }
-//}
-//
-//// Helper function to create a circular dot
-//fun Path.addDot(center: Offset, radius: Float) {
-//    addOval(
-//        Rect(
-//            center = center,
-//            radius = radius
-//        )
-//    )
-//}
 
 // Helper function to scale paths based on canvas size
 fun Path.scale(scaleX: Float, scaleY: Float): Path {
