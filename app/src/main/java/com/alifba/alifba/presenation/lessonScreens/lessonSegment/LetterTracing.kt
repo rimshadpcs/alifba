@@ -58,11 +58,19 @@ import kotlin.math.atan2
 
 
 @Composable
-fun LetterTracing(segment: LessonSegment.LetterTracing, onNextClicked: () -> Unit) {
-    // Decide which shape to use based on the segment
-    // For demo, let's pick createBaaShape() always:
-    val shape = createBaaShape()
+fun LetterTracing(
+    segment: LessonSegment.LetterTracing,
+    onNextClicked: () -> Unit
+) {
+    val shape = when (segment.letterId?.lowercase()) {
+        "baa"  -> createBaaShape()
+        "taa"  -> createTaaShape()
+        "thaa" -> createThaaShape()
+        "alif" -> createAlifShape()
+        else   -> createBaaShape()
+    }
 
+    // 2) Let user see the "demo" animation first, then do the exercise
     var showAnimation by remember { mutableStateOf(true) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -71,7 +79,6 @@ fun LetterTracing(segment: LessonSegment.LetterTracing, onNextClicked: () -> Uni
                 onContinueClicked = { showAnimation = false }
             )
         } else {
-            // Now we pass BOTH the shape and the onNextClicked
             LetterTracingExercise(
                 letterShape = shape,
                 onNextClicked = onNextClicked
@@ -79,6 +86,7 @@ fun LetterTracing(segment: LessonSegment.LetterTracing, onNextClicked: () -> Uni
         }
     }
 }
+
 
 
 
@@ -109,9 +117,11 @@ private const val DOT_RADIUS = 24f
 
 fun createBaaShape(): LetterShape {
     val mainPath = Path().apply {
-        moveTo(100f, 130f)
-        cubicTo(150f, 300f, 100f, 400f, 450f, 300f)
-        cubicTo(500f, 280f, 600f, 200f, 500f, 100f)
+        // Start from the rightmost point
+        moveTo(500f, 100f)
+        // Then curve leftwards
+        cubicTo(600f, 200f, 500f, 280f, 450f, 300f)
+        cubicTo(100f, 400f, 150f, 300f, 100f, 130f)
     }
 
     val dot = DotData(
@@ -124,9 +134,12 @@ fun createBaaShape(): LetterShape {
 
 fun createTaaShape(): LetterShape {
     val mainPath = Path().apply {
-        moveTo(50f, 180f)
-        cubicTo(100f, 300f, 100f, 400f, 450f, 300f)
-        cubicTo(500f, 280f, 600f, 200f, 500f, 100f)
+        moveTo(500f, 100f)
+
+        cubicTo(600f, 200f, 500f, 280f, 450f, 300f)
+
+        // Reverse the first cubic
+        cubicTo(100f, 400f, 100f, 300f, 50f, 180f)
     }
 
     val dot1 = DotData(center = Offset(330f, 120f), radius = DOT_RADIUS)
@@ -135,11 +148,14 @@ fun createTaaShape(): LetterShape {
     return LetterShape(mainPath = mainPath, dots = listOf(dot1, dot2))
 }
 
+
 fun createThaaShape(): LetterShape {
     val mainPath = Path().apply {
-        moveTo(50f, 180f)
-        cubicTo(100f, 300f, 100f, 400f, 450f, 300f)
-        cubicTo(500f, 280f, 600f, 200f, 500f, 100f)
+        moveTo(500f, 100f)
+
+        cubicTo(600f, 200f, 500f, 280f, 450f, 300f)
+
+        cubicTo(100f, 400f, 100f, 300f, 50f, 180f)
     }
 
     val dot1 = DotData(center = Offset(290f, 60f), radius = DOT_RADIUS)
@@ -149,96 +165,23 @@ fun createThaaShape(): LetterShape {
     return LetterShape(mainPath = mainPath, dots = listOf(dot1, dot2, dot3))
 }
 
-fun createAlifPath(): Path {
-    return Path().apply {
-        // Start at the top with a slight curve for calligraphic style
+fun createAlifShape(): LetterShape{
+    val mainPath = Path().apply {
         moveTo(100f, 80f)
-
-        // Main vertical stroke with subtle curves for calligraphic feel
         cubicTo(
             110f, 200f,  // First control point
             90f, 400f,   // Second control point
             100f, 600f   // End point
         )
-
-        // Add the characteristic base flare
         cubicTo(
             105f, 650f,  // First control point
             120f, 680f,  // Second control point
             140f, 690f   // End point
         )
     }
-}
-fun createBaaPath(): Path {
-    return Path().apply {
-        // Keep your existing curve which looks good
-        moveTo(100f, 130f)
-        cubicTo(150f, 300f, 100f, 400f, 450f, 300f) // First curve segment
-        cubicTo(500f, 280f, 600f, 200f, 500f, 100f) // Second curve segment
-
-        // Adjust dot position to be under the deepest part of the curve
-        // The deepest point is around x=275 (between 100 and 450) and y=400
-        addOval(
-            Rect(
-                center = Offset(420f, 450f), // Positioned below the curve's deepest point
-                radius = 8f,
-
-            )
-        )
-    }
+    return LetterShape(mainPath, dots = emptyList())
 }
 
-fun createTaaPath(): Path {
-    return Path().apply {
-        // Start to the right and curve leftwards (approx. shape of ت)
-        moveTo(50f, 180f)
-        cubicTo(100f, 300f, 100f, 400f, 450f, 300f) // First curve segment
-        cubicTo(500f, 280f, 600f, 200f, 500f, 100f) // Second curve segment
-
-
-        addOval(
-            Rect(
-                center = Offset(330f, 120f),
-                radius = 3f
-            )
-        )
-        addOval(
-            Rect(
-                center = Offset(250f, 120f),
-                radius = 3f
-            )
-        )
-    }
-}
-fun createThaaPath(): Path {
-    return Path().apply {
-        // Start to the right and curve leftwards (approx. shape of ت)
-        moveTo(50f, 180f)
-        cubicTo(100f, 300f, 100f, 400f, 450f, 300f) // First curve segment
-        cubicTo(500f, 280f, 600f, 200f, 500f, 100f) // Second curve segment
-
-        addOval(
-            Rect(
-                center = Offset(290f, 60f),
-                radius = 3f
-            )
-        )
-
-        addOval(
-            Rect(
-                center = Offset(330f, 120f),
-                radius = 3f
-            )
-        )
-        addOval(
-            Rect(
-                center = Offset(250f, 120f),
-                radius = 3f
-            )
-        )
-
-    }
-}
 
 
 
@@ -253,21 +196,21 @@ fun Path.scale(scaleX: Float, scaleY: Float): Path {
 }
 
 
-@Preview(showSystemUi = false) // Disables system UI in the preview
-@Composable
-fun PreviewLetterTracing() {
-    // Mocking the LessonSegment.LetterTracing data
-    val mockLessonSegment = LessonSegment.LetterTracing(
-        speech = R.raw.letterbaa // Replace with a valid audio resource ID for the preview
-    )
-
-    // Fullscreen-like simulation using Box
-    Box(
-        modifier = Modifier
-            .fillMaxSize() // Ensures the layout occupies the full available space
-            .background(Color.White) // Background to simulate the app's theme
-    ) {
-        // Call the LetterTracing composable with the mocked data
-        LetterTracing(segment = mockLessonSegment, onNextClicked = {})
-    }
-}
+//@Preview(showSystemUi = false) // Disables system UI in the preview
+//@Composable
+//fun PreviewLetterTracing() {
+//    // Mocking the LessonSegment.LetterTracing data
+//    val mockLessonSegment = LessonSegment.LetterTracing(
+//        speech = R.raw.letterbaa // Replace with a valid audio resource ID for the preview
+//    )
+//
+//    // Fullscreen-like simulation using Box
+//    Box(
+//        modifier = Modifier
+//            .fillMaxSize() // Ensures the layout occupies the full available space
+//            .background(Color.White) // Background to simulate the app's theme
+//    ) {
+//        // Call the LetterTracing composable with the mocked data
+//        LetterTracing(segment = mockLessonSegment, onNextClicked = {})
+//    }
+//}

@@ -85,6 +85,13 @@ class FireStoreLessonService(
                                 speech = speech
                             )
                         }
+                        "letterTracing" -> {
+                            LessonSegment.LetterTracing(
+                                letterId = segmentData["letterId"] as? String ?: "",
+                                speech = segmentData["speech"] as? String ?: "",
+                            )
+                        }
+
 
 
 
