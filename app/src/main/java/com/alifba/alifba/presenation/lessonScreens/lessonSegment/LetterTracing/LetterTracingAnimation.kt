@@ -40,7 +40,11 @@ import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createAlifPath
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createBaaPath
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createBaaShape
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createTaaPath
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createThaaPath
 import com.alifba.alifba.ui_components.theme.darkPurple
 import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.white
@@ -171,7 +175,7 @@ fun LetterTracingAnimation(onContinueClicked: () -> Unit) {
             letterShape.dots.forEachIndexed { index, dot ->
                 val adjCenter = dot.center + translation.value
                 drawCircle(
-                    color = if (index <= currentDotIndex && animationPhase == "dots") Color.Black else Color.Gray,
+                    color = if (index <= currentDotIndex && animationPhase == "dots") Color.Green else Color.Gray,
                     radius = dot.radius * 1.2f,
                     center = adjCenter,
                     alpha = 0.8f
@@ -228,14 +232,14 @@ private val canvasModifier = Modifier
     .aspectRatio(1f)
 
 
-//@Preview
-//@Composable
-//fun PreviewLetterTracing() {
-//    // Mocking the LessonSegment.LetterTracing data
-//    val mockLessonSegment = LessonSegment.LetterTracing(
-//        speech = R.raw.letterbaa // Replace with a valid audio resource ID for the preview
-//    )
-//
-//    // Call the LetterTracing composable with the mocked data
-//    LetterTracing(segment = mockLessonSegment, onNextClicked = {})
-//}
+@Preview
+@Composable
+fun PreviewLetterTracing() {
+    // Mocking the LessonSegment.LetterTracing data
+    val mockLessonSegment = LessonSegment.LetterTracing(
+        speech = R.raw.letterbaa // Replace with a valid audio resource ID for the preview
+    )
+
+    // Call the LetterTracing composable with the mocked data
+    LetterTracing(segment = mockLessonSegment, onNextClicked = {})
+}
