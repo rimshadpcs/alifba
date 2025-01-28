@@ -56,6 +56,7 @@ fun LazyChapterColumn(
             val iconId = when {
                 isCompleted -> R.drawable.tick
                 isUnlocked && lesson.chapterType == "Story" -> R.drawable.book
+                isUnlocked && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
                 isUnlocked -> R.drawable.start
                 else -> R.drawable.padlock
             }
@@ -66,7 +67,7 @@ fun LazyChapterColumn(
                 onClick = {
                     // **Workaround Logic:**
                     // Allow opening if the icon is either 'start' (play) or 'book'
-                    if (iconId == R.drawable.start || iconId == R.drawable.book || iconId ==R.drawable.tick) {
+                    if (iconId == R.drawable.start || iconId == R.drawable.book || iconId ==R.drawable.alphabeticon || iconId ==R.drawable.tick) {
                         onChapterClick(lesson)
                     } else {
                         onChapterClick(lesson)
