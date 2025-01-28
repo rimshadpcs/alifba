@@ -13,7 +13,7 @@ data class Lesson(
 
 sealed class LessonSegment {
 
-    data class LetterTracing(val speech: Int): LessonSegment()
+    data class LetterTracing( val letterId: String?,val speech: String? = null): LessonSegment()
     data class CommonLesson(
         val image: String = "",
         val description: String ="",
@@ -48,14 +48,6 @@ data class DragItem(val id: Int=0, val answer: String="", @DrawableRes val image
 
 data class DropItem(val id: Int=0, val name: String="")
 
-//val dragItems = listOf(
-//    DragItem(1, "Everyday",  R.drawable.salah),
-//    DragItem(2, "Occasionally",  R.drawable.umrah),
-//    DragItem(3, "Occasionally",  R.drawable.iftar),
-//    DragItem(4, "Everyday",  R.drawable.prayer),
-//    DragItem(5, "Everyday",  R.drawable.brushing),
-//    DragItem(6, "Occasionally",  R.drawable.eid),
-//)
 
 val dropItems = listOf(
     DropItem(1, "Everyday"),
