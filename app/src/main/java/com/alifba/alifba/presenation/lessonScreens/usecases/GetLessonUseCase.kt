@@ -6,8 +6,8 @@ import com.alifba.alifba.presenation.lessonScreens.domain.repository.LessonRepos
 class GetLessonUseCase(
     private val lessonRepository: LessonRepository
 ) {
-    suspend operator fun invoke(): List<Lesson>{
-        return lessonRepository.getLessons()
+    suspend operator fun invoke(levelId: String): List<Lesson>{
+        return lessonRepository.getLessons(levelId)
     }
 
 }
