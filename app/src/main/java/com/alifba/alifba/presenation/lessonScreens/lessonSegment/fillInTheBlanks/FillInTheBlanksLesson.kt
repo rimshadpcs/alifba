@@ -33,7 +33,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun FillInTheBlanksExerciseScreen(
     segment: LessonSegment.FillInTheBlanks,
-    onNextClicked: () -> Unit
+    onNextClicked: () -> Unit,
+    showNextButton: Boolean,
 ) {
     val exerciseKey = segment.exercise.hashCode()
 

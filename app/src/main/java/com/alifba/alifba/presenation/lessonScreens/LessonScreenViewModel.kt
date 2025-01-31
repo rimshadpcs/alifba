@@ -37,7 +37,8 @@ class LessonScreenViewModel  @Inject constructor(
     private val mediaPlayer: MediaPlayer? by lazy { MediaPlayer() }
     private var currentAudioResId: String? = null
     private var applicationContext: Context? = null // Store the Context
-
+    private val _isAudioCompleted = MutableLiveData<Boolean>(false)
+    val isAudioCompleted: LiveData<Boolean> get() = _isAudioCompleted
     private val _lessons = MutableLiveData<List<Lesson>>()
     val lessons: LiveData<List<Lesson>> = _lessons
 
@@ -47,41 +48,50 @@ class LessonScreenViewModel  @Inject constructor(
     private val _error = MutableLiveData<String?>()
     val error : LiveData<String?> = _error
 
+    private val _isAudioPlaying = MutableLiveData(false)
+    val isAudioPlaying: LiveData<Boolean> get() = _isAudioPlaying
 
     init {
         mediaPlayer?.setOnCompletionListener {
-            mediaPlayer?.setOnCompletionListener {
-                currentAudioResId = null // Reset the current audio ID on completion
-            }
+            _isAudioCompleted.value = true
+        }
+        mediaPlayer?.setOnErrorListener { _, _, _ ->
+            // If there's an error, we may want to allow the user to proceed
+            _isAudioCompleted.value = true
+            true
         }
     }
     fun initContext(context: Context) {
         applicationContext = context
     }
     private fun configureMediaPlayer(dataSource: () -> Unit) {
-        mediaPlayer?.let { player ->
-            try {
-                if (player.isPlaying) {
-                    player.stop()
-                    player.reset()
-                }
-                dataSource()
-                player.prepareAsync()
-                player.setOnPreparedListener { player.start() }
-            } catch (e: Exception) {
-                Log.e("LessonScreenViewModel", "Error configuring MediaPlayer", e)
-                player.reset()
+        try {
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.stop()
+                mediaPlayer?.reset()
             }
+            dataSource()
+            mediaPlayer?.prepareAsync()
+            mediaPlayer?.setOnPreparedListener { mp ->
+                mp.start()
+                _isAudioPlaying.value = true // Now playing
+            }
+        } catch (e: Exception) {
+            Log.e("LessonScreenViewModel", "Error configuring MediaPlayer: ", e)
+            mediaPlayer?.reset()
+            _isAudioPlaying.value = false
         }
     }
 
     fun startAudio(audioUrl: String) {
-        if (applicationContext == null || audioUrl.isBlank()) {
-            Log.e("LessonScreenViewModel", "Invalid audio URL or context")
-            return
-        }
-        configureMediaPlayer {
-            mediaPlayer?.setDataSource(applicationContext!!, Uri.parse(audioUrl))
+        // 1) Mark audio as not completed
+        _isAudioCompleted.value = false
+
+        // 2) Proceed with setDataSource, prepareAsync, etc.
+        if (applicationContext != null && audioUrl.isNotBlank()) {
+            configureMediaPlayer {
+                mediaPlayer?.setDataSource(applicationContext!!, Uri.parse(audioUrl))
+            }
         }
     }
 
@@ -96,12 +106,16 @@ class LessonScreenViewModel  @Inject constructor(
             afd.close()
         }
     }
-
     fun stopAudio() {
-        mediaPlayer?.stop()
+        if (mediaPlayer?.isPlaying == true) {
+            mediaPlayer?.stop()
+        }
         mediaPlayer?.reset()
-        currentAudioResId = null
+
+        // If we forcibly stop, user might be allowed to proceed:
+        _isAudioCompleted.value = true
     }
+
 
     fun loadLessons() {
         _loading.value = true

@@ -23,18 +23,22 @@ import kotlinx.coroutines.delay
 
 
 @Composable
-fun LottieAnimationLoading(showDialog: MutableState<Boolean>, @RawRes lottieFileRes: Int) {
+fun LottieAnimationLoading(
+    showDialog: MutableState<Boolean>,
+    @RawRes lottieFileRes: Int,
+    isTransparentBackground: Boolean = true,
+    onAnimationEnd: (() -> Unit)? = null
+
+) {
     if (showDialog.value) {
         Dialog(
             onDismissRequest = { showDialog.value = false },
-            properties = DialogProperties(
-                usePlatformDefaultWidth = false
-            )
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
+                    .background(if (isTransparentBackground) Color.Transparent else Color.White) // Toggle background
                     .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -45,8 +49,9 @@ fun LottieAnimationLoading(showDialog: MutableState<Boolean>, @RawRes lottieFile
         // Delay to automatically dismiss the dialog after 2 seconds
         LaunchedEffect(key1 = showDialog.value) {
             if (showDialog.value) {
-                delay(2000)
+                delay(1500) // Animation duration
                 showDialog.value = false
+                onAnimationEnd?.invoke()
             }
         }
     }
@@ -57,3 +62,4 @@ fun LottieAnimationCompos(@RawRes lottieFileRes: Int, modifier: Modifier = Modif
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(lottieFileRes))
     LottieAnimation(composition, modifier = modifier)
 }
+

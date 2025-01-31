@@ -40,7 +40,7 @@ import kotlinx.coroutines.delay
 import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText as CommonExplanationText
 
 @Composable
-fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: () -> Unit) {
+fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: () -> Unit, showNextButton: Boolean,) {
     val showNextButton = remember { mutableStateOf(false) }
     val showDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }

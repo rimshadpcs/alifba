@@ -54,7 +54,9 @@ fun LazyChapterColumn(
 
             // Determine the icon based on completion and unlock status
             val iconId = when {
-                isCompleted -> R.drawable.tick
+                lesson.isCompleted && lesson.chapterType == "Lesson" -> R.drawable.tick
+                lesson.isCompleted && lesson.chapterType == "Story" -> R.drawable.book
+                lesson.isCompleted && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
                 isUnlocked && lesson.chapterType == "Story" -> R.drawable.book
                 isUnlocked && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
                 isUnlocked -> R.drawable.start

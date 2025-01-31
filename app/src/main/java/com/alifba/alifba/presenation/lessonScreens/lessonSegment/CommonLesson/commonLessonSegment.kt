@@ -4,11 +4,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,12 +30,18 @@ import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.white
 
 @Composable
-fun CommonLessonSegment(segment: LessonSegment.CommonLesson, onNextClicked: () -> Unit) {
-
-    Column(modifier =
-    Modifier.padding(16.dp)
+fun CommonLessonSegment(
+    segment: LessonSegment.CommonLesson,
+    onNextClicked: () -> Unit,
+    showNextButton: Boolean,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
     ) {
-
+        // Image
         Image(
             painter = rememberImagePainter(
                 data = segment.image,
@@ -45,33 +54,35 @@ fun CommonLessonSegment(segment: LessonSegment.CommonLesson, onNextClicked: () -
             contentDescription = "Image",
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.5f)
-                .padding(8.dp)
-                .align(Alignment.CenterHorizontally)
-                .clip(shape = RoundedCornerShape(64.dp)),
+                // Instead of forcing half the screen:
+                // .fillMaxHeight(0.5f)
+                .clip(shape = RoundedCornerShape(64.dp))
+                .padding(8.dp),
             contentScale = ContentScale.FillWidth
         )
 
-
+        // Explanation text
         CommonExplanationText(
             text = segment.description,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-
+            modifier = Modifier.align(Alignment.CenterHorizontally)
         )
-    }
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
+
+        // This spacer absorbs any remaining space. If there is not enough
+        // space, everything remains scrollable.
+        Spacer(modifier = Modifier.weight(1f))
+        if (showNextButton) {
+            // Bottom button
             CommonButton(
                 onClick = onNextClicked,
                 buttonText = "Next",
                 mainColor = lightPurple,
                 shadowColor = darkPurple,
-                textColor = white
-
+                textColor = white,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
             )
         }
     }
+}
+

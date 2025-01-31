@@ -29,6 +29,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +57,8 @@ import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.mediumpurple
 import com.alifba.alifba.ui_components.widgets.StripedProgressIndicator
 import kotlinx.coroutines.delay
+
+
 @Composable
 fun LessonScreen(
     lessonId: Int,
@@ -66,25 +69,35 @@ fun LessonScreen(
     chaptersViewModel: ChaptersViewModel = hiltViewModel()
 ) {
     val lesson = viewModel.getLessonContentByID(lessonId)
+
+    // States for dialogs
     val showCancelDialog = remember { mutableStateOf(false) }
     val showCompletionDialog = remember { mutableStateOf(false) }
 
-    // State for segment index and accumulated XP
+    // Observing audio states from ViewModel (used in some segments)
+    val isAudioPlaying by viewModel.isAudioPlaying.observeAsState(false)
+    val isAudioCompleted by viewModel.isAudioCompleted.observeAsState(false)
+
+    // State for current segment index and XP
     val currentSegmentIndex = remember { mutableStateOf(0) }
     val accumulatedXp = remember { mutableStateOf(0) }
 
+    // Observing loading & error states
     val lessons by viewModel.lessons.observeAsState(emptyList())
     val loading by viewModel.loading.observeAsState(false)
     val error by viewModel.error.observeAsState(null)
+
     val context = LocalContext.current
     LaunchedEffect(Unit) {
-        viewModel.initContext(context) // Pass the context to the ViewModel
+        viewModel.initContext(context) // Pass context once
         viewModel.loadLessons()
         chaptersViewModel.loadChapters(levelId)
     }
 
+    // For navigation to next chapter, if needed
     val nextChapterId = chaptersViewModel.getNextChapterId(lessonId)
 
+    // Show loading if needed
     if (loading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -92,6 +105,7 @@ fun LessonScreen(
         return
     }
 
+    // Show error if any
     error?.let {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -104,6 +118,7 @@ fun LessonScreen(
         return
     }
 
+    // Main content if lesson is found
     if (lesson != null) {
         Box(
             modifier = Modifier
@@ -112,8 +127,11 @@ fun LessonScreen(
         ) {
             Column {
                 val totalSegments = lesson.segments.size
-                val progress = if (totalSegments > 0) currentSegmentIndex.value / totalSegments.toFloat() else 0f
+                val progress = if (totalSegments > 0) {
+                    currentSegmentIndex.value / totalSegments.toFloat()
+                } else 0f
 
+                // Top row with progress bar & close button
                 Row(
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
@@ -128,9 +146,7 @@ fun LessonScreen(
                         stripeColor = mediumpurple
                     )
 
-                    IconButton(
-                        onClick = { showCancelDialog.value = true }
-                    ) {
+                    IconButton(onClick = { showCancelDialog.value = true }) {
                         CompositionLocalProvider(LocalContentColor provides Color.Unspecified) {
                             Image(
                                 painter = painterResource(id = R.drawable.close),
@@ -140,158 +156,160 @@ fun LessonScreen(
                     }
                 }
 
-                // Handle lesson segments
-                when (val currentSegment = lesson.segments[currentSegmentIndex.value]) {
-                    is LessonSegment.LetterTracing -> {
-                        DisposableEffect(currentSegment) {
-                            viewModel.stopAudio()
-                            viewModel.startAudio(currentSegment.speech.toString())
-                            onDispose { viewModel.stopAudio() }
+                // Force a fresh sub-composition whenever currentSegmentIndex changes
+                key(currentSegmentIndex.value) {
+                    // Render the correct segment
+                    val currentSegment = lesson.segments[currentSegmentIndex.value]
+                    when (currentSegment) {
+
+                        is LessonSegment.LetterTracing -> {
+                            DisposableEffect(currentSegment) {
+                                viewModel.stopAudio()
+                                viewModel.startAudio(currentSegment.speech.toString())
+                                onDispose { viewModel.stopAudio() }
+                            }
+
+                            LetterTracing(
+                                segment = currentSegment,
+                                onNextClicked = {
+                                    handleNextSegment(
+                                        currentSegmentIndex,
+                                        totalSegments,
+                                        accumulatedXp,
+                                        showCompletionDialog,
+                                        currentSegment
+                                    )
+                                }
+                            )
                         }
 
-                        LetterTracing(
-                            segment = currentSegment,
-                            onNextClicked = {
-                                handleNextSegment(
-                                    currentSegmentIndex,
-                                    totalSegments,
-                                    accumulatedXp,
-                                    showCompletionDialog,
-                                    currentSegment
-                                )
-                            }
-                        )
-                    }
-
-                    is LessonSegment.FlashCardExercise -> {
-                        FlashCardLessonSegment(
-                            segment = currentSegment,
-                            onNextClicked = {
-                                handleNextSegment(
-                                    currentSegmentIndex,
-                                    totalSegments,
-                                    accumulatedXp,
-                                    showCompletionDialog,
-                                    currentSegment
-                                )
-                            }
-                        )
-                    }
-
-                    is LessonSegment.CommonLesson -> {
-                        DisposableEffect(currentSegment) {
-                            viewModel.stopAudio()
-                            viewModel.startAudio(currentSegment.speech)
-                            onDispose { viewModel.stopAudio() }
+                        is LessonSegment.FlashCardExercise -> {
+                            FlashCardLessonSegment(
+                                segment = currentSegment,
+                                onNextClicked = {
+                                    handleNextSegment(
+                                        currentSegmentIndex,
+                                        totalSegments,
+                                        accumulatedXp,
+                                        showCompletionDialog,
+                                        currentSegment
+                                    )
+                                }
+                            )
                         }
 
-                        CommonLessonSegment(
-                            segment = currentSegment,
-                            onNextClicked = {
-                                handleNextSegment(
-                                    currentSegmentIndex,
-                                    totalSegments,
-                                    accumulatedXp,
-                                    showCompletionDialog,
-                                    currentSegment
-                                )
+                        is LessonSegment.CommonLesson -> {
+                            // Optionally handle audio for CommonLesson
+                            DisposableEffect(currentSegment) {
+                                viewModel.stopAudio()
+                                viewModel.startAudio(currentSegment.speech)
+                                onDispose { viewModel.stopAudio() }
                             }
-                        )
-                    }
 
-                    is LessonSegment.FillInTheBlanks -> {
-                        DisposableEffect(currentSegment) {
-                            viewModel.stopAudio()
-                            // currentSegment.speech might be a URL or local file path
-                            viewModel.startAudio(currentSegment.exercise.speech)
-                            onDispose { viewModel.stopAudio() }
+                            CommonLessonSegment(
+                                segment = currentSegment,
+                                showNextButton = isAudioCompleted, // if you want gating by audio
+                                onNextClicked = {
+                                    handleNextSegment(
+                                        currentSegmentIndex,
+                                        totalSegments,
+                                        accumulatedXp,
+                                        showCompletionDialog,
+                                        currentSegment
+                                    )
+                                }
+                            )
                         }
 
-                        FillInTheBlanksExerciseScreen(
-                            segment = currentSegment,
-                            onNextClicked = {
-                                viewModel.incrementQuizzesAttended()
-                                handleNextSegment(
-                                    currentSegmentIndex,
-                                    totalSegments,
-                                    accumulatedXp,
-                                    showCompletionDialog,
-                                    currentSegment)
+                        is LessonSegment.FillInTheBlanks -> {
+                            DisposableEffect(currentSegment) {
+                                viewModel.stopAudio()
+                                viewModel.startAudio(currentSegment.exercise.speech)
+                                onDispose { viewModel.stopAudio() }
                             }
-                        )
-                    }
 
-                    is LessonSegment.PictureMcqLesson -> {
-                        DisposableEffect(currentSegment) {
-                            viewModel.stopAudio()
-                            // currentSegment.speech might be a URL or local file path
-                            viewModel.startAudio(currentSegment.speech)
-                            onDispose { viewModel.stopAudio() }
+                            FillInTheBlanksExerciseScreen(
+                                segment = currentSegment,
+                                showNextButton = isAudioCompleted, // if you want audio gating
+                                onNextClicked = {
+                                    handleNextSegment(
+                                        currentSegmentIndex,
+                                        totalSegments,
+                                        accumulatedXp,
+                                        showCompletionDialog,
+                                        currentSegment
+                                    )
+                                }
+                            )
                         }
-                        PictureMcqSegment(
-                            segment = currentSegment,
-                            onNextClicked = {
-                                viewModel.incrementQuizzesAttended()
-                                handleNextSegment(
-                                    currentSegmentIndex,
-                                    totalSegments,
-                                    accumulatedXp,
-                                    showCompletionDialog,
-                                    currentSegment
-                                )
-                            }
-                        )
-                    }
 
-                    is LessonSegment.DragAndDropExperiment -> {
-                        DisposableEffect(currentSegment) {
-                            viewModel.stopAudio()
-                            // currentSegment.speech might be a URL or local file path
-//                            viewModel.startAudio(currentSegment.speech)
-                            onDispose { viewModel.stopAudio() }
+                        is LessonSegment.PictureMcqLesson -> {
+                            DisposableEffect(currentSegment) {
+                                viewModel.stopAudio()
+                                viewModel.startAudio(currentSegment.speech)
+                                onDispose { viewModel.stopAudio() }
+                            }
+                            PictureMcqSegment(
+                                segment = currentSegment,
+                                showNextButton = isAudioCompleted, // if you want audio gating
+                                onNextClicked = {
+                                    handleNextSegment(
+                                        currentSegmentIndex,
+                                        totalSegments,
+                                        accumulatedXp,
+                                        showCompletionDialog,
+                                        currentSegment
+                                    )
+                                }
+                            )
                         }
-                        DragDropLessonScreen(
-                            segment = currentSegment,
-                            onNextClicked = {
-                                viewModel.incrementQuizzesAttended()
-                                handleNextSegment(
-                                    currentSegmentIndex,
-                                    totalSegments,
-                                    accumulatedXp,
-                                    showCompletionDialog,
-                                    currentSegment
-                                )
-                            }
-                        )
-                    }
 
-                    is LessonSegment.TextMcqLesson -> {
-                        DisposableEffect(currentSegment) {
-                            viewModel.stopAudio()
-                            // currentSegment.speech might be a URL or local file path
-                            viewModel.startAudio(currentSegment.speech)
-                            onDispose { viewModel.stopAudio() }
+                        is LessonSegment.TextMcqLesson -> {
+                            DisposableEffect(currentSegment) {
+                                viewModel.stopAudio()
+                                viewModel.startAudio(currentSegment.speech)
+                                onDispose { viewModel.stopAudio() }
+                            }
+                            TextMcqSegment(
+                                segment = currentSegment,
+                                onNextClicked = {
+                                    handleNextSegment(
+                                        currentSegmentIndex,
+                                        totalSegments,
+                                        accumulatedXp,
+                                        showCompletionDialog,
+                                        currentSegment
+                                    )
+                                }
+                            )
                         }
-                        TextMcqSegment(
-                            segment = currentSegment,
-                            onNextClicked = {
-                                viewModel.incrementQuizzesAttended()
-                                handleNextSegment(
-                                    currentSegmentIndex,
-                                    totalSegments,
-                                    accumulatedXp,
-                                    showCompletionDialog,
-                                    currentSegment
-                                )
-                            }
-                        )
-                    }
 
-                    else -> {}
+                        is LessonSegment.DragAndDropExperiment -> {
+                            DisposableEffect(currentSegment) {
+                                viewModel.stopAudio()
+                                // If needed: viewModel.startAudio(currentSegment.speech)
+                                onDispose { viewModel.stopAudio() }
+                            }
+                            DragDropLessonScreen(
+                                segment = currentSegment,
+                                onNextClicked = {
+                                    viewModel.incrementQuizzesAttended()
+                                    handleNextSegment(
+                                        currentSegmentIndex,
+                                        totalSegments,
+                                        accumulatedXp,
+                                        showCompletionDialog,
+                                        currentSegment
+                                    )
+                                }
+                            )
+                        }
+
+                        else -> {}
+                    }
                 }
 
-
-                // Cancel dialog
+                // Cancel (Exit) dialog
                 if (showCancelDialog.value) {
                     AlertDialog(
                         onDismissRequest = { showCancelDialog.value = false },
@@ -316,7 +334,7 @@ fun LessonScreen(
                     )
                 }
 
-                // Completion dialog
+                // Completion dialog (if on last segment)
                 if (showCompletionDialog.value) {
                     LottieAnimationDialog(
                         showDialog = showCompletionDialog,
@@ -324,10 +342,12 @@ fun LessonScreen(
                     )
 
                     DisposableEffect(showCompletionDialog.value) {
+                        // Local "yay" audio if wanted
                         viewModel.startLocalAudio(R.raw.yay)
                         onDispose {}
                     }
 
+                    // Delay for the Lottie animation, then do completion logic
                     LaunchedEffect(showCompletionDialog.value) {
                         if (showCompletionDialog.value) {
                             delay(2000)
@@ -342,23 +362,20 @@ fun LessonScreen(
                             )
 
                             // (B) Mark the chapter as complete in Firestore
-                            // In LessonScreen.kt
                             chaptersViewModel.checkAndMarkChapterCompletion(
                                 chapterId = lesson.id.toString(),
-//                                totalLessons = totalSegments,
                                 levelId = levelId,
                                 earnedXP = accumulatedXp.value,
                                 chapterType = lesson.chapterType
                             )
 
-                            // Then navigate
+                            // Then navigate back
                             navigateToChapterScreen()
                             navController.navigate("lessonPathScreen/$levelId") {
                                 popUpTo("homeScreen") { inclusive = false }
                             }
                         }
                     }
-
                 }
             }
         }
@@ -369,8 +386,7 @@ fun LessonScreen(
     }
 }
 
-
-
+// Move your handleNextSegment function below as is:
 
 private fun handleNextSegment(
     currentSegmentIndex: MutableState<Int>,
@@ -382,28 +398,26 @@ private fun handleNextSegment(
     if (currentSegmentIndex.value < totalSegments - 1) {
         currentSegmentIndex.value++
 
-        // Add XP based on the segment type
+        // Add XP based on segment type
         when (currentSegment) {
             is LessonSegment.TextMcqLesson,
             is LessonSegment.PictureMcqLesson,
             is LessonSegment.FillInTheBlanks -> {
-                accumulatedXp.value += 5 // Add 5 XP for quizzes
+                accumulatedXp.value += 5 // 5 XP for quizzes
             }
             is LessonSegment.CommonLesson -> {
-                accumulatedXp.value += 1 // Add 1 XP for common lessons
+                accumulatedXp.value += 1 // 1 XP for common lessons
             }
-            is LessonSegment.LetterTracing->{
-                accumulatedXp.value +=10
+            is LessonSegment.LetterTracing-> {
+                accumulatedXp.value += 10
             }
-            is LessonSegment.FlashCardExercise->{
-                accumulatedXp.value +=1
+            is LessonSegment.FlashCardExercise-> {
+                accumulatedXp.value += 1
             }
-            else -> {
-                // No XP for other segment types
-            }
+            else -> { /* no XP */ }
         }
     } else {
-        showDialog.value = true // Mark lesson as completed
+        // Last segment finished => show completion
+        showDialog.value = true
     }
 }
-
