@@ -116,7 +116,7 @@ fun LevelInfoScreen(
             LevelInfoRow(
                 icon = R.drawable.chapters,
                 label = "Lessons",
-                count = levelSummary?.totalChapters ?: 0,
+                count = (levelSummary?.totalChapters ?: 0).toString(),
                 alifbaFont = alifbaFont
             )
 
@@ -124,7 +124,7 @@ fun LevelInfoScreen(
             LevelInfoRow(
                 icon = R.drawable.stories,
                 label = "Stories",
-                count = levelSummary?.totalStories ?: 0,
+                count = (levelSummary?.totalStories ?: 0).toString(),
                 alifbaFont = alifbaFont
             )
 
@@ -134,7 +134,7 @@ fun LevelInfoScreen(
             LevelInfoRow(
                 icon = R.drawable.quizzesnew,
                 label = "Quizzes",
-                count = levelSummary?.totalQuizzes ?: 0,
+                count = "10+",
                 alifbaFont = alifbaFont
             )
 
@@ -144,7 +144,7 @@ fun LevelInfoScreen(
             LevelInfoRow(
                 icon = R.drawable.alifbata,
                 label = "Activities",
-                count = levelSummary?.totalActivities ?: 0,
+                count = (levelSummary?.totalActivities ?: 0).toString(),
                 alifbaFont = alifbaFont
             )
         }
@@ -159,8 +159,9 @@ fun LevelInfoScreen(
 fun LevelInfoRow(
     icon: Int,
     label: String,
-    count: Int,
-    alifbaFont: FontFamily
+    count: String,
+    alifbaFont: FontFamily,
+    showPlus: Boolean = false
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -173,7 +174,7 @@ fun LevelInfoRow(
             modifier = Modifier.size(64.dp)
         )
         Text(
-            text = "$label: $count",
+            text = "$label: ${count}${if (showPlus) "+" else ""}",
             fontSize = 24.sp,
             fontFamily = alifbaFont,
             textAlign = TextAlign.Center,

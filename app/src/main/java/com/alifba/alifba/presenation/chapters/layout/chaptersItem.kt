@@ -92,7 +92,9 @@ fun LessonPathItems(
                 contentAlignment = Alignment.Center
             ) {
                 val iconId = when {
-                    lesson.isCompleted -> R.drawable.tick
+                    lesson.isCompleted && lesson.chapterType == "Story" -> R.drawable.book
+                    lesson.isCompleted && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
+                    lesson.isCompleted && lesson.chapterType == "Lesson" -> R.drawable.tick
                     lesson.isUnlocked && lesson.chapterType == "Story" -> R.drawable.book
                     lesson.isUnlocked && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
                     lesson.isUnlocked -> R.drawable.start

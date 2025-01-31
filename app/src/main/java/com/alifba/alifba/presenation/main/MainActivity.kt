@@ -59,64 +59,54 @@ class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
     private val chaptersViewModel: ChaptersViewModel by viewModels()
 
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installSplashScreen()
         val onboardingDataStore = OnboardingDataStoreManager(applicationContext)
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         actionBar?.hide()
+
         setContent {
             val navController = rememberNavController()
             val firebaseUser = FirebaseAuth.getInstance().currentUser
-            var startDestination by remember { mutableStateOf<String?>(null) }
+            var startDestination by remember { mutableStateOf("login") } // Default to login
             var isSplashScreenVisible by remember { mutableStateOf(true) }
 
             LaunchedEffect(firebaseUser) {
-                // 1) If the user is null, they must log in
                 if (firebaseUser == null) {
                     startDestination = "login"
                 } else {
-                    // 2) Wait until userId is *not* null or empty in DataStore
                     var userId: String? = null
-                    // We'll poll or read from DataStore until we get a real userId
                     while (userId.isNullOrEmpty()) {
                         userId = authViewModel.dataStoreManager.userId.first()
-                        delay(100) // Wait a bit, or you can do a more sophisticated approach
+                        delay(100)
                     }
 
-                    // 3) Now userId is definitely not null or empty
                     val hasCompletedOnboarding = onboardingDataStore.hasCompletedOnboarding.first()
-                    val hasProfiles = authViewModel.checkForChildProfiles()  // safely reads userId from DataStore
+                    val hasProfiles = authViewModel.checkForChildProfiles()
 
-                    // 4) Decide the start destination
                     startDestination = when {
-                        !hasCompletedOnboarding -> "onboarding"
+                        !hasCompletedOnboarding -> "onboarding"  // ✅ Ensure onboarding is reachable
                         !hasProfiles -> "createProfile"
-                        else -> "home"
+                        else -> "homeScreen"
                     }
                 }
 
-                // 5) Give your splash screen at least 1 second, if desired
-                delay(1000)
+                delay(1000) // Ensure splash animation completes
                 isSplashScreenVisible = false
             }
 
-
             Box(modifier = Modifier.fillMaxSize()) {
-                if (startDestination != null && !isSplashScreenVisible) {
+                if (!isSplashScreenVisible) {
                     NavHost(
                         navController = navController,
-                        startDestination = startDestination!!,
+                        startDestination = startDestination,
                         modifier = Modifier.fillMaxSize()
                     ) {
                         composable("login") {
-                            LoginScreen(
-                                viewModel = authViewModel,
-                                navController = navController
-                            )
+                            LoginScreen(viewModel = authViewModel, navController = navController)
                         }
-                        composable("onboarding") {
+                        composable("onboarding") {  // ✅ Ensure this exists
                             OnboardingScreen(
                                 onComplete = {
                                     lifecycleScope.launch {
@@ -131,12 +121,8 @@ class MainActivity : ComponentActivity() {
                         composable("createProfile") {
                             ProfileRegistration(navController)
                         }
-                        composable("home") {
-                            AlifbaMainScreen(
-                                lessonScreenViewModel,
-                                homeViewModel,
-                                chaptersViewModel
-                            )
+                        composable("homeScreen") {
+                            AlifbaMainScreen(lessonScreenViewModel, homeViewModel, chaptersViewModel)
                         }
                     }
                 }
@@ -152,26 +138,26 @@ class MainActivity : ComponentActivity() {
 
 
 
-
-    @Composable
-    fun SplashScreenDummy(modifier: Modifier = Modifier) {
+@Composable
+fun SplashScreenDummy(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(color = Color.White) // Ensure white background
+    ) {
+        // Center the Lottie animation
         Box(
-            modifier = modifier
-                .background(color = Color.White)
+            modifier = Modifier
+                .size(100.dp)
+                .align(Alignment.Center)
         ) {
-            // Center the Lottie animation
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .align(Alignment.Center)
-            ) {
-                LottieAnimationLoading(
-                    showDialog = remember { mutableStateOf(true) },
-                    lottieFileRes = R.raw.loading_lottie
-                )
-            }
+            LottieAnimationLoading(
+                showDialog = remember { mutableStateOf(true) },
+                lottieFileRes = R.raw.loading_lottie,
+                isTransparentBackground = false // White background for splash screen
+            )
         }
     }
+}
+
 
 
     @Preview(showBackground = true)

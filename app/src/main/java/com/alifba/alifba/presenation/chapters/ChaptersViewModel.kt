@@ -254,6 +254,7 @@ class ChaptersViewModel @Inject constructor(
                     // Count required and completed chapters and stories
                     val requiredChapters = levelContents.count { it.second == "Lesson" }
                     val requiredStories = levelContents.count { it.second == "Story" }
+                    val requiredActivities = levelContents.count{it.second == "Alphabet"}
 
                     val completedChapters = userSnapshot.get("chapters_completed") as? List<String> ?: emptyList()
                     val completedStories = userSnapshot.get("stories_completed") as? List<String> ?: emptyList()
@@ -348,63 +349,6 @@ class ChaptersViewModel @Inject constructor(
         }
     }
 
-//    fun getLevelSummary(levelId: String) {
-//        viewModelScope.launch {
-//            try {
-//                val userId = dataStoreManager.userId.first()
-//                if (!userId.isNullOrEmpty()) {
-//                    val levelPath = "lessons/level$levelId"
-//
-//                    // Fetch the level document
-//                    val levelDoc = fireStore.document(levelPath).get().await()
-//
-//                    if (levelDoc.exists()) {
-//                        val levelName = levelDoc.getString("name") ?: "Level $levelId"
-//                        val levelDescription = levelDoc.getString("description") ?: "Basic concepts of Islam and stories from the Quran"
-//
-//                        // Fetch chapters for the level
-//                        val chaptersSnapshot = fireStore.collection("$levelPath/chapters").get().await()
-//
-//                        if (!chaptersSnapshot.isEmpty) {
-//                            var totalChapters = 0
-//                            var totalStories = 0
-//                            var totalQuizzes = 0
-//                            var totalActivities = 0
-//
-//                            chaptersSnapshot.documents.forEach { doc ->
-//                                when (doc.getString("chapterType")) {
-//                                    "Lesson" -> totalChapters++
-//                                    "Story" -> totalStories++
-//                                    "Quiz" -> totalQuizzes++
-//                                    "Activity" -> totalActivities++
-//                                }
-//                            }
-//
-//                            val summary = LevelSummary(
-//                                levelName = levelName,
-//                                levelDescription = levelDescription,
-//                                totalChapters = totalChapters,
-//                                totalStories = totalStories,
-//                                totalQuizzes = totalQuizzes,
-//                                totalActivities = totalActivities
-//                            )
-//
-//                            _levelSummary.value = summary
-//                        } else {
-//                            Log.e("LevelSummary", "No chapters found for level $levelId")
-//                            _levelSummary.value = null
-//                        }
-//                    } else {
-//                        Log.e("LevelSummary", "Level document not found for levelId: $levelId")
-//                        _levelSummary.value = null
-//                    }
-//                }
-//            } catch (e: Exception) {
-//                Log.e("LevelSummary", "Error getting level summary for levelID: $levelId", e)
-//                _levelSummary.value = null
-//            }
-//        }
-//    }
 
     fun getLevelSummary(levelId: String) {
         viewModelScope.launch {
@@ -430,7 +374,7 @@ class ChaptersViewModel @Inject constructor(
                             "Lesson" -> totalLessons++
                             "Story" -> totalStories++
                             "Quiz" -> totalQuizzes++
-                            "Activity" -> totalActivities++
+                            "Alphabet" -> totalActivities++
                         }
                     }
 

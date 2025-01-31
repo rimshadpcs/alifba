@@ -2,9 +2,11 @@ package com.alifba.alifba.presenation.Login
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
@@ -23,9 +25,16 @@ import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Card
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -38,8 +47,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.theme.black
 import com.alifba.alifba.ui_components.theme.darkPink
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
@@ -49,6 +60,7 @@ import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
 fun ProfileRegistration(
     navController: NavController
 ) {
+    var isLoading by remember { mutableStateOf(false) } // Loading state
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val halfScreenHeight = screenHeight / 2
     val alifbaFont: FontFamily = FontFamily(
@@ -61,28 +73,27 @@ fun ProfileRegistration(
     var selectedAge by remember { mutableStateOf<Int?>(null) }
     var selectedAvatar by remember { mutableStateOf(0) }
     var selectedAvatarName by remember { mutableStateOf("") }
+    var navigateTo by remember { mutableStateOf<String?>(null) }
 
     val profileCreationState by authViewModel.profileCreationState.collectAsState()
+
 
 
     LaunchedEffect(profileCreationState) {
         when (profileCreationState) {
             is ProfileCreationState.Success -> {
-                // Navigate to home screen
-                navController.navigate("home") {
+                Toast.makeText(context, "Registration Successful!", Toast.LENGTH_SHORT).show()
+
+                // Navigate only once after registration success
+                navController.navigate("homeScreen") {
                     popUpTo("createProfile") { inclusive = true }
                 }
-                Toast.makeText(context, "Registration Successful!", Toast.LENGTH_SHORT).show()
             }
-
             is ProfileCreationState.Error -> {
                 val errorMessage = (profileCreationState as ProfileCreationState.Error).message
                 Toast.makeText(context, "Error: $errorMessage", Toast.LENGTH_SHORT).show()
             }
-
-            else -> {
-                // Do nothing for Idle state
-            }
+            else -> {}
         }
     }
     Column(
@@ -127,39 +138,45 @@ fun ProfileRegistration(
                 .fillMaxWidth()
         )
         // Remaining Content
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .background(white),
-            //verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Name Input Field
-            NameInputField(parentName = parentName, onParentNameChange = { parentName = it },
-                childName = childName, onChildNameChange = { childName = it })
+        Column(modifier = Modifier.padding(16.dp)) {
+            CustomInputField(value = parentName, onValueChange = { parentName = it }, labelText = "Parent Name")
+            CustomInputField(value = childName, onValueChange = { childName = it }, labelText = "Child Name")
 
-            // Age Buttons
-            AgeSelectionButtons(onAgeSelected = { selectedAge = it })
-            Spacer(modifier = Modifier.height(2.dp))
+            AgeSelectionCards { age ->
+                selectedAge = age
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
             CommonButton(
                 onClick = {
-//                    sendProfileDataToFireStore(
-//                        parentName,
-//                        childName,
-//                        selectedAge,
-//                        selectedAvatarName,
-//                        da
-//                        navController,
-//                        context
-//                    )
-                    authViewModel.sendProfileDataToFireStore(parentName, childName, selectedAge, selectedAvatarName)
-                    Log.d("ProfileRegistration", "Selected Avatar Name: $selectedAvatarName")
+                    if (!isLoading) {
+                        isLoading = true
+                        authViewModel.sendProfileDataToFireStore(parentName, childName, selectedAge, selectedAvatarName)
+                    }
                 },
-                buttonText = "Submit",
-                shadowColor = darkPink,
-                mainColor = lightPink,
+                buttonText = if (isLoading) "Registering..." else "Register",
+                mainColor = navyBlue,
+                shadowColor = lightNavyBlue,
                 textColor = white
             )
+
+            if (isLoading) {
+                LottieAnimationLoading(
+                    showDialog = remember { mutableStateOf(true) },
+                    lottieFileRes = R.raw.loading_lottie,
+                    isTransparentBackground = true,
+                    onAnimationEnd = {
+                        navigateTo?.let { route ->
+                            navController.navigate(route) {
+                                popUpTo("createProfile") { inclusive = true }
+                            }
+                            navigateTo = null
+                        }
+                    }
+                )
+            }
+
+
         }
     }
 }
@@ -320,51 +337,108 @@ fun NameInputField(parentName: String, onParentNameChange: (String) -> Unit,
     CustomInputField(value = parentName, onValueChange = onParentNameChange, labelText = "Enter parent's name")
     CustomInputField(value = childName, onValueChange = onChildNameChange, labelText = "Enter Child's Name")
 }
-
-@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
-fun AgeSelectionButtons(onAgeSelected: (Int) -> Unit) {
-    val ageRange = (4..13).toList()
+fun AgeSelectionCards(onAgeSelected: (Int) -> Unit) {
     var selectedAge by remember { mutableStateOf<Int?>(null) }
-    val alifbaFont = FontFamily(
+    val alifbaFont: FontFamily = FontFamily(
         Font(R.font.more_sugar_regular, FontWeight.SemiBold)
     )
-    Text(
-        text = "Select child's age",
-        style = MaterialTheme.typography.h6,
-        fontFamily = alifbaFont,
-        color = navyBlue,
-        textAlign = TextAlign.Center,
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    )
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(
-            space = 8.dp,
-            alignment = Alignment.CenterHorizontally
-        ),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 16.dp)
     ) {
-        ageRange.forEach { age ->
-            Button(
-                onClick = { selectedAge = age
-                    onAgeSelected(age) },
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = if (selectedAge == age) Color.White else navyBlue,
-                    contentColor = if (selectedAge == age) navyBlue else Color.White
-                ),
-                modifier = Modifier.width(60.dp)
+        Text(
+            text = "How old is your child?",
+            style = MaterialTheme.typography.subtitle1,
+            fontFamily = alifbaFont,
+            color = navyBlue,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Box(modifier = Modifier.fillMaxWidth()) {
+            // Scroll Indicators
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "$age",
-                    fontFamily = alifbaFont
+                // Left Indicator
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowLeft,
+                    contentDescription = "Scroll Left",
+                    tint = lightNavyBlue.copy(alpha = 0.5f),
+                    modifier = Modifier.size(24.dp)
                 )
 
+                // Right Indicator
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight,
+                    contentDescription = "Scroll Right",
+                    tint = lightNavyBlue.copy(alpha = 0.5f),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            // Age Cards
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 32.dp)
+            ) {
+                items(10) { index ->
+                    val age = index + 4
+                    AgeCard(
+                        age = age,
+                        isSelected = selectedAge == age,
+                        onSelect = {
+                            selectedAge = age
+                            onAgeSelected(age)
+                        }
+                    )
+                }
             }
         }
     }
 }
 
-
+@Composable
+private fun AgeCard(
+    age: Int,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(60.dp)
+            .height(70.dp)
+            .clickable(onClick = onSelect),
+        backgroundColor = if (isSelected) navyBlue else white,
+        elevation = if (isSelected) 8.dp else 4.dp,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(
+            width = 2.dp,
+            color = if (isSelected) lightNavyBlue else navyBlue.copy(alpha = 0.3f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "$age",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) white else navyBlue
+            )
+            Text(
+                text = "years",
+                fontSize = 10.sp,
+                color = if (isSelected) white else navyBlue.copy(alpha = 0.7f)
+            )
+        }
+    }
+}

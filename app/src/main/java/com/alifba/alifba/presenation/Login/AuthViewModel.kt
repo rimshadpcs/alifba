@@ -139,45 +139,32 @@ class AuthViewModel @Inject constructor(
         val db = FirebaseFirestore.getInstance()
         val email = FirebaseAuth.getInstance().currentUser?.email ?: return
 
+        if (_profileCreationState.value is ProfileCreationState.Success) {
+            Log.d("Firestore", "Profile already created, ignoring duplicate click")
+            return
+        }
+
+        _profileCreationState.value = ProfileCreationState.Idle  // Track progress
+
         val settingsRef = db.collection("settings").document("userCounter")
 
         settingsRef.get().addOnSuccessListener { documentSnapshot ->
             if (!documentSnapshot.exists()) {
-                // Create the "userCounter" document with initial "currentId"
                 settingsRef.set(mapOf("currentId" to 10000L)).addOnSuccessListener {
-                    // Proceed with the transaction
                     proceedWithTransaction(
-                        db,
-                        settingsRef,
-                        email,
-                        parentName,
-                        childName,
-                        selectedAge,
-                        selectedAvatarName
+                        db, settingsRef, email, parentName, childName, selectedAge, selectedAvatarName
                     )
-                }.addOnFailureListener { e ->
-                    Log.w("Firestore", "Error creating settings/userCounter document.", e)
-                    _profileCreationState.value =
-                        ProfileCreationState.Error(e.localizedMessage ?: "Unknown error")
                 }
             } else {
-                // Proceed with the transaction
                 proceedWithTransaction(
-                    db,
-                    settingsRef,
-                    email,
-                    parentName,
-                    childName,
-                    selectedAge,
-                    selectedAvatarName
+                    db, settingsRef, email, parentName, childName, selectedAge, selectedAvatarName
                 )
             }
         }.addOnFailureListener { e ->
-            Log.w("Firestore", "Error checking settings/userCounter document.", e)
-            _profileCreationState.value =
-                ProfileCreationState.Error(e.localizedMessage ?: "Unknown error")
+            _profileCreationState.value = ProfileCreationState.Error(e.localizedMessage ?: "Unknown error")
         }
     }
+
 
     private fun proceedWithTransaction(
         db: FirebaseFirestore,
