@@ -117,31 +117,35 @@ class LessonScreenViewModel  @Inject constructor(
     }
 
 
-    fun loadLessons() {
+    fun loadLessons(levelId: String) {
         _loading.value = true
-        _error.value = null  // Reset error before a new attempt
-        Log.d("LessonScreenViewModel", "Loading lessons from Firestore...")
+        _error.value = null
+
+        Log.d("LessonScreenViewModel", "Fetching lessons for: $levelId")
 
         viewModelScope.launch {
             try {
-                val lessonList = getLessonsUseCase()
+                val lessonList = getLessonsUseCase.invoke(levelId)
                 _lessons.value = lessonList
                 _loading.value = false
-                Log.d("LessonScreenViewModel", "Successfully loaded lessons: ${lessonList.size} lessons.")
+
+                Log.d("LessonScreenViewModel", "Loaded ${lessonList.size} lessons for $levelId") // ✅ Debug log
+
             } catch (e: Exception) {
-                _error.value = "Failed to load lessons."
+                _error.value = "Failed to load lessons for $levelId."
                 _loading.value = false
-                Log.e("LessonScreenViewModel", "Error loading lessons from Firestore.", e)
+                Log.e("LessonScreenViewModel", "Error loading lessons: ${e.localizedMessage}")
             }
         }
     }
+
 
     fun getLessonContentByID(id: Int): Lesson? {
         val lesson = _lessons.value?.find { it.id == id }
         if (lesson != null) {
             Log.d("LessonScreenViewModel", "Found lesson with ID: $id")
         } else {
-            Log.w("LessonScreenViewModel", "Lesson with ID: $id not found.")
+            Log.w("LessonScreenViewModel", "Lesson with ID: $id not found in current list.")
         }
         return lesson
     }

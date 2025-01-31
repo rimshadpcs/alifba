@@ -1,6 +1,7 @@
 package com.alifba.alifba.utils
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.google.firebase.firestore.FirebaseFirestore
@@ -13,25 +14,33 @@ class DownloadLessonWorker(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
+
         val chapterId = inputData.getInt("chapter_id", -1)
-        if (chapterId == -1) return Result.failure()
+        val levelId = inputData.getString("level_id")
+        if (chapterId == -1 || levelId.isNullOrBlank()) return Result.failure()
 
         // Fetch chapter data from Firestore and download resources
-        val firestore = FirebaseFirestore.getInstance()
-        val chapter = firestore.collection("lessons").document("level1")
-            .collection("chapters").document(chapterId.toString())
-            .get().await()
+        return try {
+            val firestore = FirebaseFirestore.getInstance()
+            val chapterDoc = firestore.collection("lessons")
+                .document(levelId)
+                .collection("chapters")
+                .document(chapterId.toString())
+                .get().await()
 
-        val imageUrl = chapter.getString("imageUrl")
-        val audioUrl = chapter.getString("audioUrl")
+            val imageUrl = chapterDoc.getString("imageUrl")
+            val audioUrl = chapterDoc.getString("audioUrl")
 
-        // Download image and audio
-        imageUrl?.let { downloadFile(it, "chapter_image_$chapterId.jpg") }
-        audioUrl?.let { downloadFile(it, "chapter_audio_$chapterId.mp3") }
+            // Download image and audio
+            imageUrl?.let { downloadFile(it, "chapter_image_$chapterId.jpg") }
+            audioUrl?.let { downloadFile(it, "chapter_audio_$chapterId.mp3") }
 
-        return Result.success()
+            Result.success()
+        } catch (e: Exception) {
+            Log.e("DownloadLessonWorker", "Download failed", e)
+            Result.failure()
+        }
     }
-
     private suspend fun downloadFile(fileUrl: String, fileName: String) {
         val url = URL(fileUrl)
         val connection = url.openConnection()

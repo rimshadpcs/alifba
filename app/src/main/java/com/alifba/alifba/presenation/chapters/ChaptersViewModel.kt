@@ -48,46 +48,51 @@ class ChaptersViewModel @Inject constructor(
     private val _levelName = MutableStateFlow<String?>(null)
 
     fun loadChapters(levelId: String) {
-        val levelPath = "lessons/level$levelId/chapters"
+        val levelPath = "lessons/$levelId/chapters"  // ✅ Correct Firestore path
+
+        Log.d("ChaptersViewModel", "Fetching chapters for level: $levelId from $levelPath")  // ✅ Debug log
 
         viewModelScope.launch {
             try {
                 val userId = dataStoreManager.userId.first()
-                if (!userId.isNullOrEmpty()) {
-                    // First get the chapters
-                    val snapshot = fireStore.collection(levelPath).get().await()
-
-                    // Then get the user's completed chapters
-                    val userDoc = fireStore.collection("users").document(userId).get().await()
-                    val completedChapters = userDoc.get("chapters_completed") as? List<String> ?: emptyList()
-                    val completedStories = userDoc.get("stories_completed") as? List<String> ?: emptyList()
-
-                    // Combine both types of completed content
-                    val allCompleted = completedChapters + completedStories
-
-                    if (!snapshot.isEmpty) {
-                        val chapters = snapshot.documents.mapIndexed { index, doc ->
-                            Chapter(
-                                id = doc.getLong("id")?.toInt() ?: 0,
-                                title = doc.getString("title") ?: "",
-                                iconResId = R.drawable.start,
-                                isCompleted = false,
-                                isLocked = index != 0,
-                                isUnlocked = index == 0,
-                                chapterType = doc.getString("chapterType") ?: ""
-                            )
-                        }
-
-                        // Update states based on completion status
-                        val updatedChapters = updateChapterStates(allCompleted, chapters)
-                        _chapters.value = updatedChapters
-                    }
+                if (userId.isNullOrEmpty()) {
+                    Log.e("ChaptersViewModel", "User ID is null or empty")
+                    return@launch
                 }
+
+                // Fetch chapters from Firestore
+                val snapshot = fireStore.collection(levelPath).get().await()
+                Log.d("ChaptersViewModel", "Fetched ${snapshot.documents.size} chapters") // ✅ Debugging log
+
+                // Fetch completed chapters from user data
+                val userDoc = fireStore.collection("users").document(userId).get().await()
+                val completedChapters = userDoc.get("chapters_completed") as? List<String> ?: emptyList()
+
+                if (snapshot.isEmpty) {
+                    Log.e("ChaptersViewModel", "No chapters found in Firestore for $levelId")
+                }
+
+                val chapters = snapshot.documents.map { doc ->
+                    Chapter(
+                        id = doc.getLong("id")?.toInt() ?: 0,
+                        title = doc.getString("title") ?: "Untitled",
+                        iconResId = R.drawable.start,
+                        isCompleted = completedChapters.contains(doc.id),
+                        isLocked = false, // Set unlock logic later
+                        isUnlocked = true, // First chapter always unlocked
+                        chapterType = doc.getString("chapterType") ?: ""
+                    )
+                }
+
+                _chapters.value = chapters
+                Log.d("ChaptersViewModel", "Loaded ${chapters.size} chapters")  // ✅ Debugging log
+
             } catch (e: Exception) {
-                Log.e("ChaptersViewModel", "Error loading chapters for levelID: $levelId")
+                Log.e("ChaptersViewModel", "Error fetching chapters: ${e.localizedMessage}")
             }
         }
     }
+
     fun markChapterCompleted(chapterId: Int, nextChapterId: Int?) {
         viewModelScope.launch {
             dataStoreManager.markCompletedChapters(chapterId, nextChapterId)

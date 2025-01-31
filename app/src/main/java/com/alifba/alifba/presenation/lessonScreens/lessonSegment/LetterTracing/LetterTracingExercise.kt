@@ -274,7 +274,7 @@ fun LetterTracingExercise(
             letterShape.dots.forEach { dot ->
                 val adjustedCenter = dot.center + translation.value
                 drawCircle(
-                    color = if (dot.isTouched) Color.Green else Color.LightGray,
+                    color = if (dot.isTouched) Color.Black else Color.LightGray,
                     radius = dot.radius,
                     center = adjustedCenter
                 )

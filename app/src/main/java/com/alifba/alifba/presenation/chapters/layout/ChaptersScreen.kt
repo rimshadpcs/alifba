@@ -49,12 +49,13 @@ fun ChaptersScreen(
 //    val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId.toIntOrNull() }
 //    val levelImage = levelItem?.levelImage ?: R.drawable.default_level_image // Provide a default image
 
-    val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId.toIntOrNull() }
+    val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId }
     val levelImage = levelItem?.image ?: R.drawable.levelone
 //
 
     // 1) Load chapters on first display
     LaunchedEffect(levelId) {
+        Log.d("ChaptersScreen", "Fetching chapters for level: $levelId")  // ✅ Add log
         chaptersViewModel.loadChapters(levelId)
     }
 
@@ -198,6 +199,7 @@ fun ChapterDownloadBottomSheetContent(
         WorkManager.getInstance(context).getWorkInfoByIdLiveData(it).observeAsState()
     }?.value
 
+    val chapterId = chapter.id
     // Example custom font
     val alifbaFont = FontFamily(
         Font(R.font.more_sugar_regular, FontWeight.SemiBold)
@@ -238,8 +240,8 @@ fun ChapterDownloadBottomSheetContent(
             }
             WorkInfo.State.SUCCEEDED -> {
                 // Once succeeded, navigate automatically
-                LaunchedEffect(chapter.id) {
-                    navController.navigate("lessonScreen/${chapter.id}/$levelId")
+                LaunchedEffect(chapterId) {
+                    navController.navigate("lessonScreen/$chapterId/$levelId")
                     onDownloadCompleted()
                 }
             }
@@ -253,7 +255,7 @@ fun ChapterDownloadBottomSheetContent(
                     shadowColor = navyBlue,
                     textColor = Color.White,
                     onClick = {
-                        val newWorkId = enqueueChapterDownload(context, chapter)
+                        val newWorkId = enqueueChapterDownload(context, chapter,levelId)
                         workId.value = newWorkId
                     }
                 )
@@ -267,9 +269,12 @@ fun ChapterDownloadBottomSheetContent(
 /**
  * Enqueue your worker for downloading.
  */
-fun enqueueChapterDownload(context: Context, chapter: Chapter): UUID {
+fun enqueueChapterDownload(context: Context, chapter: Chapter, levelId: String): UUID {
     val downloadWorkRequest = OneTimeWorkRequestBuilder<DownloadLessonWorker>()
-        .setInputData(workDataOf("chapter_id" to chapter.id))
+        .setInputData(workDataOf(
+            "chapter_id" to chapter.id,
+            "level_id" to levelId
+        ))
         .build()
 
     WorkManager.getInstance(context).enqueue(downloadWorkRequest)
