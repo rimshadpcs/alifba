@@ -361,9 +361,11 @@ class ChaptersViewModel @Inject constructor(
                 val userId = dataStoreManager.userId.first()
                 if (userId.isNullOrEmpty()) return@launch
 
-                val levelPath = "lessons/level$levelId"
+                // Remove the "level" prefix from the path since levelId already includes it
+                val levelPath = "lessons/$levelId"  // Changed from "lessons/level$levelId"
                 val levelDoc = fireStore.document(levelPath).get().await()
                 val description = levelDoc.getString("description") ?: "No description available"
+
                 // Fetch all chapters for the level
                 val chaptersSnapshot = fireStore.collection("$levelPath/chapters").get().await()
 
@@ -383,9 +385,17 @@ class ChaptersViewModel @Inject constructor(
                         }
                     }
 
+                    Log.d("LevelSummary", """
+                    Level: $levelId
+                    Lessons: $totalLessons
+                    Stories: $totalStories
+                    Activities: $totalActivities
+                    Quizzes: $totalQuizzes
+                """.trimIndent())
+
                     // Update LevelSummary
                     val summary = LevelSummary(
-                        levelName = "Level $levelId",
+                        levelName = levelId,
                         levelDescription = description,
                         totalChapters = totalLessons,
                         totalStories = totalStories,
@@ -395,6 +405,7 @@ class ChaptersViewModel @Inject constructor(
 
                     _levelSummary.value = summary
                 } else {
+                    Log.e("LevelSummary", "No chapters found for level: $levelId")
                     _levelSummary.value = null
                 }
             } catch (e: Exception) {

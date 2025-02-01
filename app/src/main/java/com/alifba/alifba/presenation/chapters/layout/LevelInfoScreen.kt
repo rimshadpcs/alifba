@@ -81,13 +81,12 @@ fun LevelInfoScreen(
             )
 
             Text(
-                text = "Level ${levelId}",
+                text = levelId.replace("level", "Level "),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = navyBlue,
                 fontFamily = alifbaFont
             )
-
             // Empty box for symmetry
             Box(modifier = Modifier.size(48.dp))
         }
@@ -150,7 +149,6 @@ fun LevelInfoScreen(
         }
 
     }
-
 
 }
 

@@ -238,6 +238,7 @@ fun LessonContent(
                             segment = currentSegment,
                             showNextButton = isAudioCompleted, // if you want audio gating
                             onNextClicked = {
+                                viewModel.incrementQuizzesAttended()
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
@@ -259,6 +260,7 @@ fun LessonContent(
                             segment = currentSegment,
                             showNextButton = isAudioCompleted, // if you want audio gating
                             onNextClicked = {
+                                viewModel.incrementQuizzesAttended()
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
@@ -279,6 +281,7 @@ fun LessonContent(
                         TextMcqSegment(
                             segment = currentSegment,
                             onNextClicked = {
+                                viewModel.incrementQuizzesAttended()
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
@@ -399,8 +402,8 @@ private fun handleNextSegment(
 
         // Add XP based on segment type
         when (currentSegment) {
-            is LessonSegment.TextMcqLesson,
-            is LessonSegment.PictureMcqLesson,
+            is LessonSegment.TextMcqLesson,-> accumulatedXp.value += 5
+            is LessonSegment.PictureMcqLesson,-> accumulatedXp.value += 5
             is LessonSegment.FillInTheBlanks -> accumulatedXp.value += 5
             is LessonSegment.CommonLesson -> accumulatedXp.value += 1
             is LessonSegment.LetterTracing -> accumulatedXp.value += 10
