@@ -21,13 +21,16 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.work.*
 import com.alifba.alifba.R
+import com.alifba.alifba.data.db.DatabaseProvider
 import com.alifba.alifba.presenation.chapters.layout.LazyChapterColumn
 import com.alifba.alifba.presenation.chapters.models.Chapter
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.home.layout.TopBarIcons
+import com.alifba.alifba.presenation.lessonScreens.domain.repository.LessonCacheRepository
 import com.alifba.alifba.ui_components.dialogs.BadgeEarnedSnackBar
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
+import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.utils.DownloadLessonWorker
 import kotlinx.coroutines.launch
@@ -41,30 +44,29 @@ fun ChaptersScreen(
     chaptersViewModel: ChaptersViewModel,
     homeViewModel: HomeViewModel
 ) {
-    // For the bottom sheet
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     val context = LocalContext.current
 
-//    val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId.toIntOrNull() }
-//    val levelImage = levelItem?.levelImage ?: R.drawable.default_level_image // Provide a default image
-
     val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId }
     val levelImage = levelItem?.image ?: R.drawable.levelone
-//
 
     // 1) Load chapters on first display
     LaunchedEffect(levelId) {
-        Log.d("ChaptersScreen", "Fetching chapters for level: $levelId")  // ✅ Add log
+        Log.d("ChaptersScreen", "Fetching chapters for level: $levelId")
         chaptersViewModel.loadChapters(levelId)
     }
 
-    // 2) Observe data
+    // 2) Observe chapters from ViewModel
     val chapters by chaptersViewModel.chapters.observeAsState(initial = emptyList())
+
+    // 3) Observe badges
     val earnedBadge by chaptersViewModel.badgeEarnedEvent.collectAsState()
+
+    // Track the currently selected chapter (for the bottom sheet)
     var selectedChapter by remember { mutableStateOf<Chapter?>(null) }
 
-    // 3) If bottom sheet is open, display it
+    // If a chapter is selected, show a bottom sheet
     if (selectedChapter != null) {
         ModalBottomSheet(
             onDismissRequest = {
@@ -77,14 +79,19 @@ fun ChaptersScreen(
             containerColor = Color.White,
         ) {
             selectedChapter?.let { chapter ->
+                // We'll pass the same repository the UI uses, for reading DB
                 ChapterDownloadBottomSheetContent(
                     chapter = chapter,
                     context = context,
                     levelId = levelId,
                     navController = navController,
+                    lessonCacheRepository = chaptersViewModel.lessonCacheRepository,
                     onDownloadCompleted = {
+                        // Mark the chapter completed in local or Firestore
                         val nextChapterId = chaptersViewModel.getNextChapterId(chapter.id)
                         chaptersViewModel.markChapterCompleted(chapter.id, nextChapterId)
+
+                        // Hide bottom sheet
                         selectedChapter = null
                         coroutineScope.launch { sheetState.hide() }
                     }
@@ -93,26 +100,22 @@ fun ChaptersScreen(
         }
     }
 
-    // 4) Main UI container
+    // Main UI
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background image
+        // Background
         Image(
             painter = painterResource(id = R.drawable.lesson_path_bg),
-            contentDescription = "Background",
+            contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
 
-        // Content Column to ensure proper layering
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Top bar with fixed syntax
+        Column {
+            // Top bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-
             ) {
                 Row(
                     modifier = Modifier
@@ -122,12 +125,10 @@ fun ChaptersScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Go Back Icon
                     TopBarIcons(
                         painter = painterResource(id = R.drawable.goback),
                         contentDescription = "Go Back",
                         onClick = {
-                            Log.d("GoBackIcon", "Clicked")
                             navController.popBackStack()
                         },
                         shadowColor = Color.Gray,
@@ -143,11 +144,10 @@ fun ChaptersScreen(
                         shadowColor = Color.Gray,
                         mainColor = Color.White
                     )
-
                 }
-
             }
-            // Chapter list with adjusted padding
+
+            // Chapters list
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -160,14 +160,16 @@ fun ChaptersScreen(
                     onChapterClick = { chapter ->
                         if (chapter.isUnlocked || chapter.isCompleted) {
                             selectedChapter = chapter
-                            coroutineScope.launch { sheetState.show() }
+                            coroutineScope.launch {
+                                sheetState.show()
+                            }
                         }
                     }
                 )
             }
         }
 
-        // Badge earned snackbar with highest z-index
+        // Show Badge Earned Snackbar if we have a new badge
         earnedBadge?.let { badge ->
             Box(
                 modifier = Modifier
@@ -184,7 +186,7 @@ fun ChaptersScreen(
 }
 
 /**
- * Your bottom sheet content for downloading lessons.
+ * Bottom sheet that does the actual “Download and Start”
  */
 @Composable
 fun ChapterDownloadBottomSheetContent(
@@ -192,19 +194,59 @@ fun ChapterDownloadBottomSheetContent(
     context: Context,
     levelId: String,
     navController: NavController,
+    lessonCacheRepository: LessonCacheRepository, // for checking local DB
     onDownloadCompleted: () -> Unit
 ) {
-    val workId = remember { mutableStateOf<UUID?>(null) }
-    val workInfo = workId.value?.let {
-        WorkManager.getInstance(context).getWorkInfoByIdLiveData(it).observeAsState()
-    }?.value
+    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val coroutineScope = rememberCoroutineScope()
 
-    val chapterId = chapter.id
-    // Example custom font
-    val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
-    )
+    // Track the UI state (Initial, Downloading, Cached, Downloaded, Error)
+    var downloadState by remember { mutableStateOf<DownloadState>(DownloadState.Initial) }
 
+    // Keep track of the workerId so we can observe its progress
+    var workerId by remember { mutableStateOf<UUID?>(null) }
+    val workManager = WorkManager.getInstance(context)
+
+    // Observe worker progress if we have an ID
+    val workInfo by if (workerId != null) {
+        workManager.getWorkInfoByIdLiveData(workerId!!).observeAsState()
+    } else {
+        remember { mutableStateOf(null) }
+    }
+
+    // Each time workInfo changes, update `downloadState`
+    LaunchedEffect(workInfo) {
+        workInfo?.let { info ->
+            when (info.state) {
+                WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED, WorkInfo.State.RUNNING -> {
+                    downloadState = DownloadState.Downloading
+                }
+                WorkInfo.State.SUCCEEDED -> {
+                    downloadState = DownloadState.Downloaded
+                }
+                WorkInfo.State.FAILED -> {
+                    downloadState = DownloadState.Error
+                }
+                else -> { /* CANCELLED or other states */ }
+            }
+        }
+    }
+    LaunchedEffect(Unit) {
+        val uiDb = DatabaseProvider.getInstance(context)
+        Log.d("ChaptersScreen", "UI DB instance hash: ${uiDb.hashCode()}")
+    }
+    // Check if already cached
+    LaunchedEffect(chapter.id, levelId) {
+        kotlinx.coroutines.delay(1000)  // wait 1 second
+        val cachedLesson = lessonCacheRepository.getLessonCache(chapter.id, levelId)
+        Log.d("ChapterScreen", "After delay, cachedLesson: $cachedLesson")
+        if (cachedLesson != null) {
+            downloadState = DownloadState.Cached
+        }
+    }
+
+
+    // UI
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -221,62 +263,91 @@ fun ChapterDownloadBottomSheetContent(
                 .padding(bottom = 16.dp)
         )
 
-        // Example image
         Image(
             painter = painterResource(id = R.drawable.deenasaur),
             contentDescription = "Chapter Image",
             modifier = Modifier
-                .size(150.dp)
-                .clip(MaterialTheme.shapes.medium),
+                .size(150.dp),
             contentScale = ContentScale.Crop
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Download or show progress
-        when (workInfo?.state) {
-            WorkInfo.State.RUNNING -> {
-                CircularProgressIndicator()
-            }
-            WorkInfo.State.SUCCEEDED -> {
-                // Once succeeded, navigate automatically
-                LaunchedEffect(chapterId) {
-                    navController.navigate("lessonScreen/$chapterId/$levelId")
-                    onDownloadCompleted()
-                }
-            }
-            WorkInfo.State.FAILED -> {
-                Text("Failed to download lesson", color = Color.Red)
-            }
-            else -> {
+        when (downloadState) {
+            DownloadState.Initial -> {
                 CommonButton(
                     buttonText = "Download and Start",
                     mainColor = lightNavyBlue,
                     shadowColor = navyBlue,
-                    textColor = Color.White,
+                    textColor = white,
                     onClick = {
-                        val newWorkId = enqueueChapterDownload(context, chapter,levelId)
-                        workId.value = newWorkId
+                        // Enqueue the Worker
+                        val request = OneTimeWorkRequestBuilder<DownloadLessonWorker>()
+                            .setInputData(
+                                workDataOf(
+                                    "chapter_id" to chapter.id,  // Ensure this is the correct ID
+                                    "level_id" to levelId
+                                )
+                            )
+                            .build()
+
+
+                        workManager.enqueue(request)
+                        workerId = request.id
+                        downloadState = DownloadState.Downloading
                     }
                 )
             }
+
+            DownloadState.Downloading -> {
+                CircularProgressIndicator()
+            }
+
+            DownloadState.Cached -> {
+                // Already in DB, let user open
+                CommonButton(
+                    buttonText = "Start",
+                    mainColor = lightNavyBlue,
+                    textColor = white,
+                    shadowColor = navyBlue,
+                    onClick = {
+                        navController.navigate("lessonScreen/${chapter.id}/$levelId")
+                        onDownloadCompleted()
+                    }
+                )
+            }
+
+            DownloadState.Downloaded -> {
+                // Worker finished => open the lesson
+                LaunchedEffect(Unit) {
+                    navController.navigate("lessonScreen/${chapter.id}/$levelId")
+                    onDownloadCompleted()
+                }
+            }
+
+            DownloadState.Error -> {
+                Text("Download Failed", color = Color.Red)
+                CommonButton(
+                    buttonText = "Retry",
+                    mainColor = lightNavyBlue,
+                    textColor = white,
+                    shadowColor = navyBlue,
+                    onClick = {
+                        downloadState = DownloadState.Initial
+                        workerId = null
+                    }
+                )
+            }
+
+            else -> {}
         }
     }
 }
 
-
-
-/**
- * Enqueue your worker for downloading.
- */
-fun enqueueChapterDownload(context: Context, chapter: Chapter, levelId: String): UUID {
-    val downloadWorkRequest = OneTimeWorkRequestBuilder<DownloadLessonWorker>()
-        .setInputData(workDataOf(
-            "chapter_id" to chapter.id,
-            "level_id" to levelId
-        ))
-        .build()
-
-    WorkManager.getInstance(context).enqueue(downloadWorkRequest)
-    return downloadWorkRequest.id
+sealed class DownloadState {
+    object Initial : DownloadState()
+    object Downloading : DownloadState()
+    object Cached : DownloadState()
+    object Downloaded : DownloadState()
+    object Error : DownloadState()
 }
