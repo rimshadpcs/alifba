@@ -9,6 +9,7 @@ import com.alifba.alifba.R
 import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.presenation.chapters.models.Chapter
+import com.alifba.alifba.presenation.lessonScreens.domain.repository.LessonCacheRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +28,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChaptersViewModel @Inject constructor(
-    private val dataStoreManager: DataStoreManager
+    private val dataStoreManager: DataStoreManager,
+    val lessonCacheRepository: LessonCacheRepository
 ) : ViewModel() {
 
     
