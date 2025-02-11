@@ -88,18 +88,28 @@ fun LetterTracingExercise(
     var pathCompleted by remember { mutableStateOf(false) }
     var allDotsCompleted by remember { mutableStateOf(false) }
 
+    var showResetButton by remember { mutableStateOf(false) }
     // 4) Drawing constants
     val pathSegments = 500
     val nearestTouchDistance = 60f
+    val searchWindow = 50
 
     // 5) Painter for arrow
     val arrowPainter = painterResource(id = R.drawable.down_arrow)
 
+    fun resetTrace() {
+        currentIndex = 0
+        isTouched = false
+        userPath.reset()
+        showResetButton = false
+    }
+
+
     // 6) Function to handle user dragging
     fun handleDrag(currentPosition: Offset) {
-        if (!isTouched || pathCompleted) return
+        if (pathCompleted) return
 
-        val searchWindow = 50
+        // Search for the nearest point on the path
         val searchStart = maxOf(0, currentIndex - 10)
         val searchEnd = minOf(segmentInfoList.size, currentIndex + searchWindow)
 
@@ -116,22 +126,27 @@ fun LetterTracingExercise(
         }
 
         val trackThreshold = (nearestTouchDistance * 1.5f).pow(2)
-        if (minDist > trackThreshold) {
-            isTouched = false
-            return
-        }
 
-        if (nearestIndex >= currentIndex - 5) {
-            currentIndex = nearestIndex
-            userPath.lineTo(currentPosition.x, currentPosition.y)
-        }
+        // If within threshold, update the path
+        if (minDist <= trackThreshold) {
+            isTouched = true
+            if (nearestIndex >= currentIndex - 5) {
+                // If user is continuing from a previous point or starting new
+                if (!isTouched) {
+                    userPath.moveTo(currentPosition.x, currentPosition.y)
+                } else {
+                    userPath.lineTo(currentPosition.x, currentPosition.y)
+                }
+                currentIndex = nearestIndex
+            }
 
-        if (nearestIndex >= segmentInfoList.size - 1) {
-            isTouched = false
-            pathCompleted = true
+            // Check for completion
+            if (nearestIndex >= segmentInfoList.size - 1) {
+                isTouched = false
+                pathCompleted = true
+            }
         }
     }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Canvas(
             modifier = Modifier
@@ -142,10 +157,13 @@ fun LetterTracingExercise(
                     detectDragGestures(
                         onDragStart = { offset ->
                             if (!pathCompleted) {
+                                // Find nearest point on path to start from
                                 var minDist = Float.MAX_VALUE
                                 var startIndex = -1
 
-                                segmentInfoList.take(20).forEachIndexed { idx, seg ->
+                                // Search in entire path, but prioritize points after current index
+                                for (idx in currentIndex until minOf(currentIndex + 20, segmentInfoList.size)) {
+                                    val seg = segmentInfoList[idx]
                                     val distSq = (seg.position - offset).getDistanceSquared()
                                     if (distSq < minDist) {
                                         minDist = distSq
@@ -153,10 +171,25 @@ fun LetterTracingExercise(
                                     }
                                 }
 
+                                // If no close point found after current index, search from beginning
+                                if (minDist > nearestTouchDistance.pow(2)) {
+                                    for (idx in 0 until currentIndex) {
+                                        val seg = segmentInfoList[idx]
+                                        val distSq = (seg.position - offset).getDistanceSquared()
+                                        if (distSq < minDist) {
+                                            minDist = distSq
+                                            startIndex = idx
+                                        }
+                                    }
+                                }
+
                                 if (startIndex >= 0 && minDist < nearestTouchDistance.pow(2)) {
                                     isTouched = true
                                     currentIndex = startIndex
-                                    userPath.moveTo(offset.x, offset.y)
+                                    // Only move to new position if we're starting from a new point
+                                    if (startIndex <= currentIndex) {
+                                        userPath.moveTo(offset.x, offset.y)
+                                    }
                                 }
                             }
                         },
@@ -165,6 +198,7 @@ fun LetterTracingExercise(
                         }
                     )
                 }
+
                 .pointerInput(Unit) {
                     detectTapGestures { tapOffset ->
                         if (pathCompleted && !allDotsCompleted) {
@@ -189,6 +223,7 @@ fun LetterTracingExercise(
                         }
                     }
                 }
+
         ) {
             val canvasWidth = size.width
             val canvasHeight = size.height
@@ -280,131 +315,46 @@ fun LetterTracingExercise(
                 )
             }
         }
-
-        // Show animation only after all dots are completed
-        LottieAnimationDialog(showDialog, lottieFileRes = R.raw.burst)
-
-        // Show Continue button only after animation has played
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        ) {
         if (allDotsCompleted) {
+            // Show Continue button only after everything is completed
             CommonButton(
                 onClick = onNextClicked,
                 buttonText = "Continue",
                 shadowColor = darkPurple,
                 mainColor = lightPurple,
-                textColor = white,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
+                textColor = white
+            )
+        } else if (currentIndex > 0 && !pathCompleted) {
+            // Show Reset button only when user has started tracing but hasn't completed
+            CommonButton(
+                onClick = { resetTrace() },
+                buttonText = "Reset",
+                shadowColor = darkPurple,
+                mainColor = lightPurple,
+                textColor = white
             )
         }
     }
-}
+        // Show animation only after all dots are completed
+        LottieAnimationDialog(showDialog, lottieFileRes = R.raw.burst)
 
-/** Attempt to start dragging from the nearest segment. */
-//private fun onDragStartLetter(
-//    offset: Offset,
-//    nearestDistance: Int,
-//    segmentInfoList: List<PathSegmentInfo>,
-//    completedIndex: Int,
-//    currentIndex: Int,
-//    isTouched: (Boolean) -> Unit,
-//    userPath: Path
-//) {
-//    isTouched(false)
-//    var minDist = Float.MAX_VALUE
-//    var tempIndex = -1
-//
-//    segmentInfoList.forEachIndexed { idx, seg ->
-//        val distSq = (seg.position - offset).getDistanceSquared()
-//        if (distSq < minDist) {
-//            minDist = distSq
-//            tempIndex = idx
+        // Show Continue button only after animation has played
+//        if (allDotsCompleted) {
+//            CommonButton(
+//                onClick = onNextClicked,
+//                buttonText = "Continue",
+//                shadowColor = darkPurple,
+//                mainColor = lightPurple,
+//                textColor = white,
+//                modifier = Modifier
+//                    .align(Alignment.BottomCenter)
+//                    .padding(16.dp)
+//            )
 //        }
-//    }
-//
-//    // If we found a segment within threshold
-//    val thresholdSq = (nearestDistance * nearestDistance).toFloat()
-//    if (tempIndex >= 0 && minDist < thresholdSq) {
-//        // No strict "must be at index=0" or "within 2 steps" check
-//        isTouched(true)
-//        userPath.moveTo(offset.x, offset.y)
-//    }
-//}
-//
-///** While dragging, we find the nearest segment and move forward. */
-//private fun onDragLetter(
-//    currentPosition: Offset,
-//    nearestDistance: Int,
-//    segmentInfoList: List<PathSegmentInfo>,
-//    currentIndex: Int,
-//    isTouched: (Boolean) -> Unit,
-//    userPath: Path,
-//    onNewIndex: (Int) -> Unit,
-//    onComplete: () -> Unit
-//) {
-//    var minDist = Float.MAX_VALUE
-//    var tempIndex = -1
-//
-//    segmentInfoList.forEachIndexed { idx, seg ->
-//        val distSq = (seg.position - currentPosition).getDistanceSquared()
-//        if (distSq < minDist) {
-//            minDist = distSq
-//            tempIndex = idx
-//        }
-//    }
-//
-//    // Loosen straying check
-//    val dragMinDistanceSq = (nearestDistance * 0.9f) * (nearestDistance * 0.9f)
-//    if (minDist > dragMinDistanceSq) {
-//        // If user strays beyond an even bigger threshold, stop
-//        isTouched(false)
-//        return
-//    }
-//
-//    // If they jump backwards a ton, we can either stop them or let them skip
-//    // For simplicity, let's not forcibly stop them for mild backwards movement
-//    // but if they go *far* behind currentIndex, we can cancel.
-//    // Or remove backward check entirely:
-//    if (tempIndex < currentIndex - 20) {  // "20" is a large allowance
-//        isTouched(false)
-//        return
-//    }
-//
-//    // Keep drawing user path
-//    userPath.lineTo(currentPosition.x, currentPosition.y)
-//
-//    // Move the arrow to whichever is nearest
-//    onNewIndex(tempIndex)
-//
-//    // If user reached final segment => done
-//    if (tempIndex == segmentInfoList.size - 1) {
-//        onComplete()
-//    }
-//}
-//
-//
-///** Taps for toggling dot color once path is done */
-//private fun handleDotTap(
-//    letterShape: LetterShape,
-//    tapOffset: Offset,
-//    translation: Offset,
-//    triggerRecompose: (Boolean) -> Unit
-//) {
-//    var toggled = false
-//    val localTap = tapOffset - translation
-//    letterShape.dots.forEach { dot ->
-//        val dist = (localTap - dot.center).getDistance()
-//        if (dist <= dot.radius) {
-//            dot.isTouched = !dot.isTouched
-//            toggled = true
-//        }
-//    }
-//    if (toggled) {
-//        triggerRecompose(true)
-//    }
-//}
-//
-///** Check if all dots are tapped */
-//private fun allDotsTouched(letterShape: LetterShape): Boolean {
-//    return letterShape.dots.all { it.isTouched }
-//}
+    }
+}
