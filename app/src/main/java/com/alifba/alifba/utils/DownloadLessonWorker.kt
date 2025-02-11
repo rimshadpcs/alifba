@@ -13,7 +13,6 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
-import javax.inject.Inject
 
 class DownloadLessonWorker(
     context: Context,
