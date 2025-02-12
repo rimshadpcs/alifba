@@ -31,6 +31,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.home.HomeViewModel
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -79,8 +81,11 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
                 Button(
                     onClick = {
                         coroutineScope.launch {
+                            SoundEffectManager.playClickSound()
+                            delay(100)
                             val itemIndex = (scrollState.firstVisibleItemIndex + 1).coerceAtMost(viewModel.levelItemList.size - 1)
                             scrollState.animateScrollToItem(itemIndex)
+
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
@@ -100,6 +105,8 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
                 Button(
                     onClick = {
                         coroutineScope.launch {
+                            SoundEffectManager.playClickSound()
+                            delay(100)
                             val itemIndex = (scrollState.firstVisibleItemIndex - 1).coerceAtLeast(0)
                             scrollState.animateScrollToItem(itemIndex)
                         }

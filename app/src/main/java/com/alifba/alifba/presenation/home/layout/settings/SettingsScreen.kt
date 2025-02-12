@@ -43,6 +43,7 @@ import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.ui_components.widgets.texts.SettingsButton
 
 
@@ -145,6 +146,7 @@ fun SettingsScreen(navController: NavController){
                     isNotificationsEnabled = isEnabled // Update toggle state
                 }
             )
+            SoundToggleButton()
             SettingsButton(
                 text = "Privacy Policy", onClick = {openPrivacyPolicy()}
             )
@@ -162,4 +164,18 @@ fun SettingsScreen(navController: NavController){
 
 
     }
+}
+@Composable
+fun SoundToggleButton() {
+    val isEnabled = remember { mutableStateOf(SoundEffectManager.isSoundEnabled) }
+
+    SettingsButton(
+        text = "Button Sound",
+        showToggle = true,
+        isToggled = isEnabled.value,
+        onClick = {
+            isEnabled.value = !isEnabled.value
+            SoundEffectManager.toggleSound(isEnabled.value)
+        }
+    )
 }

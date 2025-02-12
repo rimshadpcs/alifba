@@ -343,18 +343,6 @@ fun LetterTracingExercise(
         // Show animation only after all dots are completed
         LottieAnimationDialog(showDialog, lottieFileRes = R.raw.burst)
 
-        // Show Continue button only after animation has played
-//        if (allDotsCompleted) {
-//            CommonButton(
-//                onClick = onNextClicked,
-//                buttonText = "Continue",
-//                shadowColor = darkPurple,
-//                mainColor = lightPurple,
-//                textColor = white,
-//                modifier = Modifier
-//                    .align(Alignment.BottomCenter)
-//                    .padding(16.dp)
-//            )
-//        }
+
     }
 }

@@ -26,12 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.Login.AuthViewModel
 import com.alifba.alifba.presenation.home.layout.profile.getAvatarDrawable
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -46,6 +48,9 @@ fun HomeTopBar(
     val avatarDrawable = getAvatarDrawable(avatarName)
     Log.d("HomeTopBar", "UserProfile: $userProfile")
     Log.d("HomeTopBar", "Avatar Name: $avatarName")
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     Row(
         modifier = Modifier
             .background(Color.Transparent)
@@ -59,7 +64,11 @@ fun HomeTopBar(
             contentDescription = "Profile",
             onClick = {
                 Log.d("profile-icon-click", "clicking")
-                navController.navigate("profile")
+                coroutineScope.launch {
+                    SoundEffectManager.playClickSound()
+                    delay(100)
+                    navController.navigate("profile")
+                }
             }
         )
 
@@ -68,7 +77,13 @@ fun HomeTopBar(
             painter = painterResource(id = R.drawable.setting),
             contentDescription = "Settings",
             onClick = {
-                navController.navigate("settings")
+                coroutineScope.launch {
+                    SoundEffectManager.playClickSound()
+                    delay(100)
+                    navController.navigate("settings")
+                }
+
+
             }
         )
     }
