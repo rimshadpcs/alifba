@@ -1,4 +1,4 @@
-package com.alifba.alifba.presenation.onboarding
+ package com.alifba.alifba.presenation.onboarding
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState

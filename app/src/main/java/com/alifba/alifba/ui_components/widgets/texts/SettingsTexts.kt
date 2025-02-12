@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,11 +26,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
+import com.alifba.alifba.ui_components.theme.black
+import com.alifba.alifba.ui_components.theme.darkPink
+import com.alifba.alifba.ui_components.theme.lightPink
+import com.alifba.alifba.ui_components.theme.white
 
 @Composable
 fun SettingsButton(
     text: String = "",
     onClick: () -> Unit,
+    showToggle: Boolean = false,
+    isToggled: Boolean = false
 ) {
     val alifbaFont = FontFamily(
         Font(R.font.more_sugar_regular, FontWeight.SemiBold)
@@ -64,11 +72,25 @@ fun SettingsButton(
             modifier = Modifier.weight(1f) // Take up remaining space so Image is aligned to the right
         )
 
-        // Right Arrow Icon
-        Image(
-            painter = painterResource(id = R.drawable.rightarrowsettings),
-            contentDescription = "Right Arrow",
-            modifier = Modifier.size(24.dp) // Adjust size as needed
-        )
+        if (showToggle) {
+            Switch(
+                checked = isToggled,
+                onCheckedChange = { onClick() },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = black,
+                    checkedTrackColor = darkPink,
+                    checkedBorderColor = darkPink,
+                    uncheckedThumbColor = black,
+                    uncheckedTrackColor = white,
+                    uncheckedBorderColor = darkPink
+                )
+            )
+        } else {
+            Image(
+                painter = painterResource(id = R.drawable.rightarrowsettings),
+                contentDescription = "Arrow Right",
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }

@@ -49,6 +49,8 @@ import com.alifba.alifba.ui_components.theme.black
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
@@ -246,6 +248,8 @@ fun AvatarCarousels(
             Button(
                 onClick = {
                     coroutineScope.launch {
+                        SoundEffectManager.playClickSound()
+                        delay(100)
                         pagerState.animateScrollToPage(pagerState.currentPage - 1)
                     }
                 },
@@ -264,6 +268,8 @@ fun AvatarCarousels(
             Button(
                 onClick = {
                     coroutineScope.launch {
+                        SoundEffectManager.playClickSound()
+                        delay(100)
                         pagerState.animateScrollToPage(pagerState.currentPage + 1)
                     }
                 },

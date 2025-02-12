@@ -53,7 +53,9 @@ import com.alifba.alifba.ui_components.theme.darkPink
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -295,6 +297,8 @@ fun AvatarCarousel(
             Button(
                 onClick = {
                     coroutineScope.launch {
+                        SoundEffectManager.playClickSound()
+                        delay(100)
                         pagerState.animateScrollToPage(pagerState.currentPage - 1)
                     }
                 },
@@ -313,6 +317,8 @@ fun AvatarCarousel(
             Button(
                 onClick = {
                     coroutineScope.launch {
+                        SoundEffectManager.playClickSound()
+                        delay(100)
                         pagerState.animateScrollToPage(pagerState.currentPage + 1)
                     }
                 },
