@@ -121,6 +121,7 @@ class MainActivity : ComponentActivity() {
                         composable("createProfile") {
                             ProfileRegistration(navController)
                         }
+
                         composable("homeScreen") {
                             AlifbaMainScreen(lessonScreenViewModel, homeViewModel, chaptersViewModel)
                         }

@@ -28,7 +28,9 @@ import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
 import com.alifba.alifba.ui_components.theme.black
 import com.alifba.alifba.ui_components.theme.darkPink
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightPink
+import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 
 @Composable
@@ -77,12 +79,12 @@ fun SettingsButton(
                 checked = isToggled,
                 onCheckedChange = { onClick() },
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = black,
-                    checkedTrackColor = darkPink,
-                    checkedBorderColor = darkPink,
+                    checkedThumbColor = white,
+                    checkedTrackColor = lightNavyBlue,
+                    checkedBorderColor = lightNavyBlue,
                     uncheckedThumbColor = black,
                     uncheckedTrackColor = white,
-                    uncheckedBorderColor = darkPink
+                    uncheckedBorderColor = lightNavyBlue
                 )
             )
         } else {

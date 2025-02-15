@@ -213,24 +213,29 @@ fun AvatarCarousel(
         Font(R.font.more_sugar_regular, FontWeight.SemiBold)
     )
 
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+
+    val avatarSize = (screenWidth * 0.5f).coerceIn(200.dp, 300.dp)
+    // Calculate the remaining space on each side of the avatar
+    val remainingSpace = (screenWidth - avatarSize) / 2
+    val horizontalPadding = remainingSpace.coerceAtLeast(88.dp)
+    val boxHeight = (avatarSize * 1.25f).coerceIn(250.dp, 350.dp)
+
     val repeatedCount = 1000
     val infiniteAvatars = List(avatars.size * repeatedCount) { index -> avatars[index % avatars.size] }
 
-    // Set initial page to the middle position where Deenasaur is the visible item
     val middlePosition = (infiniteAvatars.size / 2) - (infiniteAvatars.size / 2 % avatars.size)
     val pagerState = rememberPagerState(initialPage = middlePosition, pageCount = { infiniteAvatars.size })
-
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(pagerState.currentPage) {
-        // Update selected avatar name on page change
         onAvatarSelected(infiniteAvatars[pagerState.currentPage % avatars.size].name)
 
-        // If at the start or end, jump to the middle of the list to simulate infinite scrolling
         if (pagerState.currentPage == 0 || pagerState.currentPage == infiniteAvatars.size - 1) {
             val newPage = middlePosition + (pagerState.currentPage % avatars.size)
             coroutineScope.launch {
-                pagerState.scrollToPage(newPage)  // Use scrollToPage for a seamless jump
+                pagerState.scrollToPage(newPage)
             }
         }
     }
@@ -238,17 +243,16 @@ fun AvatarCarousel(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(250.dp),
+            .height(boxHeight),
         contentAlignment = Alignment.Center
     ) {
-        // Display the avatars in the HorizontalPager
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp),
-            contentPadding = PaddingValues(horizontal = 88.dp),
-            pageSpacing = (-30).dp,
+                .height(boxHeight),
+            contentPadding = PaddingValues(horizontal = horizontalPadding),
+            pageSpacing = 0.dp, // Remove negative spacing
         ) { page ->
             val actualPage = page % avatars.size
             val scale = lerp(
@@ -258,42 +262,41 @@ fun AvatarCarousel(
             )
 
             Box(
-                modifier = Modifier.graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = avatars[actualPage].id),
                     contentDescription = "Avatar $actualPage",
-                    modifier = Modifier.size(250.dp)
+                    modifier = Modifier
+                        .size(avatarSize)
+                        .align(Alignment.Center)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = avatars[actualPage].name,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .offset(y = (-30).dp),
+                        .offset(y = (-avatarSize * 0.12f)),
                     fontFamily = alifbaFont,
                     color = black,
-                    fontSize = 30.sp,
-
-                    )
-
+                    fontSize = (avatarSize.value * 0.12f).sp,
+                )
             }
         }
 
-        // Bottom Row for navigation buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 24.dp)
                 .align(Alignment.BottomCenter),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Arrow Button
             Button(
                 onClick = {
                     coroutineScope.launch {
@@ -313,7 +316,6 @@ fun AvatarCarousel(
                 )
             }
 
-            // Right Arrow Button
             Button(
                 onClick = {
                     coroutineScope.launch {
@@ -335,7 +337,6 @@ fun AvatarCarousel(
         }
     }
 }
-
 @Composable
 fun NameInputField(parentName: String, onParentNameChange: (String) -> Unit,
                    childName: String, onChildNameChange: (String) -> Unit) {

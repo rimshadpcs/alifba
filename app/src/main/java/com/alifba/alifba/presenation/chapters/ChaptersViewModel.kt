@@ -74,20 +74,35 @@ class ChaptersViewModel @Inject constructor(
                     Log.e("ChaptersViewModel", "No chapters found in Firestore for $levelId")
                 }
 
-                val chapters = snapshot.documents.map { doc ->
+//                val chapters = snapshot.documents.map { doc ->
+//                    Chapter(
+//                        id = doc.getLong("id")?.toInt() ?: 0,
+//                        title = doc.getString("title") ?: "Untitled",
+//                        iconResId = R.drawable.start,
+//                        isCompleted = completedChapters.contains(doc.id),
+//                        isLocked = false, // Set unlock logic later
+//                        isUnlocked = true, // First chapter always unlocked
+//                        chapterType = doc.getString("chapterType") ?: ""
+//                    )
+//                }
+                val chaptersRaw = snapshot.documents.map { doc ->
                     Chapter(
                         id = doc.getLong("id")?.toInt() ?: 0,
                         title = doc.getString("title") ?: "Untitled",
-                        iconResId = R.drawable.start,
+                        iconResId = when (doc.getString("chapterType")) {
+                            "Story" -> R.drawable.book
+                            "Alphabet" -> R.drawable.alphabeticon
+                            else -> R.drawable.start
+                        },
                         isCompleted = completedChapters.contains(doc.id),
-                        isLocked = false, // Set unlock logic later
-                        isUnlocked = true, // First chapter always unlocked
+                        isLocked = true,  // Default to locked, will update next
+                        isUnlocked = false,  // Default to not unlocked, will update next
                         chapterType = doc.getString("chapterType") ?: ""
                     )
-                }
-
-                _chapters.value = chapters
-                Log.d("ChaptersViewModel", "Loaded ${chapters.size} chapters")  // ✅ Debugging log
+                }.sortedBy { it.id }
+                val updatedChapters = updateChapterStates(completedChapters, chaptersRaw)
+                _chapters.value = updatedChapters
+                //Log.d("ChaptersViewModel", "Loaded ${chapters.size} chapters")  // ✅ Debugging log
 
             } catch (e: Exception) {
                 Log.e("ChaptersViewModel", "Error fetching chapters: ${e.localizedMessage}")
@@ -97,9 +112,14 @@ class ChaptersViewModel @Inject constructor(
 
     fun markChapterCompleted(chapterId: Int, nextChapterId: Int?) {
         viewModelScope.launch {
-            dataStoreManager.markCompletedChapters(chapterId, nextChapterId)
-
+            // We'll just trigger badge check - the actual completion is handled in checkAndMarkChapterCompletion
             checkAndAwardBadge(chapterId)
+
+            // Reload chapters to refresh UI after marking complete in Firestore
+            val currentLevelId = _levelSummary.value?.levelName
+            if (currentLevelId != null) {
+                loadChapters(currentLevelId)
+            }
         }
     }
 
@@ -185,29 +205,44 @@ class ChaptersViewModel @Inject constructor(
     }
 
 
-    private fun updateChapterStates(completedChapters: List<String>, chapters: List<Chapter>): List<Chapter> {
+    private fun updateChapterStates(
+        completedChapters: List<String>,
+        chapters: List<Chapter>
+    ): List<Chapter> {
         return chapters.mapIndexed { index, chapter ->
-            chapter.copy(
-                isCompleted = completedChapters.contains(chapter.id.toString()),
-                isLocked = when {
-                    // First chapter is never locked
-                    index == 0 -> false
-                    // If previous chapter is completed, unlock this one
-                    index > 0 && completedChapters.contains(chapters[index - 1].id.toString()) -> false
-                    // Otherwise keep it locked
-                    else -> true
-                },
-                isUnlocked = when {
-                    // First chapter is always unlocked
-                    index == 0 -> true
-                    // If previous chapter is completed, unlock this one
-                    index > 0 && completedChapters.contains(chapters[index - 1].id.toString()) -> true
-                    // Otherwise keep it locked
-                    else -> false
+            // 1) Determine if the user actually completed this chapter
+            val isCompleted = completedChapters.contains(chapter.id.toString())
+
+            // 2) Determine if locked or unlocked
+            val isLocked = when {
+                index == 0 -> false  // first chapter always unlocked
+                completedChapters.contains(chapters[index - 1].id.toString()) -> false
+                else -> true
+            }
+
+            // 3) Decide icon based on locked/completed status
+            val iconResId = when {
+                isCompleted -> R.drawable.tick
+                isLocked -> R.drawable.padlock  // <--- show lock if it's locked
+                else -> {
+                    // Not completed, not locked => show a “type-based” icon
+                    when (chapter.chapterType) {
+                        "Story" -> R.drawable.book
+                        "Alphabet" -> R.drawable.alphabeticon
+                        else -> R.drawable.start
+                    }
                 }
+            }
+
+            chapter.copy(
+                isCompleted = isCompleted,
+                isLocked = isLocked,
+                isUnlocked = !isLocked,
+                iconResId = iconResId
             )
         }
     }
+
     fun checkAndMarkChapterCompletion(
         chapterId: String,
         levelId: String,

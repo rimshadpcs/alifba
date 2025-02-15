@@ -5,12 +5,12 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.BottomNavigationDefaults.windowInsets
 import androidx.compose.material3.*
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -76,10 +76,12 @@ fun ChaptersScreen(
                 }
             },
             sheetState = sheetState,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             containerColor = Color.White,
+            modifier = Modifier.fillMaxWidth()
         ) {
+            // Now the bottom sheet will span the entire width.
             selectedChapter?.let { chapter ->
-                // We'll pass the same repository the UI uses, for reading DB
                 ChapterDownloadBottomSheetContent(
                     chapter = chapter,
                     context = context,
@@ -87,11 +89,8 @@ fun ChaptersScreen(
                     navController = navController,
                     lessonCacheRepository = chaptersViewModel.lessonCacheRepository,
                     onDownloadCompleted = {
-                        // Mark the chapter completed in local or Firestore
-                        val nextChapterId = chaptersViewModel.getNextChapterId(chapter.id)
-                        chaptersViewModel.markChapterCompleted(chapter.id, nextChapterId)
-
-                        // Hide bottom sheet
+                       // val nextChapterId = chaptersViewModel.getNextChapterId(chapter.id)
+                            // chaptersViewModel.markChapterCompleted(chapter.id, nextChapterId)
                         selectedChapter = null
                         coroutineScope.launch { sheetState.hide() }
                     }
@@ -99,6 +98,7 @@ fun ChaptersScreen(
             }
         }
     }
+
 
     // Main UI
     Box(modifier = Modifier.fillMaxSize()) {
@@ -250,7 +250,9 @@ fun ChapterDownloadBottomSheetContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .fillMaxWidth(),
+
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -261,6 +263,7 @@ fun ChapterDownloadBottomSheetContent(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(bottom = 16.dp)
+
         )
 
         Image(

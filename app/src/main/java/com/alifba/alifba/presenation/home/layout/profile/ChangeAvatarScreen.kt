@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -129,7 +130,6 @@ fun ChangeAvatarScreen(
         )
     }
 }
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AvatarCarousels(
@@ -151,41 +151,39 @@ fun AvatarCarousels(
         Avatar(R.drawable.sidqhog, "Sidqhog")
     )
 
-    val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular)
-    )
-
+    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular))
     val avatarsSize = avatars.size
 
-    // Find the index of the current avatar
-    val currentAvatarIndex = avatars.indexOfFirst { it.name == currentAvatarName }.takeIf { it >= 0 } ?: 0
+    // Find the index of the current avatar (defaulting to 0 if not found)
+    val currentAvatarIndex = avatars.indexOfFirst { it.name == currentAvatarName }
+        .takeIf { it >= 0 } ?: 0
 
-    // Prepare infinite avatars list
+    // Prepare an "infinite" list for smooth scrolling
     val repeatedCount = 1000
     val infiniteAvatars = List(avatarsSize * repeatedCount) { index -> avatars[index % avatarsSize] }
-
-    // Set initial page to middle position adjusted by current avatar index
     val middlePosition = (infiniteAvatars.size / 2) - ((infiniteAvatars.size / 2) % avatarsSize) + currentAvatarIndex
 
     val pagerState = rememberPagerState(
         initialPage = middlePosition,
         pageCount = { infiniteAvatars.size }
     )
-
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(pagerState.currentPage) {
-        // Update selected avatar name on page change
         selectedAvatarName.value = infiniteAvatars[pagerState.currentPage % avatarsSize].name
 
-        // Infinite scroll logic
+        // Avoid reaching the boundaries
         if (pagerState.currentPage == 0 || pagerState.currentPage == infiniteAvatars.size - 1) {
             val newPage = middlePosition + (pagerState.currentPage % avatarsSize)
-            coroutineScope.launch {
-                pagerState.scrollToPage(newPage)
-            }
+            coroutineScope.launch { pagerState.scrollToPage(newPage) }
         }
     }
+
+    // Calculate the padding so that the centered item is exactly in the middle
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val avatarDisplaySize = 200.dp // your fixed avatar image size
+    val horizontalPadding = (screenWidth - avatarDisplaySize) / 2
 
     Box(
         modifier = Modifier
@@ -193,14 +191,15 @@ fun AvatarCarousels(
             .height(300.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Display the avatars in the HorizontalPager
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp),
-            contentPadding = PaddingValues(horizontal = 88.dp),
-            pageSpacing = (-30).dp,
+                .height(avatarDisplaySize),
+            // The padding centers the current item on the screen
+            contentPadding = PaddingValues(horizontal = horizontalPadding),
+            // Increase the gap between items
+            pageSpacing = 32.dp,
         ) { page ->
             val actualPage = page % avatarsSize
             val scale = lerp(
@@ -208,7 +207,6 @@ fun AvatarCarousels(
                 stop = 1f,
                 fraction = 1f - pagerState.currentPageOffsetFraction.absoluteValue.coerceIn(0f, 1f)
             )
-
             Box(
                 modifier = Modifier
                     .graphicsLayer {
@@ -220,7 +218,7 @@ fun AvatarCarousels(
                 Image(
                     painter = painterResource(id = avatars[actualPage].id),
                     contentDescription = "Avatar ${avatars[actualPage].name}",
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier.size(avatarDisplaySize)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -244,7 +242,6 @@ fun AvatarCarousels(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Arrow Button
             Button(
                 onClick = {
                     coroutineScope.launch {
@@ -264,7 +261,6 @@ fun AvatarCarousels(
                 )
             }
 
-            // Right Arrow Button
             Button(
                 onClick = {
                     coroutineScope.launch {
@@ -286,6 +282,7 @@ fun AvatarCarousels(
         }
     }
 }
+
 
 
 

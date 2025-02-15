@@ -1,6 +1,7 @@
 package com.alifba.alifba.presenation.chapters.layout
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,6 +11,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -20,7 +22,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,75 +41,119 @@ fun LessonPathItems(
     index: Int,
     onClick: () -> Unit,
 ) {
-    val sidePadding = 128.dp
+    // 1) Setup icons, sizes, offset
     val imageSize = 75.dp
+    val cornerIconSize = 38.dp
     val borderColor = Color.White
+    val mainIcon = when (lesson.chapterType) {
+        "Story"    -> R.drawable.story
+        "Alphabet" -> R.drawable.alphabeticon
+        "Lesson"   -> R.drawable.book
+        else       -> R.drawable.start
+    }
+    val cornerIcon = when {
+        lesson.isCompleted -> R.drawable.tick
+        lesson.isLocked    -> R.drawable.padlock
+        else               -> R.drawable.start
+    }
 
-    // Same press animation logic:
+    // Zigzag offset logic
+    val horizontalOffset = if (index % 2 == 0) (-20).dp else 20.dp
+
+    // Press animation
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        label = "Scale"
+    )
     val offsetY by animateDpAsState(
         targetValue = if (isPressed) 0.dp else 5.dp,
-        animationSpec = spring(),
-        label = "IconOffset"
+        label = "OffsetY"
     )
     val coroutineScope = rememberCoroutineScope()
 
+    // 2) Main container for each path item
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = sidePadding, vertical = 8.dp)
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center
     ) {
-        // Outer container for the circle & border
+        // Container with animation and click handling
         Box(
             modifier = Modifier
-                .size(imageSize + 8.dp)
-                .align(if (index % 2 == 0) Alignment.CenterStart else Alignment.CenterEnd)
-                .border(8.dp, borderColor, CircleShape) // The white ring around
-                .padding(4.dp)
+                .size(imageSize + 24.dp)
+                .offset(x = horizontalOffset)
+                .scale(scale)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = {
+                        coroutineScope.launch {
+                            delay(100) // tiny delay to show press effect
+                            onClick()
+                        }
+                    }
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            // 1) SHADOW LAYER
+            // Shadow (slightly larger and offset down)
             Box(
                 modifier = Modifier
-                    .size(imageSize)
+                    .size(imageSize + 8.dp)
+                    .offset(y = 5.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFAAAAAA)) // Shadow color
+                    .background(Color(0x40000000))  // Translucent black for shadow
             )
 
-            // 2) MAIN LAYER (with press offset)
+            // White border ring
             Box(
                 modifier = Modifier
-                    .size(imageSize)
-                    .padding(bottom = offsetY)     // Moves up/down when pressed
+                    .size(imageSize + 16.dp)
+                    .padding(bottom = offsetY)  // animate up/down on press
+                    .border(8.dp, borderColor, CircleShape)
+                    .padding(4.dp)
                     .clip(CircleShape)
-                    .background(Color.White)       // Main circle color
-                    .clickable(
-                        onClick = {
-                            coroutineScope.launch {
-                                // tiny delay for press animation
-                                delay(100)
-                                onClick()
-                            }
-                        },
-                        interactionSource = interactionSource,
-                        indication = null
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                // Main icon (centered)
+                Image(
+                    painter = painterResource(id = mainIcon),
+                    contentDescription = lesson.chapterType,
+                    modifier = Modifier.size(imageSize - 16.dp)
+                )
+            }
+
+            // Corner icon (top-right), with proper positioning and larger size
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 8.dp, y = -8.dp)  // Adjusted for larger size
+                    .size(cornerIconSize)
+                    .clip(CircleShape)
+                    .border(2.dp, Color.White, CircleShape)
+                    .background(
+                        when {
+                            lesson.isCompleted -> Color(0xFFFFFFFF)  // Brighter green for completed
+                            lesson.isLocked -> Color(0xFFFFFFFF)     // Darker orange for locked
+                            else -> Color(0xFFFFFFFF)                // Bright blue for start
+                        }
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                val iconId = when {
-                    lesson.isCompleted && lesson.chapterType == "Story" -> R.drawable.book
-                    lesson.isCompleted && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
-                    lesson.isCompleted && lesson.chapterType == "Lesson" -> R.drawable.tick
-                    lesson.isUnlocked && lesson.chapterType == "Story" -> R.drawable.book
-                    lesson.isUnlocked && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
-                    lesson.isUnlocked -> R.drawable.start
-                    else -> R.drawable.padlock
-                }
-
                 Image(
-                    painter = painterResource(id = iconId),
-                    contentDescription = "Lesson Icon",
-                    modifier = Modifier.size(imageSize)
+                    painter = painterResource(id = cornerIcon),
+                    contentDescription = when {
+                        lesson.isCompleted -> "Completed"
+                        lesson.isLocked -> "Locked"
+                        else -> "Start"
+                    },
+                    modifier = Modifier
+                        .size(cornerIconSize - 12.dp)  // Adjusted for visibility
+                        .padding(2.dp),  // Added slight padding
+                    //colorFilter = ColorFilter.tint(Color.White)
                 )
             }
         }

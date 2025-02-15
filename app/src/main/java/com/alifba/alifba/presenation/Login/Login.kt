@@ -59,8 +59,9 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
         Image(
             painter = painterResource(id = R.drawable.login_background),
             contentDescription = "background",
-            contentScale = ContentScale.FillHeight,
-            modifier = Modifier.fillMaxSize()
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize(),
+
         )
 
         Column(
