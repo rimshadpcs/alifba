@@ -140,12 +140,11 @@ fun SettingsScreen(navController: NavController){
             )
             NotificationDialog(
                 showDialog = showDialog,
-                onDismiss = { showDialog = false }, // Close dialog
                 isNotificationsEnabled = isNotificationsEnabled,
-                onToggleNotification = { isEnabled ->
-                    isNotificationsEnabled = isEnabled // Update toggle state
-                }
+                onDismiss = { showDialog = false },
+                context = context
             )
+
             SoundToggleButton()
             SettingsButton(
                 text = "Privacy Policy", onClick = {openPrivacyPolicy()}

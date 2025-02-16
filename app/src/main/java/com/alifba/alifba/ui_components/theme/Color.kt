@@ -28,6 +28,7 @@ val mediumpurple = Color(0xFFB784FA)
 val darkPurple = Color(0xFF852db0)
 val navyBlue = Color(0xFF526ff6)
 val lightNavyBlue = Color(0xFF738cff)
+val lightRed = Color(0xFFed4849)
 val black = Color(0xFF000000)
 val sage = Color(0xFF309466)
 

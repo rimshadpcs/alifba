@@ -72,7 +72,7 @@ fun HomeScreenWithScaffold(navController: NavController,homeViewModel: HomeViewM
 }
 
 @Composable
-fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: HomeViewModel,chaptersViewModel: ChaptersViewModel,authViewModel: AuthViewModel = hiltViewModel(),profileViewModel: ProfileViewModel= hiltViewModel()) {
+fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: HomeViewModel,chaptersViewModel: ChaptersViewModel,authViewModel: AuthViewModel ,profileViewModel: ProfileViewModel) {
    // val viewModel: LessonScreenViewModel = viewModel() // Create or obtain the viewModel instance
     LaunchedEffect(Unit) {
         authViewModel.fetchUserProfile()
@@ -131,7 +131,8 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                     navController = navController,
                     levelId = levelId,
                     chaptersViewModel = chaptersViewModel,
-                    homeViewModel = HomeViewModel()
+                    homeViewModel = homeViewModel,
+                    profileViewModel = profileViewModel,
 
                 )
             }

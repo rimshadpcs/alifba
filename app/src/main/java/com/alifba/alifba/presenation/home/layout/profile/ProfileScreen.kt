@@ -10,13 +10,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -29,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +37,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.Badge
@@ -114,7 +109,7 @@ fun ProfileScreen(
                 // Avatar Image
                 Image(
                     painter = if (userProfile != null) {
-                        painterResource(id = getAvatarDrawable(userProfile!!.avatar))
+                        painterResource(id = getAvatarHeadShots(userProfile!!.avatar))
                     } else {
                         painterResource(id = R.drawable.avatar9) // Placeholder while loading
                     },
@@ -401,7 +396,7 @@ data class UserCardData(
     val description: String
 )
 
-fun getAvatarDrawable(avatarName: String): Int {
+fun getAvatarHeadShots(avatarName: String): Int {
     return when (avatarName) {
         "Deenasaur" -> R.drawable.deenasaur_head
         "Duallama" -> R.drawable.duallama_head

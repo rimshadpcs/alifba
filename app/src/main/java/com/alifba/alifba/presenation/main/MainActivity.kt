@@ -41,6 +41,7 @@ import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.main.layout.AlifbaMainScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
+import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.onboarding.OnboardingScreen
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
     private val homeViewModel: HomeViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
     private val chaptersViewModel: ChaptersViewModel by viewModels()
+    private val profileViewModel:ProfileViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -123,7 +125,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("homeScreen") {
-                            AlifbaMainScreen(lessonScreenViewModel, homeViewModel, chaptersViewModel)
+                            AlifbaMainScreen(lessonScreenViewModel, homeViewModel, chaptersViewModel,authViewModel,profileViewModel)
                         }
                     }
                 }
