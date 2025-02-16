@@ -24,9 +24,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +48,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.home.HomeViewModel
+import com.alifba.alifba.presenation.home.layout.settings.areNotificationsEnabled
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.utils.NotificationPermissionRationale
 import com.alifba.alifba.utils.requestNotificationPermission
@@ -60,24 +63,37 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
     val context = LocalContext.current
     var (showPermissionDialog, setShowPermissionDialog) = remember { mutableStateOf(false) }
+    var isNotificationsEnabled by remember { mutableStateOf(areNotificationsEnabled(context)) }
 
     LaunchedEffect(Unit) {
-        if (shouldAskNotifications()) {
-            showPermissionDialog = true
+        // We only want to show our custom dialog if the permission hasn't been granted yet
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED) {
+            setShowPermissionDialog(true)
+        }
+    }
 
+    // If the user returns to this screen after granting permission, we should update the dialog state
+    LaunchedEffect(context) {
+        if (!context.shouldAskNotifications() && showPermissionDialog) {
+            setShowPermissionDialog(false)
         }
     }
 
     if (showPermissionDialog) {
         NotificationPermissionRationale(
-            onDismiss = { showPermissionDialog = false },
+            onDismiss = {
+                setShowPermissionDialog(false)
+            },
             onAccept = {
-                showPermissionDialog = false
+                setShowPermissionDialog(false)
                 requestNotificationPermission(context)
             }
         )
     }
-
     Column(modifier = Modifier.fillMaxWidth()) {
 
         Spacer(modifier = Modifier.weight(.3f))  // This will push the LazyRow towards center if needed
