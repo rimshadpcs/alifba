@@ -1,0 +1,556 @@
+[debug] [2025-02-16T08:27:11.035Z] ----------------------------------------------------------------------
+[debug] [2025-02-16T08:27:11.036Z] Command:       /Users/rimshad/.nvm/versions/node/v18.20.5/bin/node /Users/rimshad/.nvm/versions/node/v18.20.5/bin/firebase functions:shell
+[debug] [2025-02-16T08:27:11.036Z] CLI Version:   13.31.1
+[debug] [2025-02-16T08:27:11.036Z] Platform:      darwin
+[debug] [2025-02-16T08:27:11.036Z] Node Version:  v18.20.5
+[debug] [2025-02-16T08:27:11.041Z] Time:          Sun Feb 16 2025 08:27:11 GMT+0000 (Greenwich Mean Time)
+[debug] [2025-02-16T08:27:11.041Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-16T08:27:11.123Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-16T08:27:11.124Z] > authorizing via signed-in user (rimshadpcs@gmail.com)
+[debug] [2025-02-16T08:27:11.124Z] [iam] checking project alifba-16e53 for permissions ["firebase.projects.get"]
+[debug] [2025-02-16T08:27:11.124Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:27:11.124Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:27:11.125Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions [none]
+[debug] [2025-02-16T08:27:11.125Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions x-goog-quota-user=projects/alifba-16e53
+[debug] [2025-02-16T08:27:11.125Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-02-16T08:27:12.561Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions 200
+[debug] [2025-02-16T08:27:12.561Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[warn] ⚠  functions: Functions Emulator unable to start on port 5000, starting on 5001 instead. {"metadata":{"emulator":{"name":"functions"},"message":"Functions Emulator unable to start on port 5000, starting on 5001 instead."}}
+[debug] [2025-02-16T08:27:12.674Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-02-16T08:27:12.675Z] defaultcredentials: writing to file /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:27:12.676Z] DEBUG: Setting GAC to /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:27:12.676Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:27:12.676Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:27:12.676Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig [none]
+[debug] [2025-02-16T08:27:13.173Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig 200
+[debug] [2025-02-16T08:27:13.173Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig {"projectId":"alifba-16e53","storageBucket":"alifba-16e53.firebasestorage.app"}
+[debug] [2025-02-16T08:27:13.190Z] [functions] Watching "/Users/rimshad/AndroidStudioProjects/Alifba/functions" for Cloud Functions...
+[debug] [2025-02-16T08:27:13.194Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-02-16T08:27:13.726Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^4.0.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-02-16T08:27:13.726Z] Building nodejs source
+[debug] [2025-02-16T08:27:13.726Z] Failed to find version of module node: reached end of search path /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "22" doesn't match your global version "18". Using node@18 from host. 
+[info] i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly 
+[debug] [2025-02-16T08:27:13.728Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-02-16T08:27:13.730Z] Found firebase-functions binary at '/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8591
+
+[debug] [2025-02-16T08:27:14.055Z] Got response from /__/functions.yaml {"endpoints":{"hourlyLessonReminder":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"scheduleTrigger":{"schedule":"0 * * * *","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetryDuration":null,"maxBackoffDuration":null,"minBackoffDuration":null},"timeZone":null},"labels":{},"entryPoint":"hourlyLessonReminder"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}]}
+[debug] [2025-02-16T08:27:14.067Z] [functions] Loaded functions definitions from source: hourlyLessonReminder.
+[debug] [2025-02-16T08:27:14.067Z] [functions[us-central1-hourlyLessonReminder]] function ignored because the pubsub emulator does not exist or is not running.
+[info] i  functions: Loaded functions: hourlyLessonReminder 
+[warn] ⚠  functions: The following emulators are not running, calls to these services will affect production: firestore, database, pubsub, storage, eventarc, tasks 
+[debug] [2025-02-16T08:29:22.576Z] ----------------------------------------------------------------------
+[debug] [2025-02-16T08:29:22.577Z] Command:       /Users/rimshad/.nvm/versions/node/v18.20.5/bin/node /Users/rimshad/.nvm/versions/node/v18.20.5/bin/firebase functions:shell
+[debug] [2025-02-16T08:29:22.577Z] CLI Version:   13.31.1
+[debug] [2025-02-16T08:29:22.577Z] Platform:      darwin
+[debug] [2025-02-16T08:29:22.578Z] Node Version:  v18.20.5
+[debug] [2025-02-16T08:29:22.582Z] Time:          Sun Feb 16 2025 08:29:22 GMT+0000 (Greenwich Mean Time)
+[debug] [2025-02-16T08:29:22.582Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-16T08:29:22.663Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-16T08:29:22.664Z] > authorizing via signed-in user (rimshadpcs@gmail.com)
+[debug] [2025-02-16T08:29:22.664Z] [iam] checking project alifba-16e53 for permissions ["firebase.projects.get"]
+[debug] [2025-02-16T08:29:22.664Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:29:22.664Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:29:22.665Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions [none]
+[debug] [2025-02-16T08:29:22.665Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions x-goog-quota-user=projects/alifba-16e53
+[debug] [2025-02-16T08:29:22.665Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-02-16T08:29:24.047Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions 200
+[debug] [2025-02-16T08:29:24.048Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[warn] ⚠  functions: Functions Emulator unable to start on port 5000, starting on 5001 instead. {"metadata":{"emulator":{"name":"functions"},"message":"Functions Emulator unable to start on port 5000, starting on 5001 instead."}}
+[debug] [2025-02-16T08:29:24.163Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-02-16T08:29:24.163Z] defaultcredentials: writing to file /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:29:24.164Z] DEBUG: Setting GAC to /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:29:24.164Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:29:24.164Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:29:24.164Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig [none]
+[debug] [2025-02-16T08:29:24.858Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig 200
+[debug] [2025-02-16T08:29:24.859Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig {"projectId":"alifba-16e53","storageBucket":"alifba-16e53.firebasestorage.app"}
+[debug] [2025-02-16T08:29:24.872Z] [functions] Watching "/Users/rimshad/AndroidStudioProjects/Alifba/functions" for Cloud Functions...
+[debug] [2025-02-16T08:29:24.877Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-02-16T08:29:25.433Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^4.0.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-02-16T08:29:25.433Z] Building nodejs source
+[debug] [2025-02-16T08:29:25.433Z] Failed to find version of module node: reached end of search path /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "22" doesn't match your global version "18". Using node@18 from host. 
+[info] i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly 
+[debug] [2025-02-16T08:29:25.434Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-02-16T08:29:25.437Z] Found firebase-functions binary at '/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8327
+
+[debug] [2025-02-16T08:29:25.696Z] Got response from /__/functions.yaml {"endpoints":{"hourlyLessonReminder":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"scheduleTrigger":{"schedule":"0 * * * *","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetryDuration":null,"maxBackoffDuration":null,"minBackoffDuration":null},"timeZone":null},"labels":{},"entryPoint":"hourlyLessonReminder"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}]}
+[debug] [2025-02-16T08:29:25.706Z] [functions] Loaded functions definitions from source: hourlyLessonReminder.
+[debug] [2025-02-16T08:29:25.707Z] [functions[us-central1-hourlyLessonReminder]] function ignored because the pubsub emulator does not exist or is not running.
+[info] i  functions: Loaded functions: hourlyLessonReminder 
+[warn] ⚠  functions: The following emulators are not running, calls to these services will affect production: firestore, database, pubsub, storage, eventarc, tasks 
+[debug] [2025-02-16T08:30:29.083Z] ----------------------------------------------------------------------
+[debug] [2025-02-16T08:30:29.083Z] Command:       /Users/rimshad/.nvm/versions/node/v18.20.5/bin/node /Users/rimshad/.nvm/versions/node/v18.20.5/bin/firebase functions:shell
+[debug] [2025-02-16T08:30:29.084Z] CLI Version:   13.31.1
+[debug] [2025-02-16T08:30:29.084Z] Platform:      darwin
+[debug] [2025-02-16T08:30:29.084Z] Node Version:  v18.20.5
+[debug] [2025-02-16T08:30:29.084Z] Time:          Sun Feb 16 2025 08:30:29 GMT+0000 (Greenwich Mean Time)
+[debug] [2025-02-16T08:30:29.084Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-16T08:30:29.171Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-16T08:30:29.171Z] > authorizing via signed-in user (rimshadpcs@gmail.com)
+[debug] [2025-02-16T08:30:29.171Z] [iam] checking project alifba-16e53 for permissions ["firebase.projects.get"]
+[debug] [2025-02-16T08:30:29.172Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:30:29.172Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:30:29.172Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions [none]
+[debug] [2025-02-16T08:30:29.172Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions x-goog-quota-user=projects/alifba-16e53
+[debug] [2025-02-16T08:30:29.172Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-02-16T08:30:30.604Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions 200
+[debug] [2025-02-16T08:30:30.604Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[warn] ⚠  functions: Functions Emulator unable to start on port 5000, starting on 5002 instead. {"metadata":{"emulator":{"name":"functions"},"message":"Functions Emulator unable to start on port 5000, starting on 5002 instead."}}
+[debug] [2025-02-16T08:30:30.734Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-02-16T08:30:30.735Z] defaultcredentials: writing to file /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:30:30.735Z] DEBUG: Setting GAC to /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:30:30.736Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:30:30.736Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:30:30.736Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig [none]
+[debug] [2025-02-16T08:30:31.337Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig 200
+[debug] [2025-02-16T08:30:31.337Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig {"projectId":"alifba-16e53","storageBucket":"alifba-16e53.firebasestorage.app"}
+[debug] [2025-02-16T08:30:31.346Z] [functions] Watching "/Users/rimshad/AndroidStudioProjects/Alifba/functions" for Cloud Functions...
+[debug] [2025-02-16T08:30:31.349Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-02-16T08:30:31.844Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^4.0.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-02-16T08:30:31.844Z] Building nodejs source
+[debug] [2025-02-16T08:30:31.845Z] Failed to find version of module node: reached end of search path /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "22" doesn't match your global version "18". Using node@18 from host. 
+[info] i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly 
+[debug] [2025-02-16T08:30:31.846Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-02-16T08:30:31.848Z] Found firebase-functions binary at '/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8323
+
+[debug] [2025-02-16T08:30:32.106Z] Got response from /__/functions.yaml {"endpoints":{"hourlyLessonReminder":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"scheduleTrigger":{"schedule":"0 * * * *","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetryDuration":null,"maxBackoffDuration":null,"minBackoffDuration":null},"timeZone":null},"labels":{},"entryPoint":"hourlyLessonReminder"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}]}
+[debug] [2025-02-16T08:30:32.116Z] [functions] Loaded functions definitions from source: hourlyLessonReminder.
+[debug] [2025-02-16T08:30:32.116Z] [functions[us-central1-hourlyLessonReminder]] function ignored because the pubsub emulator does not exist or is not running.
+[info] i  functions: Loaded functions: hourlyLessonReminder 
+[warn] ⚠  functions: The following emulators are not running, calls to these services will affect production: firestore, database, pubsub, storage, eventarc, tasks 
+[debug] [2025-02-16T08:31:19.569Z] shell:hourlyLessonReminder: trigger={"entryPoint":"hourlyLessonReminder","platform":"gcfv1","region":"us-central1","name":"hourlyLessonReminder","id":"us-central1-hourlyLessonReminder","codebase":"default","availableMemoryMb":256,"labels":{"EVENTARC_CLOUD_EVENT_SOURCE":"cloudfunctions-emulated.googleapis.com/projects/alifba-16e53/locations/us-central1/functions/hourlyLessonReminder"},"timeoutSeconds":60,"secretEnvironmentVariables":[],"eventTrigger":{"eventType":"pubsub","resource":""},"schedule":{"schedule":"0 * * * *","timeZone":null,"retryConfig":{"maxBackoffSeconds":null,"minBackoffSeconds":null,"maxRetrySeconds":null,"retryCount":null,"maxDoublings":null}}}
+[debug] [2025-02-16T08:31:19.571Z] shell:hourlyLessonReminder: opts={}, data={}
+[debug] [2025-02-16T08:31:19.583Z] DEBUG: [worker-pool] addWorker(us-central1-hourlyLessonReminder)
+[debug] [2025-02-16T08:31:19.585Z] DEBUG: [worker-pool] Adding worker with key us-central1-hourlyLessonReminder, total=1
+[debug] [2025-02-16T08:31:20.096Z] DEBUG: [runtime-status] [64574] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}
+[debug] [2025-02-16T08:31:20.096Z] DEBUG: [runtime-status] [64574] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:31:20.096Z] DEBUG: [runtime-status] [64574] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}]
+[debug] [2025-02-16T08:31:20.096Z] DEBUG: [runtime-status] [64574] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:31:20.191Z] DEBUG: [runtime-status] [64574] Checked functions.config() {"config":{}}
+[debug] [2025-02-16T08:31:20.191Z] DEBUG: [runtime-status] [64574] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}}
+[debug] [2025-02-16T08:31:20.191Z] DEBUG: [runtime-status] [64574] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:31:20.191Z] DEBUG: [runtime-status] [64574] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}
+[debug] [2025-02-16T08:31:20.192Z] DEBUG: [runtime-status] [64574] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:31:20.192Z] DEBUG: [runtime-status] [64574] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}}
+[debug] [2025-02-16T08:31:20.193Z] DEBUG: [runtime-status] [64574] initializeApp(DEFAULT) {"storageBucket":"alifba-16e53.firebasestorage.app","projectId":"alifba-16e53"}
+[debug] [2025-02-16T08:31:20.195Z] DEBUG: [runtime-status] [64574] Functions runtime initialized. {"cwd":"/Users/rimshad/AndroidStudioProjects/Alifba/functions","node_version":"18.20.5"}
+[debug] [2025-02-16T08:31:20.195Z] DEBUG: [runtime-status] [64574] Listening to port: /var/folders/31/2m6zlx9s3jb14slp1gscd2tc0000gn/T/fire_emu_d40a5ae16872dba0.sock
+[debug] [2025-02-16T08:31:20.300Z] DEBUG: [worker-us-central1-hourlyLessonReminder-1284752d-2dd0-45c3-854d-ab323132bf51]: IDLE
+[debug] [2025-02-16T08:31:20.308Z] DEBUG: [runtime-status] [64574] RunBackground {"data":{},"context":{"eventId":"795f4909-4bc3-4051-904e-17f91eef9e69","timestamp":"2025-02-16T08:31:19.572Z","eventType":"pubsub","auth":{"admin":false}}}
+[warn] ⚠  functions: The Cloud Firestore emulator is not running, so calls to Firestore will affect production. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"The Cloud Firestore emulator is not running, so calls to Firestore will affect production."}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[warn] ⚠  functions: Error: 7 PERMISSION_DENIED: Cloud Firestore API has not been used in project alifba-16e53 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=alifba-16e53 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at callErrorFromStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/resolving-call.js:129:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:376:40)
+    at makeRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:367:37)
+    at StreamingApiCaller.call (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+Caused by: Error
+    at QueryUtil._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at CollectionReference._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at CollectionReference._get (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28) {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Error: 7 PERMISSION_DENIED: Cloud Firestore API has not been used in project alifba-16e53 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=alifba-16e53 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.\n    at callErrorFromStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/call.js:32:19)\n    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:359:73)\n    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/resolving-call.js:129:78\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)\nfor call at\n    at ServiceClientImpl.makeServerStreamRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:342:32)\n    at ServiceClientImpl.<anonymous> (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16\n    at Object.request (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:376:40)\n    at makeRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:159:28)\n    at retryRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:119:5)\n    at StreamProxy.setStream (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:367:37)\n    at StreamingApiCaller.call (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)\nCaused by: Error\n    at QueryUtil._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)\n    at CollectionReference._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)\n    at CollectionReference._get (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)\n    at EnabledTraceUtil.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)"}}
+[warn] ⚠  Your function was killed because it raised an unhandled error. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Your function was killed because it raised an unhandled error."}}
+[debug] [2025-02-16T08:31:21.068Z] DEBUG: [worker-us-central1-hourlyLessonReminder-1284752d-2dd0-45c3-854d-ab323132bf51]: exited
+[debug] [2025-02-16T08:31:21.068Z] DEBUG: [worker-us-central1-hourlyLessonReminder-1284752d-2dd0-45c3-854d-ab323132bf51]: FINISHED
+[debug] [2025-02-16T08:31:40.597Z] shell:hourlyLessonReminder: trigger={"entryPoint":"hourlyLessonReminder","platform":"gcfv1","region":"us-central1","name":"hourlyLessonReminder","id":"us-central1-hourlyLessonReminder","codebase":"default","availableMemoryMb":256,"labels":{"EVENTARC_CLOUD_EVENT_SOURCE":"cloudfunctions-emulated.googleapis.com/projects/alifba-16e53/locations/us-central1/functions/hourlyLessonReminder"},"timeoutSeconds":60,"secretEnvironmentVariables":[],"eventTrigger":{"eventType":"pubsub","resource":""},"schedule":{"schedule":"0 * * * *","timeZone":null,"retryConfig":{"maxBackoffSeconds":null,"minBackoffSeconds":null,"maxRetrySeconds":null,"retryCount":null,"maxDoublings":null}}}
+[debug] [2025-02-16T08:31:40.598Z] shell:hourlyLessonReminder: opts={}, data={}
+[debug] [2025-02-16T08:31:40.604Z] DEBUG: [worker-pool] addWorker(us-central1-hourlyLessonReminder)
+[debug] [2025-02-16T08:31:40.605Z] DEBUG: [worker-pool] Adding worker with key us-central1-hourlyLessonReminder, total=1
+[debug] [2025-02-16T08:31:41.182Z] DEBUG: [runtime-status] [64576] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}
+[debug] [2025-02-16T08:31:41.182Z] DEBUG: [runtime-status] [64576] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:31:41.182Z] DEBUG: [runtime-status] [64576] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}]
+[debug] [2025-02-16T08:31:41.183Z] DEBUG: [runtime-status] [64576] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:31:41.306Z] DEBUG: [runtime-status] [64576] Checked functions.config() {"config":{}}
+[debug] [2025-02-16T08:31:41.307Z] DEBUG: [runtime-status] [64576] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}}
+[debug] [2025-02-16T08:31:41.307Z] DEBUG: [runtime-status] [64576] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:31:41.307Z] DEBUG: [runtime-status] [64576] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}
+[debug] [2025-02-16T08:31:41.308Z] DEBUG: [runtime-status] [64576] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:31:41.308Z] DEBUG: [runtime-status] [64576] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}}
+[debug] [2025-02-16T08:31:41.309Z] DEBUG: [runtime-status] [64576] initializeApp(DEFAULT) {"storageBucket":"alifba-16e53.firebasestorage.app","projectId":"alifba-16e53"}
+[debug] [2025-02-16T08:31:41.311Z] DEBUG: [runtime-status] [64576] Functions runtime initialized. {"cwd":"/Users/rimshad/AndroidStudioProjects/Alifba/functions","node_version":"18.20.5"}
+[debug] [2025-02-16T08:31:41.311Z] DEBUG: [runtime-status] [64576] Listening to port: /var/folders/31/2m6zlx9s3jb14slp1gscd2tc0000gn/T/fire_emu_dcd386729be4be9e.sock
+[debug] [2025-02-16T08:31:41.318Z] DEBUG: [worker-us-central1-hourlyLessonReminder-f050f210-2356-42bd-9945-68cb9ac8399d]: IDLE
+[debug] [2025-02-16T08:31:41.329Z] DEBUG: [runtime-status] [64576] RunBackground {"data":{},"context":{"eventId":"8cea49eb-7c3c-4703-8b0a-d0be6980b2e2","timestamp":"2025-02-16T08:31:40.598Z","eventType":"pubsub","auth":{"admin":false}}}
+[warn] ⚠  functions: The Cloud Firestore emulator is not running, so calls to Firestore will affect production. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"The Cloud Firestore emulator is not running, so calls to Firestore will affect production."}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[warn] ⚠  functions: Error: 7 PERMISSION_DENIED: Cloud Firestore API has not been used in project alifba-16e53 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=alifba-16e53 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at callErrorFromStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/resolving-call.js:129:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:376:40)
+    at makeRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:367:37)
+    at StreamingApiCaller.call (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+Caused by: Error
+    at QueryUtil._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at CollectionReference._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at CollectionReference._get (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28) {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Error: 7 PERMISSION_DENIED: Cloud Firestore API has not been used in project alifba-16e53 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=alifba-16e53 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.\n    at callErrorFromStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/call.js:32:19)\n    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:359:73)\n    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/resolving-call.js:129:78\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)\nfor call at\n    at ServiceClientImpl.makeServerStreamRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:342:32)\n    at ServiceClientImpl.<anonymous> (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16\n    at Object.request (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:376:40)\n    at makeRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:159:28)\n    at retryRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:119:5)\n    at StreamProxy.setStream (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:367:37)\n    at StreamingApiCaller.call (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)\nCaused by: Error\n    at QueryUtil._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)\n    at CollectionReference._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)\n    at CollectionReference._get (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)\n    at EnabledTraceUtil.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)"}}
+[warn] ⚠  Your function was killed because it raised an unhandled error. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Your function was killed because it raised an unhandled error."}}
+[debug] [2025-02-16T08:31:42.043Z] DEBUG: [worker-us-central1-hourlyLessonReminder-f050f210-2356-42bd-9945-68cb9ac8399d]: exited
+[debug] [2025-02-16T08:31:42.043Z] DEBUG: [worker-us-central1-hourlyLessonReminder-f050f210-2356-42bd-9945-68cb9ac8399d]: FINISHED
+[debug] [2025-02-16T08:33:41.658Z] ----------------------------------------------------------------------
+[debug] [2025-02-16T08:33:41.659Z] Command:       /Users/rimshad/.nvm/versions/node/v18.20.5/bin/node /Users/rimshad/.nvm/versions/node/v18.20.5/bin/firebase functions:shell
+[debug] [2025-02-16T08:33:41.659Z] CLI Version:   13.31.1
+[debug] [2025-02-16T08:33:41.659Z] Platform:      darwin
+[debug] [2025-02-16T08:33:41.659Z] Node Version:  v18.20.5
+[debug] [2025-02-16T08:33:41.660Z] Time:          Sun Feb 16 2025 08:33:41 GMT+0000 (Greenwich Mean Time)
+[debug] [2025-02-16T08:33:41.660Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-16T08:33:41.743Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-16T08:33:41.743Z] > authorizing via signed-in user (rimshadpcs@gmail.com)
+[debug] [2025-02-16T08:33:41.743Z] [iam] checking project alifba-16e53 for permissions ["firebase.projects.get"]
+[debug] [2025-02-16T08:33:41.744Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:33:41.744Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:33:41.744Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions [none]
+[debug] [2025-02-16T08:33:41.744Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions x-goog-quota-user=projects/alifba-16e53
+[debug] [2025-02-16T08:33:41.744Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-02-16T08:33:43.209Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions 200
+[debug] [2025-02-16T08:33:43.209Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[warn] ⚠  functions: Functions Emulator unable to start on port 5000, starting on 5002 instead. {"metadata":{"emulator":{"name":"functions"},"message":"Functions Emulator unable to start on port 5000, starting on 5002 instead."}}
+[debug] [2025-02-16T08:33:43.338Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-02-16T08:33:43.338Z] defaultcredentials: writing to file /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:33:43.339Z] DEBUG: Setting GAC to /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:33:43.339Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:33:43.339Z] Checked if tokens are valid: true, expires at: 1739695791458
+[debug] [2025-02-16T08:33:43.339Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig [none]
+[debug] [2025-02-16T08:33:43.763Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig 200
+[debug] [2025-02-16T08:33:43.764Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig {"projectId":"alifba-16e53","storageBucket":"alifba-16e53.firebasestorage.app"}
+[debug] [2025-02-16T08:33:43.773Z] [functions] Watching "/Users/rimshad/AndroidStudioProjects/Alifba/functions" for Cloud Functions...
+[debug] [2025-02-16T08:33:43.775Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-02-16T08:33:44.258Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^4.0.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-02-16T08:33:44.258Z] Building nodejs source
+[debug] [2025-02-16T08:33:44.259Z] Failed to find version of module node: reached end of search path /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "22" doesn't match your global version "18". Using node@18 from host. 
+[info] i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly 
+[debug] [2025-02-16T08:33:44.260Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-02-16T08:33:44.262Z] Found firebase-functions binary at '/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8420
+
+[debug] [2025-02-16T08:33:44.510Z] Got response from /__/functions.yaml {"endpoints":{"hourlyLessonReminder":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"scheduleTrigger":{"schedule":"0 * * * *","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetryDuration":null,"maxBackoffDuration":null,"minBackoffDuration":null},"timeZone":null},"labels":{},"entryPoint":"hourlyLessonReminder"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}]}
+[debug] [2025-02-16T08:33:44.520Z] [functions] Loaded functions definitions from source: hourlyLessonReminder.
+[debug] [2025-02-16T08:33:44.520Z] [functions[us-central1-hourlyLessonReminder]] function ignored because the pubsub emulator does not exist or is not running.
+[info] i  functions: Loaded functions: hourlyLessonReminder 
+[warn] ⚠  functions: The following emulators are not running, calls to these services will affect production: firestore, database, pubsub, storage, eventarc, tasks 
+[debug] [2025-02-16T08:33:48.874Z] shell:hourlyLessonReminder: trigger={"entryPoint":"hourlyLessonReminder","platform":"gcfv1","region":"us-central1","name":"hourlyLessonReminder","id":"us-central1-hourlyLessonReminder","codebase":"default","availableMemoryMb":256,"labels":{"EVENTARC_CLOUD_EVENT_SOURCE":"cloudfunctions-emulated.googleapis.com/projects/alifba-16e53/locations/us-central1/functions/hourlyLessonReminder"},"timeoutSeconds":60,"secretEnvironmentVariables":[],"eventTrigger":{"eventType":"pubsub","resource":""},"schedule":{"schedule":"0 * * * *","timeZone":null,"retryConfig":{"maxBackoffSeconds":null,"minBackoffSeconds":null,"maxRetrySeconds":null,"retryCount":null,"maxDoublings":null}}}
+[debug] [2025-02-16T08:33:48.874Z] shell:hourlyLessonReminder: opts={}, data={}
+[debug] [2025-02-16T08:33:48.879Z] DEBUG: [worker-pool] addWorker(us-central1-hourlyLessonReminder)
+[debug] [2025-02-16T08:33:48.879Z] DEBUG: [worker-pool] Adding worker with key us-central1-hourlyLessonReminder, total=1
+[debug] [2025-02-16T08:33:49.297Z] DEBUG: [runtime-status] [64940] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}
+[debug] [2025-02-16T08:33:49.297Z] DEBUG: [runtime-status] [64940] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:33:49.297Z] DEBUG: [runtime-status] [64940] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}]
+[debug] [2025-02-16T08:33:49.297Z] DEBUG: [runtime-status] [64940] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:33:49.357Z] DEBUG: [runtime-status] [64940] Checked functions.config() {"config":{}}
+[debug] [2025-02-16T08:33:49.357Z] DEBUG: [runtime-status] [64940] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}}
+[debug] [2025-02-16T08:33:49.357Z] DEBUG: [runtime-status] [64940] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:33:49.357Z] DEBUG: [runtime-status] [64940] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}
+[debug] [2025-02-16T08:33:49.358Z] DEBUG: [runtime-status] [64940] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:33:49.358Z] DEBUG: [runtime-status] [64940] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}}
+[debug] [2025-02-16T08:33:49.359Z] DEBUG: [runtime-status] [64940] initializeApp(DEFAULT) {"storageBucket":"alifba-16e53.firebasestorage.app","projectId":"alifba-16e53"}
+[debug] [2025-02-16T08:33:49.361Z] DEBUG: [runtime-status] [64940] Functions runtime initialized. {"cwd":"/Users/rimshad/AndroidStudioProjects/Alifba/functions","node_version":"18.20.5"}
+[debug] [2025-02-16T08:33:49.362Z] DEBUG: [runtime-status] [64940] Listening to port: /var/folders/31/2m6zlx9s3jb14slp1gscd2tc0000gn/T/fire_emu_cc09500208867f5a.sock
+[debug] [2025-02-16T08:33:49.388Z] DEBUG: [worker-us-central1-hourlyLessonReminder-5154a950-7b59-4b5f-b396-fee5f15a36c4]: IDLE
+[debug] [2025-02-16T08:33:49.394Z] DEBUG: [runtime-status] [64940] RunBackground {"data":{},"context":{"eventId":"108e9f87-195a-4145-9b70-bd25d730800a","timestamp":"2025-02-16T08:33:48.874Z","eventType":"pubsub","auth":{"admin":false}}}
+[warn] ⚠  functions: The Cloud Firestore emulator is not running, so calls to Firestore will affect production. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"The Cloud Firestore emulator is not running, so calls to Firestore will affect production."}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[warn] ⚠  functions: Error: 5 NOT_FOUND: 
+    at callErrorFromStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/resolving-call.js:129:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:376:40)
+    at makeRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:367:37)
+    at StreamingApiCaller.call (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+Caused by: Error
+    at QueryUtil._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at CollectionReference._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at CollectionReference._get (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28) {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Error: 5 NOT_FOUND: \n    at callErrorFromStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/call.js:32:19)\n    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:359:73)\n    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/resolving-call.js:129:78\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)\nfor call at\n    at ServiceClientImpl.makeServerStreamRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:342:32)\n    at ServiceClientImpl.<anonymous> (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16\n    at Object.request (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:376:40)\n    at makeRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:159:28)\n    at retryRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:119:5)\n    at StreamProxy.setStream (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:367:37)\n    at StreamingApiCaller.call (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)\nCaused by: Error\n    at QueryUtil._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)\n    at CollectionReference._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)\n    at CollectionReference._get (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)\n    at EnabledTraceUtil.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)"}}
+[warn] ⚠  Your function was killed because it raised an unhandled error. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Your function was killed because it raised an unhandled error."}}
+[debug] [2025-02-16T08:33:50.150Z] DEBUG: [worker-us-central1-hourlyLessonReminder-5154a950-7b59-4b5f-b396-fee5f15a36c4]: exited
+[debug] [2025-02-16T08:33:50.150Z] DEBUG: [worker-us-central1-hourlyLessonReminder-5154a950-7b59-4b5f-b396-fee5f15a36c4]: FINISHED
+[debug] [2025-02-16T08:35:55.903Z] ----------------------------------------------------------------------
+[debug] [2025-02-16T08:35:55.903Z] Command:       /Users/rimshad/.nvm/versions/node/v18.20.5/bin/node /Users/rimshad/.nvm/versions/node/v18.20.5/bin/firebase functions:shell
+[debug] [2025-02-16T08:35:55.904Z] CLI Version:   13.31.1
+[debug] [2025-02-16T08:35:55.904Z] Platform:      darwin
+[debug] [2025-02-16T08:35:55.904Z] Node Version:  v18.20.5
+[debug] [2025-02-16T08:35:55.905Z] Time:          Sun Feb 16 2025 08:35:55 GMT+0000 (Greenwich Mean Time)
+[debug] [2025-02-16T08:35:55.905Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-16T08:35:55.990Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-16T08:35:55.990Z] > authorizing via signed-in user (rimshadpcs@gmail.com)
+[debug] [2025-02-16T08:35:55.990Z] [iam] checking project alifba-16e53 for permissions ["firebase.projects.get"]
+[debug] [2025-02-16T08:35:55.991Z] Checked if tokens are valid: false, expires at: 1739695791458
+[debug] [2025-02-16T08:35:55.991Z] Checked if tokens are valid: false, expires at: 1739695791458
+[debug] [2025-02-16T08:35:55.991Z] > refreshing access token with scopes: []
+[debug] [2025-02-16T08:35:55.991Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-02-16T08:35:55.991Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-02-16T08:35:56.219Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-02-16T08:35:56.219Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-02-16T08:35:56.229Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions [none]
+[debug] [2025-02-16T08:35:56.229Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions x-goog-quota-user=projects/alifba-16e53
+[debug] [2025-02-16T08:35:56.229Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-02-16T08:35:57.526Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions 200
+[debug] [2025-02-16T08:35:57.526Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-16e53:testIamPermissions {"permissions":["firebase.projects.get"]}
+[warn] ⚠  functions: Functions Emulator unable to start on port 5000, starting on 5002 instead. {"metadata":{"emulator":{"name":"functions"},"message":"Functions Emulator unable to start on port 5000, starting on 5002 instead."}}
+[debug] [2025-02-16T08:35:57.702Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-02-16T08:35:57.703Z] defaultcredentials: writing to file /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:35:57.704Z] DEBUG: Setting GAC to /Users/rimshad/.config/firebase/rimshadpcs_gmail_com_application_default_credentials.json
+[debug] [2025-02-16T08:35:57.704Z] Checked if tokens are valid: true, expires at: 1739698555219
+[debug] [2025-02-16T08:35:57.704Z] Checked if tokens are valid: true, expires at: 1739698555219
+[debug] [2025-02-16T08:35:57.704Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig [none]
+[debug] [2025-02-16T08:35:58.373Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig 200
+[debug] [2025-02-16T08:35:58.373Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/alifba-16e53/adminSdkConfig {"projectId":"alifba-16e53","storageBucket":"alifba-16e53.firebasestorage.app"}
+[debug] [2025-02-16T08:35:58.382Z] [functions] Watching "/Users/rimshad/AndroidStudioProjects/Alifba/functions" for Cloud Functions...
+[debug] [2025-02-16T08:35:58.384Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-02-16T08:35:58.953Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^4.0.0"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-02-16T08:35:58.953Z] Building nodejs source
+[debug] [2025-02-16T08:35:58.953Z] Failed to find version of module node: reached end of search path /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules
+[warn] ⚠  functions: Your requested "node" version "22" doesn't match your global version "18". Using node@18 from host. 
+[info] i  functions: You are using a version of firebase-functions SDK (4.9.0) that does not have support for the newest Firebase Extensions features. Please update firebase-functions SDK to >=5.1.0 to use them correctly 
+[debug] [2025-02-16T08:35:58.954Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-02-16T08:35:58.956Z] Found firebase-functions binary at '/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8228
+
+[debug] [2025-02-16T08:35:59.220Z] Got response from /__/functions.yaml {"endpoints":{"hourlyLessonReminder":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"scheduleTrigger":{"schedule":"0 * * * *","retryConfig":{"retryCount":null,"maxDoublings":null,"maxRetryDuration":null,"maxBackoffDuration":null,"minBackoffDuration":null},"timeZone":null},"labels":{},"entryPoint":"hourlyLessonReminder"}},"specVersion":"v1alpha1","requiredAPIs":[{"api":"cloudscheduler.googleapis.com","reason":"Needed for scheduled functions."}]}
+[debug] [2025-02-16T08:35:59.229Z] [functions] Loaded functions definitions from source: hourlyLessonReminder.
+[debug] [2025-02-16T08:35:59.229Z] [functions[us-central1-hourlyLessonReminder]] function ignored because the pubsub emulator does not exist or is not running.
+[info] i  functions: Loaded functions: hourlyLessonReminder 
+[warn] ⚠  functions: The following emulators are not running, calls to these services will affect production: firestore, database, pubsub, storage, eventarc, tasks 
+[debug] [2025-02-16T08:36:01.994Z] shell:hourlyLessonReminder: trigger={"entryPoint":"hourlyLessonReminder","platform":"gcfv1","region":"us-central1","name":"hourlyLessonReminder","id":"us-central1-hourlyLessonReminder","codebase":"default","availableMemoryMb":256,"labels":{"EVENTARC_CLOUD_EVENT_SOURCE":"cloudfunctions-emulated.googleapis.com/projects/alifba-16e53/locations/us-central1/functions/hourlyLessonReminder"},"timeoutSeconds":60,"secretEnvironmentVariables":[],"eventTrigger":{"eventType":"pubsub","resource":""},"schedule":{"schedule":"0 * * * *","timeZone":null,"retryConfig":{"maxBackoffSeconds":null,"minBackoffSeconds":null,"maxRetrySeconds":null,"retryCount":null,"maxDoublings":null}}}
+[debug] [2025-02-16T08:36:01.995Z] shell:hourlyLessonReminder: opts={}, data={}
+[debug] [2025-02-16T08:36:01.999Z] DEBUG: [worker-pool] addWorker(us-central1-hourlyLessonReminder)
+[debug] [2025-02-16T08:36:01.999Z] DEBUG: [worker-pool] Adding worker with key us-central1-hourlyLessonReminder, total=1
+[debug] [2025-02-16T08:36:02.525Z] DEBUG: [runtime-status] [65385] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}
+[debug] [2025-02-16T08:36:02.525Z] DEBUG: [runtime-status] [65385] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:36:02.525Z] DEBUG: [runtime-status] [65385] Outgoing network have been stubbed. [{"name":"http","status":"mocked"},{"name":"http","status":"mocked"},{"name":"https","status":"mocked"},{"name":"https","status":"mocked"},{"name":"net","status":"mocked"}]
+[debug] [2025-02-16T08:36:02.525Z] DEBUG: [runtime-status] [65385] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:36:02.582Z] DEBUG: [runtime-status] [65385] Checked functions.config() {"config":{}}
+[debug] [2025-02-16T08:36:02.582Z] DEBUG: [runtime-status] [65385] firebase-functions has been stubbed. {"functionsResolution":{"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}}
+[debug] [2025-02-16T08:36:02.582Z] DEBUG: [runtime-status] [65385] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:36:02.583Z] DEBUG: [runtime-status] [65385] Resolved module firebase-admin {"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}
+[debug] [2025-02-16T08:36:02.583Z] DEBUG: [runtime-status] [65385] Resolved module firebase-functions {"declared":true,"installed":true,"version":"4.9.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-functions/lib/v1/index.js"}
+[debug] [2025-02-16T08:36:02.583Z] DEBUG: [runtime-status] [65385] firebase-admin has been stubbed. {"adminResolution":{"declared":true,"installed":true,"version":"12.7.0","resolution":"/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/firebase-admin/lib/index.js"}}
+[debug] [2025-02-16T08:36:02.584Z] DEBUG: [runtime-status] [65385] initializeApp(DEFAULT) {"storageBucket":"alifba-16e53.firebasestorage.app","projectId":"alifba-16e53"}
+[debug] [2025-02-16T08:36:02.587Z] DEBUG: [runtime-status] [65385] Functions runtime initialized. {"cwd":"/Users/rimshad/AndroidStudioProjects/Alifba/functions","node_version":"18.20.5"}
+[debug] [2025-02-16T08:36:02.587Z] DEBUG: [runtime-status] [65385] Listening to port: /var/folders/31/2m6zlx9s3jb14slp1gscd2tc0000gn/T/fire_emu_5ed5dd5ff4a27334.sock
+[debug] [2025-02-16T08:36:02.609Z] DEBUG: [worker-us-central1-hourlyLessonReminder-49320cfc-4d57-486b-a969-4a12ba8eb529]: IDLE
+[debug] [2025-02-16T08:36:02.615Z] DEBUG: [runtime-status] [65385] RunBackground {"data":{},"context":{"eventId":"6439b806-191c-43ca-a7ea-0fc295bf90b1","timestamp":"2025-02-16T08:36:01.995Z","eventType":"pubsub","auth":{"admin":false}}}
+[warn] ⚠  functions: The Cloud Firestore emulator is not running, so calls to Firestore will affect production. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"The Cloud Firestore emulator is not running, so calls to Firestore will affect production."}}
+[warn] ⚠  Google API requested!
+   - URL: "https://oauth2.googleapis.com/token"
+   - Be careful, this may be a production service. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Google API requested!\n   - URL: \"https://oauth2.googleapis.com/token\"\n   - Be careful, this may be a production service."}}
+[warn] ⚠  functions: Error: 5 NOT_FOUND: 
+    at callErrorFromStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/call.js:32:19)
+    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:359:73)
+    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/resolving-call.js:129:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeServerStreamRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:342:32)
+    at ServiceClientImpl.<anonymous> (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at Object.request (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:376:40)
+    at makeRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:159:28)
+    at retryRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:119:5)
+    at StreamProxy.setStream (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:367:37)
+    at StreamingApiCaller.call (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)
+Caused by: Error
+    at QueryUtil._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at CollectionReference._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at CollectionReference._get (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28) {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Error: 5 NOT_FOUND: \n    at callErrorFromStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/call.js:32:19)\n    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:359:73)\n    at Object.onReceiveStatus (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:324:181)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/resolving-call.js:129:78\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)\nfor call at\n    at ServiceClientImpl.makeServerStreamRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/client.js:342:32)\n    at ServiceClientImpl.<anonymous> (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@grpc/grpc-js/build/src/make-client.js:105:19)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/v1/firestore_client.js:237:29\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:38:28\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16\n    at Object.request (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:376:40)\n    at makeRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:159:28)\n    at retryRequest (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/retry-request/index.js:119:5)\n    at StreamProxy.setStream (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streaming.js:367:37)\n    at StreamingApiCaller.call (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/google-gax/build/src/streamingCalls/streamingApiCaller.js:54:16)\nCaused by: Error\n    at QueryUtil._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)\n    at CollectionReference._getResponse (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)\n    at CollectionReference._get (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43\n    at /Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)\n    at EnabledTraceUtil.startActiveSpan (/Users/rimshad/AndroidStudioProjects/Alifba/functions/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)"}}
+[warn] ⚠  Your function was killed because it raised an unhandled error. {"metadata":{"emulator":{"name":"functions"},"function":{"name":"us-central1-hourlyLessonReminder"},"extension":{},"message":"Your function was killed because it raised an unhandled error."}}
+[debug] [2025-02-16T08:36:03.409Z] DEBUG: [worker-us-central1-hourlyLessonReminder-49320cfc-4d57-486b-a969-4a12ba8eb529]: exited
+[debug] [2025-02-16T08:36:03.409Z] DEBUG: [worker-us-central1-hourlyLessonReminder-49320cfc-4d57-486b-a969-4a12ba8eb529]: FINISHED

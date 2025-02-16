@@ -1,5 +1,11 @@
 package com.alifba.alifba.presenation.home.layout
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,19 +17,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,6 +47,9 @@ import androidx.navigation.compose.rememberNavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
+import com.alifba.alifba.utils.NotificationPermissionRationale
+import com.alifba.alifba.utils.requestNotificationPermission
+import com.alifba.alifba.utils.shouldAskNotifications
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -40,7 +58,25 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
     val scrollState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
+    val context = LocalContext.current
+    var (showPermissionDialog, setShowPermissionDialog) = remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        if (shouldAskNotifications()) {
+            showPermissionDialog = true
+
+        }
+    }
+
+    if (showPermissionDialog) {
+        NotificationPermissionRationale(
+            onDismiss = { showPermissionDialog = false },
+            onAccept = {
+                showPermissionDialog = false
+                requestNotificationPermission(context)
+            }
+        )
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
 

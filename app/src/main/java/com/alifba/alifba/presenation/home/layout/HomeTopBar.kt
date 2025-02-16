@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.Login.AuthViewModel
-import com.alifba.alifba.presenation.home.layout.profile.getAvatarDrawable
+import com.alifba.alifba.presenation.home.layout.profile.getAvatarHeadShots
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -45,7 +45,7 @@ fun HomeTopBar(
 ) {
     val userProfile by authViewModel.userProfileState.collectAsState()
     val avatarName = userProfile?.avatar ?: "deenasaur"
-    val avatarDrawable = getAvatarDrawable(avatarName)
+    val avatarDrawable = getAvatarHeadShots(avatarName)
     Log.d("HomeTopBar", "UserProfile: $userProfile")
     Log.d("HomeTopBar", "Avatar Name: $avatarName")
     val context = LocalContext.current

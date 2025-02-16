@@ -6,7 +6,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.BottomNavigationDefaults.windowInsets
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -25,6 +24,7 @@ import com.alifba.alifba.data.db.DatabaseProvider
 import com.alifba.alifba.presenation.chapters.layout.LazyChapterColumn
 import com.alifba.alifba.presenation.chapters.models.Chapter
 import com.alifba.alifba.presenation.home.HomeViewModel
+import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.home.layout.TopBarIcons
 import com.alifba.alifba.presenation.lessonScreens.domain.repository.LessonCacheRepository
 import com.alifba.alifba.ui_components.dialogs.BadgeEarnedSnackBar
@@ -42,7 +42,8 @@ fun ChaptersScreen(
     navController: NavController,
     levelId: String,
     chaptersViewModel: ChaptersViewModel,
-    homeViewModel: HomeViewModel
+    homeViewModel: HomeViewModel,
+    profileViewModel: ProfileViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
@@ -50,6 +51,9 @@ fun ChaptersScreen(
 
     val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId }
     val levelImage = levelItem?.image ?: R.drawable.levelone
+
+
+    val userProfile by profileViewModel.userProfileState.collectAsState()
 
     // 1) Load chapters on first display
     LaunchedEffect(levelId) {
@@ -82,15 +86,30 @@ fun ChaptersScreen(
         ) {
             // Now the bottom sheet will span the entire width.
             selectedChapter?.let { chapter ->
+                Log.d("ChaptersScreen", "selectedChapter: ${chapter.title}")
+                Log.d("ChaptersScreen", "userProfile?.avatar = ${userProfile?.avatar}")
+                Log.d("ChaptersScreens", "profileViewModel instance = $profileViewModel, userProfileState = ${profileViewModel.userProfileState.value}")
+
+                val avatarRes = if (userProfile != null) {
+                    val loadedAvatar = getAvatarImages(userProfile!!.avatar)
+                    // (B) Debug what we resolved for the resource:
+                    Log.d("ChaptersScreen", "Loaded Avatar Resource = $loadedAvatar")
+                    loadedAvatar
+                } else {
+                    // (C) If userProfile is null
+                    Log.d("ChaptersScreen", "userProfile is null => fallback to avatar9")
+                    R.drawable.avatar9
+                }
+
                 ChapterDownloadBottomSheetContent(
                     chapter = chapter,
                     context = context,
                     levelId = levelId,
                     navController = navController,
                     lessonCacheRepository = chaptersViewModel.lessonCacheRepository,
+//                    avatarRes = avatarRes,
+                    profileViewModel = profileViewModel,
                     onDownloadCompleted = {
-                       // val nextChapterId = chaptersViewModel.getNextChapterId(chapter.id)
-                            // chaptersViewModel.markChapterCompleted(chapter.id, nextChapterId)
                         selectedChapter = null
                         coroutineScope.launch { sheetState.hide() }
                     }
@@ -185,6 +204,26 @@ fun ChaptersScreen(
     }
 }
 
+fun getAvatarImages(avatarName: String): Int {
+    return when (avatarName) {
+        "Deenasaur" -> R.drawable.deenasaur
+        "Duallama" -> R.drawable.duallama
+        "Firdawsaur" -> R.drawable.firdawsaur
+        "Ihsaninguin" -> R.drawable.ihsaninguin
+        "Imamoth" -> R.drawable.imamoth
+        "Khilafox" -> R.drawable.khilafox
+        "Shukraf" -> R.drawable.shukraf
+        "Jannahbee" -> R.drawable.jannahbee
+        "Qadragon" -> R.drawable.qadragon
+        "Sabracorn" -> R.drawable.sabracorn
+        "Sadiqling" -> R.drawable.sadiqling
+        "Sidqhog" -> R.drawable.sidqhog
+
+        else -> R.drawable.avatar9
+    }
+}
+
+
 /**
  * Bottom sheet that does the actual “Download and Start”
  */
@@ -194,14 +233,28 @@ fun ChapterDownloadBottomSheetContent(
     context: Context,
     levelId: String,
     navController: NavController,
+    profileViewModel: ProfileViewModel,
     lessonCacheRepository: LessonCacheRepository, // for checking local DB
     onDownloadCompleted: () -> Unit
 ) {
+    val userProfile by profileViewModel.userProfileState.collectAsState()  // ✅ Live observe changes!
+
+    val avatarRes = userProfile?.avatar?.let { getAvatarImages(it) } ?: R.drawable.avatar9  // ✅ Dynamic update
+    LaunchedEffect(userProfile) {
+        Log.d("BottomSheetContent", "Updated userProfile: $userProfile")
+        Log.d("BottomSheetContent", "Avatar resolved to: $avatarRes")
+    }
+
+
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
     val coroutineScope = rememberCoroutineScope()
 
     // Track the UI state (Initial, Downloading, Cached, Downloaded, Error)
     var downloadState by remember { mutableStateOf<DownloadState>(DownloadState.Initial) }
+
+   // val userProfile by profileViewModel.userProfileState.collectAsState()
+
+   // val avatarRes = userProfile?.avatar?.let { getAvatarImages(avatarName = it) } ?: R.drawable.avatar9
 
     // Keep track of the workerId so we can observe its progress
     var workerId by remember { mutableStateOf<UUID?>(null) }
@@ -221,13 +274,17 @@ fun ChapterDownloadBottomSheetContent(
                 WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED, WorkInfo.State.RUNNING -> {
                     downloadState = DownloadState.Downloading
                 }
+
                 WorkInfo.State.SUCCEEDED -> {
                     downloadState = DownloadState.Downloaded
                 }
+
                 WorkInfo.State.FAILED -> {
                     downloadState = DownloadState.Error
                 }
-                else -> { /* CANCELLED or other states */ }
+
+                else -> { /* CANCELLED or other states */
+                }
             }
         }
     }
@@ -266,11 +323,11 @@ fun ChapterDownloadBottomSheetContent(
 
         )
 
+
         Image(
-            painter = painterResource(id = R.drawable.deenasaur),
-            contentDescription = "Chapter Image",
-            modifier = Modifier
-                .size(150.dp),
+            painter = painterResource(id = avatarRes),
+            contentDescription = "User Avatar",
+            modifier = Modifier.size(150.dp),
             contentScale = ContentScale.Crop
         )
 

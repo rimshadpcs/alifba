@@ -28,6 +28,9 @@ class ProfileViewModel @Inject constructor(
     private val _earnedBadges = MutableStateFlow<List<Badge>>(emptyList())
     val earnedBadges: StateFlow<List<Badge>> get() = _earnedBadges
 
+    init {
+        fetchUserProfile()
+    }
 
     /**
      * Fetches all relevant user data (XP, chaptersCompleted, badges, child profile, etc.)

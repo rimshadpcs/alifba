@@ -10,6 +10,7 @@ import com.alifba.alifba.features.authentication.usecase.SignUpUseCase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,6 +80,7 @@ class AuthViewModel @Inject constructor(
                         val userId = userDoc.getString("userId")
                         if (userId != null) {
                             dataStoreManager.saveUserDetails(email, password, userId)
+                            fetchAndSaveFcmToken(userId)
                             val hasProfiles = checkForChildProfiles()
                             onResult(hasProfiles)
                         }
@@ -216,7 +218,7 @@ class AuthViewModel @Inject constructor(
                     userId = createdUserId.toString()
                 )
             }
-
+            fetchAndSaveFcmToken(createdUserId.toString())
             // Notify success
             _profileCreationState.value = ProfileCreationState.Success
         }.addOnFailureListener { e ->
@@ -333,6 +335,28 @@ sealed class ProfileCreationState {
     data class Error(val message: String) : ProfileCreationState()
 }
 
+
+fun fetchAndSaveFcmToken(userId: String) {
+    FirebaseMessaging.getInstance().token
+        .addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.e("FCM", "Fetching FCM token failed", task.exception)
+                return@addOnCompleteListener
+            }
+            val token = task.result
+            Log.d("FCM", "Fetched Token: $token")
+            // Save token to Firestore
+            saveFcmToken(userId, token)
+        }
+}
+
+private fun saveFcmToken(userId: String, token: String) {
+    FirebaseFirestore.getInstance().collection("users")
+        .document(userId)
+        .update("fcmToken", token)
+        .addOnSuccessListener { Log.d("FCM", "FCM token updated in Firestore") }
+        .addOnFailureListener { e -> Log.e("FCM", "Error: ${e.localizedMessage}") }
+}
 
 
 
