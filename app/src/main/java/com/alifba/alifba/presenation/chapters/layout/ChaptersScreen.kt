@@ -57,6 +57,7 @@ fun ChaptersScreen(
 
     // 1) Load chapters on first display
     LaunchedEffect(levelId) {
+
         Log.d("ChaptersScreen", "Fetching chapters for level: $levelId")
         chaptersViewModel.loadChapters(levelId)
     }

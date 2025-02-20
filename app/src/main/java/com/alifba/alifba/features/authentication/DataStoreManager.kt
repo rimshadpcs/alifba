@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -77,47 +79,20 @@ class DataStoreManager @Inject constructor(
         }
     }
 
-    suspend fun saveUserProfileExists(exists: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKeys.USER_PROFILE_EXISTS] = exists
+    object TimeZonePreferences {
+        val TIME_ZONE_KEY = stringPreferencesKey("time_zone")
+    }
+    suspend fun getTimeZone(context: Context): String? {
+        val preferences = context.dataStore.data.first()
+        return preferences[TimeZonePreferences.TIME_ZONE_KEY]
+    }
+
+    suspend fun saveTimeZone(context: Context, timeZone: String) {
+        context.dataStore.edit { preferences ->
+            preferences[TimeZonePreferences.TIME_ZONE_KEY] = timeZone
         }
     }
 
-    suspend fun saveUserId(userId: String) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKeys.USER_ID] = userId
-        }
-    }
-
-    suspend fun markCompletedChapters(chapterId: Int, nextChapterId: Int?) {
-        dataStore.edit { preferences ->
-            // Handle Completed Chapters
-            val completedChapters = preferences[ChapterPrefKeys.COMPLETED_CHAPTER]
-                ?.split(",")
-                ?.map { it.trim() }
-                ?.toMutableSet()
-                ?: mutableSetOf()
-            completedChapters.add(chapterId.toString())
-            preferences[ChapterPrefKeys.COMPLETED_CHAPTER] = completedChapters.joinToString(",")
-
-            // Handle Unlocked Chapters
-            nextChapterId?.let {
-                val unlockedChapters = preferences[ChapterPrefKeys.UNLOCKED_CHAPTER]
-                    ?.split(",")
-                    ?.map { it.trim() }
-                    ?.toMutableSet()
-                    ?: mutableSetOf()
-                unlockedChapters.add(it.toString())
-                preferences[ChapterPrefKeys.UNLOCKED_CHAPTER] = unlockedChapters.joinToString(",")
-            }
-        }
-
-        // Optional: Add logging to verify updates
-        coroutineScope.launch {
-            val currentStatus = getChapterStatuses().first()
-            Log.d("DataStoreManager", "After marking, Current Chapter Status: $currentStatus")
-        }
-    }
 
     fun getChapterStatuses(): Flow<Map<String, Boolean>> {
         return dataStore.data.map { preferences ->

@@ -35,12 +35,12 @@
         <!-- Required by Firebase -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher_round" />
+            android:resource="@drawable/ic_stat_name" />
 
         <!-- Optional: default color for notifications -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@color/purple_200" />
+            android:resource="@color/white" />
 
     </application>
 

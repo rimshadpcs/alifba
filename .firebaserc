@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "alifba-16e53"
-  }
+    "default": "alifba-16e53",
+    "staging": "alifba-16e53"
+  },
+  "targets": {},
+  "etags": {}
 }

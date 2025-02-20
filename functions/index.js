@@ -1,65 +1,145 @@
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-admin.initializeApp();
+async function sendLessonNotifications(forceNotification = false) {
+  const db = admin.firestore();
+  console.log("Starting lesson notification process...");
+  console.log(`Force notification mode: ${forceNotification}`);
 
-exports.hourlyLessonReminder = functions.pubsub
-  .schedule("0 * * * *") // Run every hour at minute 0 (e.g., 12:00, 1:00, 2:00, etc.)
-  .onRun(async () => {
-    const db = admin.firestore();
-    const snapshot = await db.collection("users").get();
-    const messages = [];
+  try {
     const now = new Date();
+    console.log(`Current UTC time: ${now.toISOString()}`);
 
-    // Loop through each user document
-    snapshot.forEach(doc => {
+    // Get all users
+    const snapshot = await db.collection("users").get();
+    console.log(`Processing ${snapshot.size} users for lesson notifications`);
+
+    if (snapshot.size === 0) {
+      console.warn("⚠️ WARNING: No users found in the database!");
+      return {
+        success: false,
+        error: "No users found in database",
+        timestamp: now.toISOString()
+      };
+    }
+
+    let notificationsSent = 0;
+    let skippedDueToTime = 0;
+    let skippedDueToMissingToken = 0;
+    let failedNotifications = 0;
+
+    for (const doc of snapshot.docs) {
       const userData = doc.data();
       const fcmToken = userData.fcmToken;
-      if (!fcmToken) return;
+      const userTimeZone = userData.timeZone || "UTC";
 
-      // Retrieve the user's time zone; default to UTC if not available.
-      const timeZone = userData.timeZone || "UTC";
-      // Convert the current time (UTC) to the user's local time.
-      const localTime = new Date(now.toLocaleString("en-US", { timeZone }));
+      console.log(`Processing user ${doc.id}:`, {
+        hasToken: !!fcmToken,
+        timezone: userTimeZone,
+        childProfiles: userData.childProfiles ? userData.childProfiles.length : 0
+      });
 
-      // Define the notification window. For example, if you want to send notifications
-      // between 7:00 PM and 8:15 PM local time, you can check:
-      if ((localTime.getHours() === 19) || (localTime.getHours() === 20 && localTime.getMinutes() < 15)) {
-        // Get today's date (UTC) in YYYY-MM-DD format
-        const today = now.toISOString().split("T")[0];
-        const lastLessonCompleted = userData.lastLessonCompleted || "";
-        const streak = userData.streak || 0;
+      if (!fcmToken) {
+        console.log(`⚠️ Skipping user ${doc.id}: No FCM token`);
+        skippedDueToMissingToken++;
+        continue;
+      }
+
+      try {
+        // Convert current UTC time to the user's local time
+        const userLocalTime = new Date(
+          now.toLocaleString("en-US", { timeZone: userTimeZone })
+        );
+        const userHour = userLocalTime.getHours();
+        const userMinute = userLocalTime.getMinutes();
+        console.log(`User ${doc.id} local time: ${userHour}:${userMinute} (${userTimeZone})`);
+
+        let shouldSendNotification = forceNotification; // If force=true, skip time checks
+
+        // Check for lesson notification window: 7:00 PM - 7:30 PM local time
+        if (!shouldSendNotification) {
+          if (userHour === 19 && userMinute < 30) {
+            shouldSendNotification = true;
+            console.log(`✅ Time condition met for lesson notification: ${userHour}:${userMinute}`);
+          } else {
+            console.log(
+              `❌ Time condition NOT met: Current: ${userHour}:${userMinute}, Required: 19:00-19:30`
+            );
+          }
+        }
+
+        if (!shouldSendNotification) {
+          skippedDueToTime++;
+          continue;
+        }
+
+        console.log(`🔔 Preparing to send lesson notification to user ${doc.id}`);
+
         const childProfiles = userData.childProfiles || [];
-        const childName = childProfiles[0]?.childName || "friend";
+        const childName =
+          childProfiles.length > 0 && childProfiles[0]?.childName
+            ? childProfiles[0].childName
+            : "friend";
 
-        // If the user hasn't completed today's lesson, queue notifications.
-        if (lastLessonCompleted !== today) {
-          messages.push({
-            token: fcmToken,
+        // Choose a rotating message
+        const messageTemplate = getRotatingMessage(lessonMessages, doc.id);
+
+        // Replace {childName} placeholder
+        const title = messageTemplate.title;
+        const body = messageTemplate.body.replace("{childName}", childName);
+
+        const message = {
+          token: fcmToken,
+          notification: { title, body },
+          android: {
+            priority: "high",
             notification: {
-              title: "📖 Time for today's lesson!",
-              body: `Keep learning, ${childName}! Your next lesson is waiting. 🚀`
-            },
-            android: { priority: "high" }
-          });
+              channelId: "lessons"
+            }
+          }
+        };
 
-          // If the user has a streak, send an additional reminder.
-          if (streak > 0) {
-            messages.push({
-              token: fcmToken,
-              notification: {
-                title: "🔥 Don't lose your streak!",
-                body: `You're on a ${streak}-day streak, ${childName}! Complete a lesson today to keep it going! 💪`
-              },
-              android: { priority: "high" }
-            });
+        // Send the notification
+        await admin.messaging().send(message);
+        console.log(`✅ Successfully sent lesson notification to user ${doc.id}`);
+        notificationsSent++;
+
+      } catch (error) {
+        failedNotifications++;
+        console.error(`❌ Error sending to user ${doc.id}:`, error);
+
+        // If invalid/expired token, remove it from Firestore
+        if (
+          error.code === "messaging/invalid-registration-token" ||
+          error.code === "messaging/registration-token-not-registered"
+        ) {
+          console.log(`🔄 Removing invalid token for user ${doc.id}`);
+          try {
+            await db
+              .collection("users")
+              .doc(doc.id)
+              .update({ fcmToken: admin.firestore.FieldValue.delete() });
+            console.log(`✅ Successfully removed invalid token for user ${doc.id}`);
+          } catch (updateError) {
+            console.error(`❌ Failed to remove token: ${updateError.message}`);
           }
         }
       }
-    });
-
-    if (messages.length > 0) {
-      await admin.messaging().sendAll(messages);
-      console.log(`Sent ${messages.length} notifications`);
     }
-    return null;
-  });
+
+    // Summary
+    const result = {
+      success: true,
+      notificationsSent,
+      usersProcessed: snapshot.size,
+      skippedDueToTime,
+      skippedDueToMissingToken,
+      failedNotifications,
+      timestamp: now.toISOString(),
+      forceMode: forceNotification
+    };
+
+    console.log("📊 Notification process summary:", result);
+    return result;
+  } catch (error) {
+    console.error("❌ Main lesson notification error:", error);
+    throw error;
+  }
+}
