@@ -1,8 +1,6 @@
 package com.alifba.alifba.presenation.main
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -15,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,15 +20,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alifba.alifba.R
+import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.features.authentication.OnboardingDataStoreManager
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.Login.AuthViewModel
@@ -51,16 +50,18 @@ import kotlinx.coroutines.delay
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var dataStoreManager: DataStoreManager
 
     private val lessonScreenViewModel: LessonScreenViewModel by viewModels()
     private val homeViewModel: HomeViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
     private val chaptersViewModel: ChaptersViewModel by viewModels()
     private val profileViewModel:ProfileViewModel by viewModels()
-
+    val Context.dataStore by preferencesDataStore(name = "settings")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installSplashScreen()
@@ -73,7 +74,7 @@ class MainActivity : ComponentActivity() {
             val firebaseUser = FirebaseAuth.getInstance().currentUser
             var startDestination by remember { mutableStateOf("login") } // Default to login
             var isSplashScreenVisible by remember { mutableStateOf(true) }
-
+            val context = LocalContext.current
             LaunchedEffect(firebaseUser) {
                 if (firebaseUser == null) {
                     startDestination = "login"
@@ -97,6 +98,14 @@ class MainActivity : ComponentActivity() {
                 delay(1000) // Ensure splash animation completes
                 isSplashScreenVisible = false
             }
+            LaunchedEffect(Unit) {
+                val userId = authViewModel.dataStoreManager.userId.first()
+                if (userId != null) {
+                    authViewModel.updateTimeZoneIfNeeded(context, userId)
+                }
+            }
+
+
 
             Box(modifier = Modifier.fillMaxSize()) {
                 if (!isSplashScreenVisible) {

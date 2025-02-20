@@ -8,6 +8,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
+import com.alifba.alifba.utils.NotificationUtils
 import com.google.firebase.FirebaseApp
 import dagger.MapKey
 import dagger.hilt.android.HiltAndroidApp
@@ -23,6 +24,7 @@ class AlifbaApp : Application() {
         super.onCreate()
         SoundEffectManager.initialize(this)
         FirebaseApp.initializeApp(this)
+        NotificationUtils.createNotificationChannels(this)
     }
     override fun onTerminate() {
         super.onTerminate()

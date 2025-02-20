@@ -1,5 +1,6 @@
 package com.alifba.alifba.presenation.Login
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.TimeZone
 import javax.inject.Inject
 
 @HiltViewModel
@@ -226,6 +228,26 @@ class AuthViewModel @Inject constructor(
             _profileCreationState.value = ProfileCreationState.Error(e.localizedMessage ?: "Unknown error")
         }
     }
+    suspend fun updateTimeZoneIfNeeded(context: Context, userId: String) {
+        val currentTimeZone = TimeZone.getDefault().id
+        // Retrieve the locally stored time zone if needed (or use null if not set)
+        val storedTimeZone = dataStoreManager.getTimeZone(context)
+        if (storedTimeZone == currentTimeZone) {
+            Log.d("TimeZone", "Time zone unchanged: $currentTimeZone")
+            return
+        }
+        dataStoreManager.saveTimeZone(context, currentTimeZone)
+        FirebaseFirestore.getInstance().collection("users")
+            .document(userId)
+            .update("timeZone", currentTimeZone)
+            .addOnSuccessListener {
+                Log.d("TimeZone", "User time zone updated in Firestore: $currentTimeZone")
+            }
+            .addOnFailureListener { e ->
+                Log.e("TimeZone", "Error updating time zone: ${e.localizedMessage}")
+            }
+    }
+
 
 
     fun fetchUserProfile() {
@@ -357,6 +379,8 @@ private fun saveFcmToken(userId: String, token: String) {
         .addOnSuccessListener { Log.d("FCM", "FCM token updated in Firestore") }
         .addOnFailureListener { e -> Log.e("FCM", "Error: ${e.localizedMessage}") }
 }
+
+
 
 
 

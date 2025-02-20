@@ -130,15 +130,15 @@ fun LessonPathItems(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = 8.dp, y = -8.dp)  // Adjusted for larger size
+                    .offset(x = 8.dp, y = 8.dp)  // Adjusted for larger size
                     .size(cornerIconSize)
                     .clip(CircleShape)
                     .border(2.dp, Color.White, CircleShape)
                     .background(
                         when {
-                            lesson.isCompleted -> Color(0xFFFFFFFF)  // Brighter green for completed
-                            lesson.isLocked -> Color(0xFFFFFFFF)     // Darker orange for locked
-                            else -> Color(0xFFFFFFFF)                // Bright blue for start
+                            lesson.isCompleted -> Color(0xFFFFFFFF)
+                            lesson.isLocked -> Color(0xFFFFFFFF)
+                            else -> Color(0xFFFFFFFF)
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -151,9 +151,8 @@ fun LessonPathItems(
                         else -> "Start"
                     },
                     modifier = Modifier
-                        .size(cornerIconSize - 12.dp)  // Adjusted for visibility
-                        .padding(2.dp),  // Added slight padding
-                    //colorFilter = ColorFilter.tint(Color.White)
+                        .size(cornerIconSize - 4.dp)  // Adjusted for visibility
+                        .padding(2.dp),
                 )
             }
         }

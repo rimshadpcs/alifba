@@ -1,5 +1,6 @@
 package com.alifba.alifba.presenation.chapters
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -23,6 +24,7 @@ import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import javax.inject.Inject
 
 
@@ -454,13 +456,4 @@ class ChaptersViewModel @Inject constructor(
 
 
 
-    fun getNextChapterId(currentChapterId: Int): Int? {
-        val chapterList = _chapters.value ?: return null
-        val currentIndex = chapterList.indexOfFirst { it.id == currentChapterId }
-        return if (currentIndex != -1 && currentIndex < chapterList.size - 1) {
-            chapterList[currentIndex + 1].id
-        } else {
-            null // No next chapter
-        }
-    }
 }

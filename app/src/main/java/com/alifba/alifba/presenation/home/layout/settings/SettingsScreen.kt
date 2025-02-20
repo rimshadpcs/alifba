@@ -1,5 +1,6 @@
 package com.alifba.alifba.presenation.home.layout.settings
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -47,6 +48,7 @@ import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.ui_components.widgets.texts.SettingsButton
 
 
+@SuppressLint("NewApi")
 @Composable
 fun SettingsScreen(navController: NavController){
     val alifbaFont = FontFamily(
@@ -140,7 +142,6 @@ fun SettingsScreen(navController: NavController){
             )
             NotificationDialog(
                 showDialog = showDialog,
-                isNotificationsEnabled = isNotificationsEnabled,
                 onDismiss = { showDialog = false },
                 context = context
             )

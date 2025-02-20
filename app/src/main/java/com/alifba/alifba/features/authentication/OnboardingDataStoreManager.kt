@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-private val Context.dataStore by preferencesDataStore(name = "user_preferences")
+val Context.dataStore by preferencesDataStore(name = "user_preferences")
 
 class OnboardingDataStoreManager @Inject constructor(
     @ApplicationContext context: Context
