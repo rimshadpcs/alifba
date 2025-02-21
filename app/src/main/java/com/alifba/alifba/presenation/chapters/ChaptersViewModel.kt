@@ -27,14 +27,12 @@ import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 
-
 @HiltViewModel
 class ChaptersViewModel @Inject constructor(
     private val dataStoreManager: DataStoreManager,
     val lessonCacheRepository: LessonCacheRepository
 ) : ViewModel() {
 
-    
     private val fireStore = FirebaseFirestore.getInstance()
 
     private val _chapters = MutableLiveData<List<Chapter>>()
@@ -49,13 +47,10 @@ class ChaptersViewModel @Inject constructor(
     private val _levelSummary = MutableStateFlow<LevelSummary?>(null)
     val levelSummary: StateFlow<LevelSummary?> = _levelSummary.asStateFlow()
 
-    private val _levelName = MutableStateFlow<String?>(null)
-
     fun loadChapters(levelId: String) {
-        val levelPath = "lessons/$levelId/chapters"  // ✅ Correct Firestore path
+        val levelPath = "lessons/$levelId/chapters"  // Correct Firestore path
 
-        Log.d("ChaptersViewModel", "Fetching chapters for level: $levelId from $levelPath")  // ✅ Debug log
-
+        Log.d("ChaptersViewModel", "Fetching chapters for level: $levelId from $levelPath")
         viewModelScope.launch {
             try {
                 val userId = dataStoreManager.userId.first()
@@ -66,7 +61,7 @@ class ChaptersViewModel @Inject constructor(
 
                 // Fetch chapters from Firestore
                 val snapshot = fireStore.collection(levelPath).get().await()
-                Log.d("ChaptersViewModel", "Fetched ${snapshot.documents.size} chapters") // ✅ Debugging log
+                Log.d("ChaptersViewModel", "Fetched ${snapshot.documents.size} chapters")
 
                 // Fetch completed chapters from user data
                 val userDoc = fireStore.collection("users").document(userId).get().await()
@@ -76,90 +71,32 @@ class ChaptersViewModel @Inject constructor(
                     Log.e("ChaptersViewModel", "No chapters found in Firestore for $levelId")
                 }
 
-//                val chapters = snapshot.documents.map { doc ->
-//                    Chapter(
-//                        id = doc.getLong("id")?.toInt() ?: 0,
-//                        title = doc.getString("title") ?: "Untitled",
-//                        iconResId = R.drawable.start,
-//                        isCompleted = completedChapters.contains(doc.id),
-//                        isLocked = false, // Set unlock logic later
-//                        isUnlocked = true, // First chapter always unlocked
-//                        chapterType = doc.getString("chapterType") ?: ""
-//                    )
-//                }
                 val chaptersRaw = snapshot.documents.map { doc ->
+                    val numericId = doc.getLong("id")?.toInt() ?: 0
                     Chapter(
-                        id = doc.getLong("id")?.toInt() ?: 0,
+                        id = numericId,
                         title = doc.getString("title") ?: "Untitled",
                         iconResId = when (doc.getString("chapterType")) {
-                            "Story" -> R.drawable.book
+                            "Lessson" -> R.drawable.book  // Note: correct this if needed
+                            "Story" -> R.drawable.story
                             "Alphabet" -> R.drawable.alphabeticon
                             else -> R.drawable.start
                         },
-                        isCompleted = completedChapters.contains(doc.id),
-                        isLocked = true,  // Default to locked, will update next
-                        isUnlocked = false,  // Default to not unlocked, will update next
+                        // Use the numeric id (converted to string) for consistency
+                        isCompleted = completedChapters.contains(numericId.toString()),
+                        isLocked = true,
+                        isUnlocked = false,
                         chapterType = doc.getString("chapterType") ?: ""
                     )
                 }.sortedBy { it.id }
                 val updatedChapters = updateChapterStates(completedChapters, chaptersRaw)
                 _chapters.value = updatedChapters
-                //Log.d("ChaptersViewModel", "Loaded ${chapters.size} chapters")  // ✅ Debugging log
-
             } catch (e: Exception) {
                 Log.e("ChaptersViewModel", "Error fetching chapters: ${e.localizedMessage}")
             }
         }
     }
 
-    fun markChapterCompleted(chapterId: Int, nextChapterId: Int?) {
-        viewModelScope.launch {
-            // We'll just trigger badge check - the actual completion is handled in checkAndMarkChapterCompletion
-            checkAndAwardBadge(chapterId)
-
-            // Reload chapters to refresh UI after marking complete in Firestore
-            val currentLevelId = _levelSummary.value?.levelName
-            if (currentLevelId != null) {
-                loadChapters(currentLevelId)
-            }
-        }
-    }
-
-
-    private suspend fun checkAndAwardBadge(chapterId: Int) {
-        val userId = dataStoreManager.userId.first()
-        if (!userId.isNullOrEmpty()) {
-            try {
-                val userRef = fireStore.collection("users").document(userId)
-
-                // Fetch current earned badges as an array
-                val userDoc = userRef.get().await()
-                val earnedBadges = userDoc.get("earned_badges") as? List<String> ?: emptyList()
-
-                // Query badges with the "chapter_completion" criteria
-                val badgeQuery = fireStore.collection("badges")
-                    .whereEqualTo("criteria.type", "chapter_completion")
-                    .get().await()
-
-                for (badgeDoc in badgeQuery.documents) {
-                    val badge = badgeDoc.toObject(Badge::class.java) ?: continue
-
-                    if (!earnedBadges.contains(badge.id)) {
-                        // Award the badge by appending it to the earned_badges array
-                        userRef.update("earned_badges", earnedBadges + badge.id).await()
-
-                        // Trigger badge event to notify the UI
-                        _badgeEarnedEvent.value = badge
-                        break // Exit loop after awarding the badge to avoid multiple notifications
-                    }
-                    Log.d("ChaptersViewModel", "Badge earned: ${badge.title}")
-
-                }
-            } catch (e: Exception) {
-                Log.e("checkAndAwardBadge", "Error awarding badge: ${e.localizedMessage}")
-            }
-        }
-    }
 
     fun clearBadgeEvent() {
         _badgeEarnedEvent.value = null
@@ -168,31 +105,23 @@ class ChaptersViewModel @Inject constructor(
     private fun updateStreak() {
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first()
-            if (!userId.isNullOrEmpty()) {
-                try {
-                    val userRef = fireStore.collection("users").document(userId)
-                    fireStore.runTransaction { transaction ->
-                        val snapshot = transaction.get(userRef)
-
-                        val lastActivityDate = snapshot.getString("last_activity_date") ?: ""
-                        val currentStreak = snapshot.getLong("day_streak") ?: 0
-
-                        // Get today's date in "yyyy-MM-dd" format
-                        val currentDate = getCurrentDate()
-
-                        if (lastActivityDate != currentDate) {
-                            // If lastActivityDate is yesterday, continue the streak; otherwise, reset it
-                            val newStreak =
-                                if (isYesterday(lastActivityDate)) currentStreak + 1 else 1
-                            transaction.update(userRef, "last_activity_date", currentDate)
-                            transaction.update(userRef, "day_streak", newStreak)
-                        }
-
-                    }.await()
-                    checkAndAwardBadges(userId)
-                } catch (e: Exception) {
-                    Log.e("AuthViewModel", "Error updating streak: ${e.localizedMessage}")
-                }
+            if (userId.isNullOrEmpty()) return@launch
+            try {
+                val userRef = fireStore.collection("users").document(userId)
+                fireStore.runTransaction { transaction ->
+                    val snapshot = transaction.get(userRef)
+                    val lastActivityDate = snapshot.getString("last_activity_date") ?: ""
+                    val currentStreak = snapshot.getLong("day_streak") ?: 0
+                    val currentDate = getCurrentDate()
+                    if (lastActivityDate != currentDate) {
+                        val newStreak = if (isYesterday(lastActivityDate)) currentStreak + 1 else 1
+                        transaction.update(userRef, "last_activity_date", currentDate)
+                        transaction.update(userRef, "day_streak", newStreak)
+                    }
+                }.await()
+                checkAndAwardBadges(userId)
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error updating streak: ${e.localizedMessage}")
             }
         }
     }
@@ -206,28 +135,21 @@ class ChaptersViewModel @Inject constructor(
         return false
     }
 
-
     private fun updateChapterStates(
         completedChapters: List<String>,
         chapters: List<Chapter>
     ): List<Chapter> {
         return chapters.mapIndexed { index, chapter ->
-            // 1) Determine if the user actually completed this chapter
             val isCompleted = completedChapters.contains(chapter.id.toString())
-
-            // 2) Determine if locked or unlocked
             val isLocked = when {
-                index == 0 -> false  // first chapter always unlocked
+                index == 0 -> false
                 completedChapters.contains(chapters[index - 1].id.toString()) -> false
                 else -> true
             }
-
-            // 3) Decide icon based on locked/completed status
             val iconResId = when {
                 isCompleted -> R.drawable.tick
-                isLocked -> R.drawable.padlock  // <--- show lock if it's locked
+                isLocked -> R.drawable.padlock
                 else -> {
-                    // Not completed, not locked => show a “type-based” icon
                     when (chapter.chapterType) {
                         "Story" -> R.drawable.book
                         "Alphabet" -> R.drawable.alphabeticon
@@ -235,7 +157,6 @@ class ChaptersViewModel @Inject constructor(
                     }
                 }
             }
-
             chapter.copy(
                 isCompleted = isCompleted,
                 isLocked = isLocked,
@@ -259,8 +180,7 @@ class ChaptersViewModel @Inject constructor(
                 checkAndAwardBadges(userId)
                 val userRef = fireStore.collection("users").document(userId)
                 val levelPath = "lessons/$levelId/chapters"
-
-                // Fetch all chapters and stories for the level
+                // Fetch all chapters for level (for level-completion logic)
                 val levelContentsSnapshot = fireStore.collection(levelPath).get().await()
                 val levelContents = levelContentsSnapshot.documents.mapNotNull { doc ->
                     val type = doc.getString("chapterType") ?: return@mapNotNull null
@@ -271,72 +191,53 @@ class ChaptersViewModel @Inject constructor(
                 fireStore.runTransaction { transaction ->
                     val userSnapshot = transaction.get(userRef)
 
-                    // Update completed chapters or stories
-                    when (chapterType) {
-                        "Lesson" -> {
-                            val completedChapters = userSnapshot.get("chapters_completed") as? MutableList<String>
-                                ?: mutableListOf()
-                            if (!completedChapters.contains(chapterId)) {
-                                completedChapters.add(chapterId)
-                                transaction.update(userRef, "chapters_completed", completedChapters)
-                                val currentXP = userSnapshot.getLong("xp") ?: 0
-                                transaction.update(userRef, "xp", currentXP + earnedXP)
-                            }
-                        }
-                        "Story" -> {
-                            val completedStories = userSnapshot.get("stories_completed") as? MutableList<String>
-                                ?: mutableListOf()
-                            if (!completedStories.contains(chapterId)) {
-                                completedStories.add(chapterId)
-                                transaction.update(userRef, "stories_completed", completedStories)
-                                val currentXP = userSnapshot.getLong("xp") ?: 0
-                                transaction.update(userRef, "xp", currentXP + earnedXP)
-                            }
-                        }
+                    // Update category-specific completions
+                    val lessonsCompleted = userSnapshot.get("lessons_completed") as? MutableList<String> ?: mutableListOf()
+                    if (chapterType == "Lesson" && !lessonsCompleted.contains(chapterId)) {
+                        lessonsCompleted.add(chapterId)
+                        transaction.update(userRef, "lessons_completed", lessonsCompleted)
                     }
 
-                    // Count required and completed chapters and stories
+                    val storiesCompleted = userSnapshot.get("stories_completed") as? MutableList<String> ?: mutableListOf()
+                    if (chapterType == "Story" && !storiesCompleted.contains(chapterId)) {
+                        storiesCompleted.add(chapterId)
+                        transaction.update(userRef, "stories_completed", storiesCompleted)
+                    }
+
+                    val activitiesCompleted = userSnapshot.get("activities_completed") as? MutableList<String> ?: mutableListOf()
+                    if (chapterType == "Alphabet" && !activitiesCompleted.contains(chapterId)) {
+                        activitiesCompleted.add(chapterId)
+                        transaction.update(userRef, "activities_completed", activitiesCompleted)
+                    }
+
+                    // Update general completion (chapters_completed)
+                    val allChaptersCompleted = userSnapshot.get("chapters_completed") as? MutableList<String> ?: mutableListOf()
+                    if (!allChaptersCompleted.contains(chapterId)) {
+                        allChaptersCompleted.add(chapterId)
+                        transaction.update(userRef, "chapters_completed", allChaptersCompleted)
+                        val currentXP = userSnapshot.getLong("xp") ?: 0
+                        transaction.update(userRef, "xp", currentXP + earnedXP)
+                    }
+
+                    // Level completion logic
                     val requiredChapters = levelContents.count { it.second == "Lesson" }
                     val requiredStories = levelContents.count { it.second == "Story" }
-                    val requiredActivities = levelContents.count{it.second == "Alphabet"}
-
-                    val completedChapters = userSnapshot.get("chapters_completed") as? List<String> ?: emptyList()
-                    val completedStories = userSnapshot.get("stories_completed") as? List<String> ?: emptyList()
-
-                    val completedChaptersInLevel = levelContents
-                        .filter { it.second == "Lesson" }
-                        .count { completedChapters.contains(it.first) }
-
-                    val completedStoriesInLevel = levelContents
-                        .filter { it.second == "Story" }
-                        .count { completedStories.contains(it.first) }
-
-                    // Check if the level is fully completed
+                    val completedChaptersInLevel = levelContents.filter { it.second == "Lesson" }
+                        .count { allChaptersCompleted.contains(it.first) }
+                    val completedStoriesInLevel = levelContents.filter { it.second == "Story" }
+                        .count { storiesCompleted.contains(it.first) }
                     if (completedChaptersInLevel >= requiredChapters && completedStoriesInLevel >= requiredStories) {
-                        val completedLevels = userSnapshot.get("levels_completed") as? MutableList<String>
-                            ?: mutableListOf()
-
+                        val completedLevels = userSnapshot.get("levels_completed") as? MutableList<String> ?: mutableListOf()
                         if (!completedLevels.contains(levelId)) {
                             completedLevels.add(levelId)
                             transaction.update(userRef, "levels_completed", completedLevels)
-
-                            // Add bonus XP
                             val currentXP = userSnapshot.getLong("xp") ?: 0
-                            transaction.update(userRef, "xp", currentXP + earnedXP + 100) // Assuming 100 as bonus XP
-
-                            Log.d("LevelCompletion", """
-                            Level $levelId completed!
-                            Required Chapters: $requiredChapters
-                            Completed Chapters: $completedChaptersInLevel
-                            Required Stories: $requiredStories
-                            Completed Stories: $completedStoriesInLevel
-                            Bonus XP: 100
-                        """.trimIndent())
+                            transaction.update(userRef, "xp", currentXP + earnedXP + 100)
+                            Log.d("LevelCompletion", "Level $levelId completed! Bonus XP: 100")
                         }
                     }
                 }.await()
 
-                // Update streak and reload chapters
                 updateStreak()
                 loadChapters(levelId)
             } catch (e: Exception) {
@@ -344,46 +245,35 @@ class ChaptersViewModel @Inject constructor(
             }
         }
     }
+
     private suspend fun checkAndAwardBadges(userId: String) {
         try {
             val userRef = fireStore.collection("users").document(userId)
             val userDoc = userRef.get().await()
-
-            // Get current earned badges
             val earnedBadges = userDoc.get("earned_badges") as? List<String> ?: emptyList()
-
-            // Get all available badges
             val badgesSnapshot = fireStore.collection("badges").get().await()
             val badges = badgesSnapshot.documents.mapNotNull { it.toObject(Badge::class.java) }
-
-            // Get user stats
             val quizzesAttended = userDoc.getLong("quizzes_attended") ?: 0
-            val storiesCompleted = (userDoc.get("stories_completed") as? List<*>)?.size ?: 0
-            val chaptersCompleted = (userDoc.get("chapters_completed") as? List<*>)?.size ?: 0
-            val levelsCompleted = (userDoc.get("levels_completed") as? List<*>)?.size ?: 0
+            val storiesCount = (userDoc.get("stories_completed") as? List<*>)?.size ?: 0
+            val chaptersCount = (userDoc.get("chapters_completed") as? List<*>)?.size ?: 0
+            val levelsCount = (userDoc.get("levels_completed") as? List<*>)?.size ?: 0
             val dayStreak = userDoc.getLong("day_streak") ?: 0
             val xp = userDoc.getLong("xp") ?: 0
 
             badges.forEach { badge ->
-                // Skip if already earned
                 if (!earnedBadges.contains(badge.id)) {
                     val shouldAward = when (badge.criteria.type) {
                         "quiz_completion" -> quizzesAttended >= (badge.criteria.count ?: 0)
-                        "story_completion" -> storiesCompleted >= (badge.criteria.count ?: 0)
-                        "chapter_completion" -> chaptersCompleted >= (badge.criteria.count ?: 0)
-                        "level_completion" -> levelsCompleted >= (badge.criteria.count ?: 0)
+                        "story_completion" -> storiesCount >= (badge.criteria.count ?: 0)
+                        "chapter_completion" -> chaptersCount >= (badge.criteria.count ?: 0)
+                        "level_completion" -> levelsCount >= (badge.criteria.count ?: 0)
                         "streak" -> dayStreak >= (badge.criteria.count ?: 0)
                         "xp_earned" -> xp >= (badge.criteria.count ?: 0)
                         else -> false
                     }
-
                     if (shouldAward) {
-                        // Add to earned_badges array
                         userRef.update("earned_badges", earnedBadges + badge.id).await()
-
-                        // Notify UI about earned badge
                         _badgeEarnedEvent.value = badge
-
                         Log.d("BadgeCheck", "Badge earned: ${badge.title}")
                     }
                 }
@@ -393,28 +283,20 @@ class ChaptersViewModel @Inject constructor(
         }
     }
 
-
     fun getLevelSummary(levelId: String) {
         viewModelScope.launch {
             try {
                 val userId = dataStoreManager.userId.first()
                 if (userId.isNullOrEmpty()) return@launch
-
-                // Remove the "level" prefix from the path since levelId already includes it
-                val levelPath = "lessons/$levelId"  // Changed from "lessons/level$levelId"
+                val levelPath = "lessons/$levelId"
                 val levelDoc = fireStore.document(levelPath).get().await()
                 val description = levelDoc.getString("description") ?: "No description available"
-
-                // Fetch all chapters for the level
                 val chaptersSnapshot = fireStore.collection("$levelPath/chapters").get().await()
-
                 if (!chaptersSnapshot.isEmpty) {
                     var totalLessons = 0
                     var totalStories = 0
                     var totalQuizzes = 0
                     var totalActivities = 0
-
-                    // Calculate totals based on chapter type
                     chaptersSnapshot.documents.forEach { doc ->
                         when (doc.getString("chapterType")) {
                             "Lesson" -> totalLessons++
@@ -423,16 +305,7 @@ class ChaptersViewModel @Inject constructor(
                             "Alphabet" -> totalActivities++
                         }
                     }
-
-                    Log.d("LevelSummary", """
-                    Level: $levelId
-                    Lessons: $totalLessons
-                    Stories: $totalStories
-                    Activities: $totalActivities
-                    Quizzes: $totalQuizzes
-                """.trimIndent())
-
-                    // Update LevelSummary
+                    Log.d("LevelSummary", "Level: $levelId Lessons: $totalLessons Stories: $totalStories Activities: $totalActivities Quizzes: $totalQuizzes")
                     val summary = LevelSummary(
                         levelName = levelId,
                         levelDescription = description,
@@ -441,7 +314,6 @@ class ChaptersViewModel @Inject constructor(
                         totalQuizzes = totalQuizzes,
                         totalActivities = totalActivities
                     )
-
                     _levelSummary.value = summary
                 } else {
                     Log.e("LevelSummary", "No chapters found for level: $levelId")
@@ -453,7 +325,4 @@ class ChaptersViewModel @Inject constructor(
             }
         }
     }
-
-
-
 }

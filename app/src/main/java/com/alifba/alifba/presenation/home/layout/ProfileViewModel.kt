@@ -7,6 +7,7 @@ import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.presenation.Login.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,10 @@ class ProfileViewModel @Inject constructor(
     val userProfileState: StateFlow<UserProfile?> get() = _userProfileState
     private val _earnedBadges = MutableStateFlow<List<Badge>>(emptyList())
     val earnedBadges: StateFlow<List<Badge>> get() = _earnedBadges
+
+    private var profileListenerRegistration: ListenerRegistration? = null
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     init {
         fetchUserProfile()
@@ -59,12 +64,14 @@ class ProfileViewModel @Inject constructor(
                         val age = (childProfile?.get("age") as? Long)?.toInt() ?: 0
                         val avatar = childProfile?.get("avatar") as? String ?: ""
 
-                        // Stats
+                        // Stats with updated completion fields
                         val xp = (documentSnapshot.getLong("xp") ?: 0).toInt()
                         val chaptersCompleted = documentSnapshot.get("chapters_completed") as? List<String> ?: emptyList()
+                        val lessonsCompleted = documentSnapshot.get("lessons_completed") as? List<String> ?: emptyList()
+                        val storiesCompleted = documentSnapshot.get("stories_completed") as? List<String> ?: emptyList()
+                        val activitiesCompleted = documentSnapshot.get("activities_completed") as? List<String> ?: emptyList()
                         val quizzesAttended = (documentSnapshot.getLong("quizzes_attended") ?: 0).toInt()
                         val dayStreak = (documentSnapshot.getLong("day_streak") ?: 0).toInt()
-                        val storiesCompleted = documentSnapshot.get("stories_completed") as? List<String> ?: emptyList()
                         val levelsCompleted = documentSnapshot.get("levels_completed") as? List<String> ?: emptyList()
 
                         // Update local state
@@ -79,7 +86,9 @@ class ProfileViewModel @Inject constructor(
                             quizzesAttended = quizzesAttended,
                             dayStreak = dayStreak,
                             chaptersCompleted = chaptersCompleted,
+                            lessonsCompleted = lessonsCompleted,
                             storiesCompleted = storiesCompleted,
+                            activitiesCompleted = activitiesCompleted,
                             levelsCompleted = levelsCompleted
                         )
                     } else {
@@ -93,7 +102,6 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
-
     private suspend fun fetchEarnedBadges(earnedBadgeIds: List<String>) {
         try {
             if (earnedBadgeIds.isEmpty()) {
@@ -117,11 +125,11 @@ class ProfileViewModel @Inject constructor(
             _earnedBadges.value = emptyList()
         }
     }
-
     fun startProfileListener() {
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first()
             if (!userId.isNullOrEmpty()) {
+                profileListenerRegistration?.remove()
                 fireStore.collection("users")
                     .document(userId)
                     .addSnapshotListener { snapshot, error ->
@@ -141,19 +149,22 @@ class ProfileViewModel @Inject constructor(
                             val age = (childProfile?.get("age") as? Long)?.toInt() ?: 0
                             val avatar = childProfile?.get("avatar") as? String ?: ""
 
+                            // Get all types of completions
                             val xp = (snapshot.getLong("xp") ?: 0).toInt()
                             val chaptersCompleted = snapshot.get("chapters_completed") as? List<String> ?: emptyList()
+                            val lessonsCompleted = snapshot.get("lessons_completed") as? List<String> ?: emptyList()
+                            val storiesCompleted = snapshot.get("stories_completed") as? List<String> ?: emptyList()
+                            val activitiesCompleted = snapshot.get("activities_completed") as? List<String> ?: emptyList()
                             val quizzesAttended = (snapshot.getLong("quizzes_attended") ?: 0).toInt()
                             val dayStreak = (snapshot.getLong("day_streak") ?: 0).toInt()
-                            val storiesCompleted = snapshot.get("stories_completed") as? List<String> ?: emptyList()
                             val levelsCompleted = snapshot.get("levels_completed") as? List<String> ?: emptyList()
-
 
                             val earnedBadgeIds = snapshot.get("earned_badges") as? List<String> ?: emptyList()
                             viewModelScope.launch {
                                 fetchEarnedBadges(earnedBadgeIds)
                             }
-                            // Update local state
+
+                            // Update local state with all completion types
                             _userProfileState.value = UserProfile(
                                 parentName = parentName,
                                 childName = childName,
@@ -165,16 +176,24 @@ class ProfileViewModel @Inject constructor(
                                 quizzesAttended = quizzesAttended,
                                 dayStreak = dayStreak,
                                 chaptersCompleted = chaptersCompleted,
+                                lessonsCompleted = lessonsCompleted,
                                 storiesCompleted = storiesCompleted,
+                                activitiesCompleted = activitiesCompleted,
                                 levelsCompleted = levelsCompleted
-
                             )
+                            _isLoading.value = false
                         } else {
+                            _isLoading.value = false
                             Log.d("ProfileViewModel", "Snapshot is null or user document doesn't exist.")
                         }
                     }
             }
         }
+    }
+
+    fun stopProfileListener() {
+        profileListenerRegistration?.remove()
+        profileListenerRegistration = null
     }
 
 
@@ -213,5 +232,5 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
-
 }
+

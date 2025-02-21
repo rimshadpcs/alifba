@@ -1,8 +1,8 @@
 package com.alifba.alifba.presenation.chapters.layout
 
+import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,23 +24,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.chapters.models.Chapter
-import com.alifba.alifba.ui_components.theme.white
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun LessonPathItems(
+fun ChapterPathItems(
     lesson: Chapter,
     index: Int,
     onClick: () -> Unit,
 ) {
+
     // 1) Setup icons, sizes, offset
     val imageSize = 75.dp
     val cornerIconSize = 38.dp
@@ -72,6 +69,7 @@ fun LessonPathItems(
         label = "OffsetY"
     )
     val coroutineScope = rememberCoroutineScope()
+    Log.d("LessonPathItems", "Chapter ${lesson.id} - isCompleted: ${lesson.isCompleted}")
 
     // 2) Main container for each path item
     Box(
@@ -141,7 +139,9 @@ fun LessonPathItems(
                             else -> Color(0xFFFFFFFF)
                         }
                     ),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
+
+
             ) {
                 Image(
                     painter = painterResource(id = cornerIcon),
