@@ -270,7 +270,8 @@ class AuthViewModel @Inject constructor(
                         val chaptersFromDoc = documentSnapshot.get("chapters_completed") as? List<String> ?: emptyList()
                         val storiesFromDoc = documentSnapshot.get("stories_completed") as? List<String> ?: emptyList()
                         val levelsFromDoc = documentSnapshot.get("levels_completed") as? List<String> ?: emptyList()
-
+                        val activitiesCompleted = documentSnapshot.get("activities_completed") as? List<String> ?: emptyList()
+                        val lessonsCompleted = documentSnapshot.get(("lessons_completed"))as? List<String> ?: emptyList()
                         if (childProfiles.isNotEmpty()) {
                             val childProfile = childProfiles[0]
                             val childName = childProfile["childName"] as? String ?: "N/A"
@@ -287,7 +288,9 @@ class AuthViewModel @Inject constructor(
                                 xp = xpFromDoc,
                                 chaptersCompleted = chaptersFromDoc,
                                 storiesCompleted = storiesFromDoc,
-                                levelsCompleted = levelsFromDoc
+                                levelsCompleted = levelsFromDoc,
+                                lessonsCompleted = lessonsCompleted,
+                                activitiesCompleted = activitiesCompleted
                             )
                         } else {
                             _userProfileState.value = UserProfile(
@@ -300,7 +303,9 @@ class AuthViewModel @Inject constructor(
                                 xp = xpFromDoc,
                                 chaptersCompleted = chaptersFromDoc,
                                 storiesCompleted = storiesFromDoc,
-                                levelsCompleted = levelsFromDoc
+                                levelsCompleted = levelsFromDoc,
+                                lessonsCompleted = lessonsCompleted,
+                                activitiesCompleted = activitiesCompleted
                             )
                         }
                     } else {
@@ -345,6 +350,8 @@ data class UserProfile(
     val levelsCompleted: List<String> = emptyList(),
     val quizzesAttended: Int = 0,
     val dayStreak: Int = 0,
+    val lessonsCompleted: List<String>,
+    val activitiesCompleted: List<String>,
 )
 
 

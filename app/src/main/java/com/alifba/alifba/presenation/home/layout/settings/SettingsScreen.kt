@@ -61,7 +61,7 @@ fun SettingsScreen(navController: NavController){
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(privacyPolicyUrl))
         context.startActivity(intent)
     }
-    val termsAndConditionsUrl = "https://alifba.xyz/terms-and-conditions"
+    val termsAndConditionsUrl = "https://alifba.xyz/terms-of-service"
     val openTermsAndConditions = {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(termsAndConditionsUrl))
         context.startActivity(intent)

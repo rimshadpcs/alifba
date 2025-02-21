@@ -1,10 +1,21 @@
 package com.alifba.alifba.presenation.chapters.layout
 
-import android.widget.Toast
+import android.util.Log
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,22 +23,23 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.alifba.alifba.R
-import com.alifba.alifba.presenation.chapters.models.Chapter
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.alifba.alifba.features.authentication.DataStoreManager
+import androidx.navigation.NavController
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
+import com.alifba.alifba.presenation.chapters.models.Chapter
+import kotlinx.coroutines.delay
+
 @Composable
 fun LazyChapterColumn(
     lessons: List<Chapter>,
@@ -36,60 +48,106 @@ fun LazyChapterColumn(
     onChapterClick: (Chapter) -> Unit,
     viewModel: ChaptersViewModel = hiltViewModel()
 ) {
-    val chapterStatus by viewModel.chapterStatuses.collectAsState()
     val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp
-
-    // On tablets, constrain the overall width to a maximum (e.g., 600dp)
-    val constrainedModifier = if (screenWidthDp > 600) {
+    val constrainedModifier = if (configuration.screenWidthDp > 600) {
         Modifier.widthIn(max = 600.dp)
     } else {
         Modifier.fillMaxWidth()
     }
 
-    // Wrap the list in a Box that fills the screen and aligns content at the bottom.
+    val listState = rememberLazyListState()
+    val density = LocalDensity.current
+
+    LaunchedEffect(lessons) {
+        if (lessons.isNotEmpty()) {
+            // Wait for UI to settle
+            delay(300)
+
+            val targetIndex = lessons.indexOfLast { chapter ->
+                !chapter.isCompleted && !chapter.isLocked
+            }
+
+            if (targetIndex != -1) {
+                Log.d("ChapterScroll", "Starting smooth scroll to target index: $targetIndex")
+
+                // Calculate the approximate scroll distance
+                val itemHeightPx = with(density) { 120.dp.toPx() }
+                val currentIndex = listState.firstVisibleItemIndex
+                val distance = (targetIndex - currentIndex) * itemHeightPx
+
+                // Perform a single smooth animation with custom slower settings
+                try {
+                    listState.animateScrollBy(
+                        value = distance,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,  // Remove bounce for smoother feel
+                            stiffness = 50f,  // Custom lower stiffness value for slower animation
+                            visibilityThreshold = .5f  // Lower threshold for smoother finish
+                        )
+                    )
+                } catch (e: Exception) {
+                    Log.e("ChapterScroll", "Error during scroll animation", e)
+                }
+
+                Log.d("ChapterScroll", "Smooth scroll animation completed")
+            }
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
         LazyColumn(
-            // Make the LazyColumn only take the height it needs and align it to the bottom.
-            modifier = modifier.then(constrainedModifier).wrapContentHeight(align = Alignment.Bottom),
+            state = listState,
+            modifier = modifier
+                .then(constrainedModifier)
+                .wrapContentHeight(align = Alignment.Bottom),
             verticalArrangement = Arrangement.spacedBy(32.dp),
             reverseLayout = true
-            // Note: Remove reverseLayout if you want the first item to appear at the bottom.
         ) {
             itemsIndexed(lessons) { index, lesson ->
-                val isCompleted = chapterStatus[lesson.id.toString()] == true
-                val isUnlocked = if (index == 0) true else chapterStatus[lesson.id.toString()] != null
-
-                val iconId = when {
-                    lesson.isCompleted && lesson.chapterType == "Lesson" -> R.drawable.tick
-                    lesson.isCompleted && lesson.chapterType == "Story" -> R.drawable.book
-                    lesson.isCompleted && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
-                    isUnlocked && lesson.chapterType == "Story" -> R.drawable.book
-                    isUnlocked && lesson.chapterType == "Alphabet" -> R.drawable.alphabeticon
-                    isUnlocked -> R.drawable.start
-                    else -> R.drawable.padlock
-                }
-
-                LessonPathItems(
-                    lesson = lesson.copy(isCompleted = isCompleted, isUnlocked = isUnlocked),
-                    index = index,
-                    onClick = {
-                        // Use your logic to allow clicking based on the icon.
-                        if (iconId == R.drawable.start ||
-                            iconId == R.drawable.book ||
-                            iconId == R.drawable.alphabeticon ||
-                            iconId == R.drawable.tick
-                        ) {
-                            onChapterClick(lesson)
-                        } else {
-                            onChapterClick(lesson)
-                        }
+                // Wrap the ChapterPathItems with PulsingStartIndicator if it's the start point
+                if (!lesson.isCompleted && !lesson.isLocked) {
+                    PulsingStartIndicator {
+                        ChapterPathItems(
+                            lesson = lesson,
+                            index = index,
+                            onClick = { onChapterClick(lesson) }
+                        )
                     }
-                )
+                } else {
+                    ChapterPathItems(
+                        lesson = lesson,
+                        index = index,
+                        onClick = { onChapterClick(lesson) }
+                    )
+                }
             }
         }
+    }
+}
+@Composable
+fun PulsingStartIndicator(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+
+    // Scale animation
+    val scale = infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900),
+            repeatMode = RepeatMode.Reverse
+        ), label = ""
+    )
+
+    Box(
+        modifier = modifier
+            .scale(scale.value).padding(4.dp)
+    ) {
+        content()
     }
 }

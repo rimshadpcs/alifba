@@ -71,6 +71,7 @@ fun ChaptersScreen(
     // Track the currently selected chapter (for the bottom sheet)
     var selectedChapter by remember { mutableStateOf<Chapter?>(null) }
 
+
     // If a chapter is selected, show a bottom sheet
     if (selectedChapter != null) {
         ModalBottomSheet(
@@ -124,7 +125,7 @@ fun ChaptersScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         // Background
         Image(
-            painter = painterResource(id = R.drawable.lesson_path_bg),
+            painter = painterResource(id = R.drawable.chapterscreen_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -337,7 +338,7 @@ fun ChapterDownloadBottomSheetContent(
         when (downloadState) {
             DownloadState.Initial -> {
                 CommonButton(
-                    buttonText = "Download and Start",
+                    buttonText = "Download lesson",
                     mainColor = lightNavyBlue,
                     shadowColor = navyBlue,
                     textColor = white,
@@ -367,7 +368,7 @@ fun ChapterDownloadBottomSheetContent(
             DownloadState.Cached -> {
                 // Already in DB, let user open
                 CommonButton(
-                    buttonText = "Start",
+                    buttonText = "Start lesson",
                     mainColor = lightNavyBlue,
                     textColor = white,
                     shadowColor = navyBlue,
