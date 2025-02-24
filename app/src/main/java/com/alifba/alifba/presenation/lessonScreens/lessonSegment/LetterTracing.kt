@@ -1,20 +1,32 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing.LetterTracingAnimation
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing.LetterTracingExercise
-
+import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
+import com.alifba.alifba.ui_components.theme.navyBlue
 
 
 @Composable
@@ -22,50 +34,104 @@ fun LetterTracing(
     segment: LessonSegment.LetterTracing,
     onNextClicked: () -> Unit
 ) {
+    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
+    // How many times to trace (fallback to 3 if not provided by backend)
+    val timesToTrace = segment.repeatCount ?: 3
+
+    // Which attempt are we on now?
+    var attemptIndex by remember { mutableStateOf(1) }
+
+    // Show a “demo” animation only once at start? (If you need it)
+    var showIntroAnimation by remember { mutableStateOf(true) }
+
+    // Show final “celebration” animation after the last attempt
+    var showFinalAnimation by remember { mutableStateOf(false) }
+
+    // A key that forces the child to re-initialize from scratch each attempt
+    var resetTrigger by remember { mutableStateOf(0) }
+    // Decide which letter shape we’ll be tracing
     val shape = when (segment.letterId?.lowercase()) {
         "baa"  -> createBaaShape()
         "taa"  -> createTaaShape()
         "thaa" -> createThaaShape()
         "alif" -> createAlifShape()
-        else   -> createBaaShape()
+        else   -> createBaaShape() // fallback
     }
 
-    // 2) Let user see the "demo" animation first, then do the exercise
-    var showAnimation by remember { mutableStateOf(true) }
-
     Box(modifier = Modifier.fillMaxSize()) {
-        if (showAnimation) {
-            LetterTracingAnimation(
-                onContinueClicked = { showAnimation = false }
-            )
-        } else {
-            LetterTracingExercise(
-                letterShape = shape,
-                onNextClicked = onNextClicked
-            )
+        when {
+            // 1) Optional: If you want an intro animation first
+            showIntroAnimation -> {
+                LetterTracingAnimation(
+                    onContinueClicked = {
+                        showIntroAnimation = false
+                    }
+                )
+            }
+
+            // 2) If we’ve done all attempts, show final animation
+            showFinalAnimation -> {
+                LottieAnimationDialog(
+                    showDialog = remember { mutableStateOf(true) },
+                    lottieFileRes = R.raw.burst
+                )
+                // After a delay, navigate out
+                LaunchedEffect(Unit) {
+                    kotlinx.coroutines.delay(1500)
+                    onNextClicked() // or go back, or wherever
+                }
+            }
+
+            // 3) Otherwise, let the user do the letter tracing for the current attempt
+            else -> {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // 1) Show how many attempts remain
+                    val attemptsRemaining = timesToTrace - attemptIndex
+                    val textToShow = when {
+                        attemptsRemaining > 1 -> "$attemptsRemaining more times"
+                        attemptsRemaining == 1 -> "1 more time"
+                        else -> "Last attempt" // or "0 more times" if you prefer
+                    }
+
+                    // Display it near the top
+                    Text(
+                        text = textToShow,
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .align(Alignment.CenterHorizontally),
+                        color = navyBlue,
+                        fontSize = 22.sp,
+                        fontFamily = alifbaFont
+                    )
+
+                    // 2) Force re-composition of the exercise each time resetTrigger increments
+                    androidx.compose.runtime.key(resetTrigger) {
+                        LetterTracingExercise(
+                            letterShape = shape,
+                            onNextClicked = {
+                                if (attemptIndex < timesToTrace) {
+                                    attemptIndex++
+                                    resetTrigger++
+                                } else {
+                                    showFinalAnimation = true
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
 
-
-
-/**
- * Data class that holds the main letter path and a list of dot data.
- * You can expand this if you have multiple sub-paths, but for now
- * we’ll assume one main path plus zero or more dots.
- */
 data class LetterShape(
     val mainPath: Path,
     val dots: List<DotData>
 )
 
-/**
- * Represents a tappable dot in the letter (e.g. the dot in ب or two dots in ت).
- * [center] is where the dot is placed.
- * [radius] is its radius for both drawing and tap detection.
- * [isTouched] indicates whether the user has tapped it.
- */
 data class DotData(
     val center: Offset,
     val radius: Float,
@@ -142,10 +208,6 @@ fun createAlifShape(): LetterShape{
     return LetterShape(mainPath, dots = emptyList())
 }
 
-
-
-
-// Helper function to scale paths based on canvas size
 fun Path.scale(scaleX: Float, scaleY: Float): Path {
     val scalePath = Path()
     val matrix = android.graphics.Matrix()
@@ -154,23 +216,3 @@ fun Path.scale(scaleX: Float, scaleY: Float): Path {
     scalePath.asAndroidPath().set(this.asAndroidPath())
     return scalePath
 }
-
-
-//@Preview(showSystemUi = false) // Disables system UI in the preview
-//@Composable
-//fun PreviewLetterTracing() {
-//    // Mocking the LessonSegment.LetterTracing data
-//    val mockLessonSegment = LessonSegment.LetterTracing(
-//        speech = R.raw.letterbaa // Replace with a valid audio resource ID for the preview
-//    )
-//
-//    // Fullscreen-like simulation using Box
-//    Box(
-//        modifier = Modifier
-//            .fillMaxSize() // Ensures the layout occupies the full available space
-//            .background(Color.White) // Background to simulate the app's theme
-//    ) {
-//        // Call the LetterTracing composable with the mocked data
-//        LetterTracing(segment = mockLessonSegment, onNextClicked = {})
-//    }
-//}

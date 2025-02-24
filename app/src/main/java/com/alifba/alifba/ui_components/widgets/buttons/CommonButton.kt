@@ -34,9 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
-import com.alifba.alifba.ui_components.theme.darkPurple
 import com.alifba.alifba.ui_components.theme.darkYellow
-import com.alifba.alifba.ui_components.theme.lightPurple
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
+import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -171,8 +171,8 @@ fun PreviewCommonButton() {
     CommonButton(
         onClick = {},
         buttonText = "Next",
-        mainColor = lightPurple,
-        shadowColor = darkPurple,
+        mainColor = lightNavyBlue,
+        shadowColor = navyBlue,
         textColor = white
     )
 }

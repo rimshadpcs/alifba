@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -47,7 +48,7 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, s
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .height(48.dp) // Total height including the shadow
+            .height(72.dp) // Total height including the shadow
             .clip(RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.TopCenter,
 
@@ -82,7 +83,8 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, s
             Text(
                 text = buttonText,
                 fontFamily = alifbaFont,
-                color = Color.White
+                color = Color.White,
+                fontSize = 24.sp
             )
         }
     }

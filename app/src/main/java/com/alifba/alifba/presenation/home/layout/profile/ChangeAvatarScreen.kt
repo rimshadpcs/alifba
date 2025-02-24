@@ -51,6 +51,10 @@ import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
@@ -61,6 +65,14 @@ fun ChangeAvatarScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(Unit) {
+        Firebase.analytics.logEvent(
+            FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, "ChangeAvatarScreen")
+            param(FirebaseAnalytics.Param.SCREEN_CLASS, "ChangeAvatarScreen")
+        }
+    }
+
     val alifbaFont = FontFamily(
         Font(R.font.more_sugar_regular)
     )

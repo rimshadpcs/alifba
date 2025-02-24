@@ -13,11 +13,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -46,8 +44,17 @@ import com.alifba.alifba.presenation.lessonScreens.lessonSegment.pictureMcq.Pict
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.TextMcq.TextMcqSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.fillInTheBlanks.FillInTheBlanksExerciseScreen
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.flashCard.FlashCardLessonSegment
+import com.alifba.alifba.presenation.main.logLessonEvent
+import com.alifba.alifba.ui_components.theme.darkPink
+import com.alifba.alifba.ui_components.theme.darkPurple
+import com.alifba.alifba.ui_components.theme.darkRed
+import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.theme.lightPurple
+import com.alifba.alifba.ui_components.theme.lightRed
+import com.alifba.alifba.ui_components.theme.mediumNavyBlue
+import com.alifba.alifba.ui_components.theme.mediumRed
 import com.alifba.alifba.ui_components.theme.mediumpurple
+import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.widgets.StripedProgressIndicator
 import kotlinx.coroutines.delay
 
@@ -63,6 +70,7 @@ fun LessonScreen(
     val context = LocalContext.current
     val isLessonsLoaded = remember { mutableStateOf(false) }
 
+    val startTime = remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         if (!isLessonsLoaded.value) {
             Log.d("LessonScreen", "Loading lessons for level: $levelId")
@@ -70,8 +78,25 @@ fun LessonScreen(
             viewModel.loadLessons(levelId)
             chaptersViewModel.loadChapters(levelId)
             isLessonsLoaded.value = true
+
+            // 🔥 Log Lesson Start (Remove timeSpent here)
+            logLessonEvent(
+                eventName = "lesson_start",
+                lessonId = lessonId,
+                levelId = levelId
+            )
         }
     }
+    DisposableEffect(Unit) {
+        onDispose {
+            logLessonEvent(
+                eventName = "lesson_abandon",
+                lessonId = lessonId,
+                levelId = levelId,
+            )
+        }
+    }
+
 
     val isLoading by viewModel.loading.observeAsState(false)
     val errorMessage by viewModel.error.observeAsState()
@@ -129,7 +154,7 @@ fun LessonContent(
     val currentSegmentIndex = remember { mutableStateOf(0) }
     val accumulatedXp = remember { mutableStateOf(0) }
     val isAudioCompleted by viewModel.isAudioCompleted.observeAsState(false)
-
+    val startTime = remember { mutableStateOf(System.currentTimeMillis()) }
     val totalSegments = lesson.segments.size
     val progress = if (totalSegments > 0) {
         currentSegmentIndex.value / totalSegments.toFloat()
@@ -178,12 +203,28 @@ fun LessonContent(
                         LetterTracing(
                             segment = currentSegment,
                             onNextClicked = {
+                                val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
+                                logLessonEvent(
+                                    eventName = "segment_complete",
+                                    lessonId = lessonId,
+                                    levelId = levelId,
+                                    chapterId = lesson.id.toString(),
+                                    segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
+                                    xpEarned = accumulatedXp.value,
+                                    timeSpent = timeSpent
+                                )
+                                startTime.value = System.currentTimeMillis()
+
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
                                     accumulatedXp,
                                     showCompletionDialog,
-                                    currentSegment
+                                    currentSegment,
+                                    lessonId,
+                                    levelId,
+                                    lesson.id.toString(),
+                                    startTime.value
                                 )
                             }
                         )
@@ -198,7 +239,11 @@ fun LessonContent(
                                     totalSegments,
                                     accumulatedXp,
                                     showCompletionDialog,
-                                    currentSegment
+                                    currentSegment,
+                                    lessonId,
+                                    levelId,
+                                    lesson.id.toString(),
+                                    startTime.value
                                 )
                             }
                         )
@@ -216,12 +261,27 @@ fun LessonContent(
                             segment = currentSegment,
                             showNextButton = isAudioCompleted, // if you want gating by audio
                             onNextClicked = {
+                                val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
+                                logLessonEvent(
+                                    eventName = "segment_complete",
+                                    lessonId = lessonId,
+                                    levelId = levelId,
+                                    chapterId = lesson.id.toString(),
+                                    segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
+                                    xpEarned = accumulatedXp.value,
+                                    timeSpent = timeSpent
+                                )
+                                startTime.value = System.currentTimeMillis()
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
                                     accumulatedXp,
                                     showCompletionDialog,
-                                    currentSegment
+                                    currentSegment,
+                                    lessonId,
+                                    levelId,
+                                    lesson.id.toString(),
+                                    startTime.value
                                 )
                             }
                         )
@@ -229,6 +289,7 @@ fun LessonContent(
 
                     is LessonSegment.FillInTheBlanks -> {
                         DisposableEffect(currentSegment) {
+
                             viewModel.stopAudio()
                             viewModel.startAudio(currentSegment.exercise.speech)
                             onDispose { viewModel.stopAudio() }
@@ -238,13 +299,29 @@ fun LessonContent(
                             segment = currentSegment,
                             showNextButton = isAudioCompleted, // if you want audio gating
                             onNextClicked = {
+                                val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
+
                                 viewModel.incrementQuizzesAttended()
+                                logLessonEvent(
+                                    eventName = "segment_complete",
+                                    lessonId = lessonId,
+                                    levelId = levelId,
+                                    chapterId = lesson.id.toString(),
+                                    segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
+                                    xpEarned = accumulatedXp.value,
+                                    timeSpent = timeSpent
+                                )
+                                startTime.value = System.currentTimeMillis()
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
                                     accumulatedXp,
                                     showCompletionDialog,
-                                    currentSegment
+                                    currentSegment,
+                                    lessonId,
+                                    levelId,
+                                    lesson.id.toString(),
+                                    startTime.value
                                 )
                             }
                         )
@@ -260,13 +337,28 @@ fun LessonContent(
                             segment = currentSegment,
                             showNextButton = isAudioCompleted, // if you want audio gating
                             onNextClicked = {
+                                val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
                                 viewModel.incrementQuizzesAttended()
+                                logLessonEvent(
+                                    eventName = "segment_complete",
+                                    lessonId = lessonId,
+                                    levelId = levelId,
+                                    chapterId = lesson.id.toString(),
+                                    segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
+                                    xpEarned = accumulatedXp.value,
+                                    timeSpent = timeSpent
+                                )
+                                startTime.value = System.currentTimeMillis()
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
                                     accumulatedXp,
                                     showCompletionDialog,
-                                    currentSegment
+                                    currentSegment,
+                                    lessonId,
+                                    levelId,
+                                    lesson.id.toString(),
+                                    startTime.value
                                 )
                             }
                         )
@@ -281,13 +373,28 @@ fun LessonContent(
                         TextMcqSegment(
                             segment = currentSegment,
                             onNextClicked = {
+                                val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
                                 viewModel.incrementQuizzesAttended()
+                                logLessonEvent(
+                                    eventName = "segment_complete",
+                                    lessonId = lessonId,
+                                    levelId = levelId,
+                                    chapterId = lesson.id.toString(),
+                                    segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
+                                    xpEarned = accumulatedXp.value,
+                                    timeSpent = timeSpent
+                                )
+                                startTime.value = System.currentTimeMillis()
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
                                     accumulatedXp,
                                     showCompletionDialog,
-                                    currentSegment
+                                    currentSegment,
+                                    lessonId,
+                                    levelId,
+                                    lesson.id.toString(),
+                                    startTime.value
                                 )
                             }
                         )
@@ -302,13 +409,18 @@ fun LessonContent(
                         DragDropLessonScreen(
                             segment = currentSegment,
                             onNextClicked = {
+
                                 viewModel.incrementQuizzesAttended()
                                 handleNextSegment(
                                     currentSegmentIndex,
                                     totalSegments,
                                     accumulatedXp,
                                     showCompletionDialog,
-                                    currentSegment
+                                    currentSegment,
+                                    lessonId,
+                                    levelId,
+                                    lesson.id.toString(),
+                                    startTime.value
                                 )
                             }
                         )
@@ -390,20 +502,26 @@ fun LessonContent(
     }
 }
 
+
 private fun handleNextSegment(
     currentSegmentIndex: MutableState<Int>,
     totalSegments: Int,
     accumulatedXp: MutableState<Int>,
     showDialog: MutableState<Boolean>,
-    currentSegment: LessonSegment
+    currentSegment: LessonSegment,
+    lessonId: Int,
+    levelId: String,
+    chapterId: String,
+    timeSpent: Long
+
 ) {
     if (currentSegmentIndex.value < totalSegments - 1) {
         currentSegmentIndex.value++
 
         // Add XP based on segment type
         when (currentSegment) {
-            is LessonSegment.TextMcqLesson,-> accumulatedXp.value += 5
-            is LessonSegment.PictureMcqLesson,-> accumulatedXp.value += 5
+            is LessonSegment.TextMcqLesson -> accumulatedXp.value += 5
+            is LessonSegment.PictureMcqLesson -> accumulatedXp.value += 5
             is LessonSegment.FillInTheBlanks -> accumulatedXp.value += 5
             is LessonSegment.CommonLesson -> accumulatedXp.value += 1
             is LessonSegment.LetterTracing -> accumulatedXp.value += 10
@@ -411,6 +529,16 @@ private fun handleNextSegment(
             else -> {}
         }
     } else {
+        // 🔥 Log Lesson Completion
+        logLessonEvent(
+            eventName = "lesson_complete",
+            lessonId = lessonId,
+            levelId = levelId,
+            chapterId = chapterId,
+            totalXp = accumulatedXp.value,
+            timeSpent = timeSpent
+        )
         showDialog.value = true
     }
 }
+

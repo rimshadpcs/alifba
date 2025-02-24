@@ -33,6 +33,10 @@ import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.utils.DownloadLessonWorker
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -45,6 +49,14 @@ fun ChaptersScreen(
     homeViewModel: HomeViewModel,
     profileViewModel: ProfileViewModel
 ) {
+
+    LaunchedEffect(Unit) {
+        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, "ChapterScreen")
+            param(FirebaseAnalytics.Param.SCREEN_CLASS, "ChapterScreen")
+        }
+    }
+
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
     val context = LocalContext.current

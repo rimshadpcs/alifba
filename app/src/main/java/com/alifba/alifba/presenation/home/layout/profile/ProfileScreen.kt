@@ -61,6 +61,10 @@ import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 
 @Composable
@@ -68,6 +72,13 @@ fun ProfileScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel
 ) {
+    LaunchedEffect(Unit) {
+        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, "ProfileScreen")
+            param(FirebaseAnalytics.Param.SCREEN_CLASS, "ProfileScreen")
+        }
+    }
+
     val userProfile by profileViewModel.userProfileState.collectAsState()
     val earnedBadges by profileViewModel.earnedBadges.collectAsState()
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))

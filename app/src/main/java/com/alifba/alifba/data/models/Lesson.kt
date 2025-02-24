@@ -7,18 +7,19 @@ data class Lesson(
     val id: Int = 0,
     val title: String = "",
     val segments: List<LessonSegment> = emptyList(),
-    val chapterType:String = ""// Default value
+    val chapterType: String
 )
 
 
 sealed class LessonSegment {
 
-    data class LetterTracing( val letterId: String?,val speech: String? = null): LessonSegment()
+    data class LetterTracing( val letterId: String?,val speech: String? = null,val repeatCount: Int? = null): LessonSegment()
     data class CommonLesson(
         val image: String = "",
         val description: String ="",
         val speech: String ="",
-        val character: String=""
+        val character: String="",
+
     ) :
         LessonSegment()
 

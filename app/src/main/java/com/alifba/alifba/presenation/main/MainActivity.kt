@@ -2,7 +2,6 @@ package com.alifba.alifba.presenation.main
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -44,6 +43,9 @@ import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.onboarding.OnboardingScreen
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 
@@ -148,7 +150,33 @@ class MainActivity : ComponentActivity() {
 }
 
 
+fun logScreenView(screenName: String) {
+    val bundle = Bundle().apply {
+        putString(FirebaseAnalytics.Param.SCREEN_NAME, screenName)
+    }
+    Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, bundle)
+}
 
+fun logLessonEvent(
+    eventName: String,
+    lessonId: Int,
+    levelId: String,
+    chapterId: String? = null,
+    segmentType: String? = null,
+    xpEarned: Int? = null,
+    totalXp: Int? = null,
+    timeSpent: Long? = null
+) {
+    val bundle = Bundle().apply {
+        putInt("lesson_id", lessonId)
+        putString("level_id", levelId)
+        chapterId?.let { putString("chapter_id", it) }
+        segmentType?.let { putString("segment_type", it) }
+        xpEarned?.let { putInt("xp_earned", it) }
+        timeSpent?.let { putLong("time_spent", it) } // 🔥 Now this works
+    }
+    Firebase.analytics.logEvent(eventName, bundle)
+}
 
 @Composable
 fun SplashScreenDummy(modifier: Modifier = Modifier) {
