@@ -12,9 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.ui_components.theme.darkPink
-import com.alifba.alifba.ui_components.theme.darkPurple
 import com.alifba.alifba.ui_components.theme.lightPink
-import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 

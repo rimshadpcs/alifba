@@ -13,6 +13,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,9 +29,14 @@ import com.alifba.alifba.R
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText
 import com.alifba.alifba.data.models.LessonSegment
-import com.alifba.alifba.ui_components.theme.darkPurple
-import com.alifba.alifba.ui_components.theme.lightPurple
+import com.alifba.alifba.presenation.main.logScreenView
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
+import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
 
 @Composable
 fun CommonLessonSegment(
@@ -35,6 +44,17 @@ fun CommonLessonSegment(
     onNextClicked: () -> Unit,
     showNextButton: Boolean,
 ) {
+    LaunchedEffect(Unit) {
+        logScreenView("lesson_screen")
+    }
+    LaunchedEffect(Unit) {
+        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, "ByteSizeLessonSegment")
+            param(FirebaseAnalytics.Param.SCREEN_CLASS, "ByteSizeLessonSegment")
+        }
+    }
+// 🔥 Define startTime at the top level of LessonContent
+    val startTime = remember { mutableLongStateOf(System.currentTimeMillis()) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -75,8 +95,8 @@ fun CommonLessonSegment(
             CommonButton(
                 onClick = onNextClicked,
                 buttonText = "Next",
-                mainColor = lightPurple,
-                shadowColor = darkPurple,
+                mainColor = lightNavyBlue,
+                shadowColor = navyBlue,
                 textColor = white,
                 modifier = Modifier
                     .fillMaxWidth()

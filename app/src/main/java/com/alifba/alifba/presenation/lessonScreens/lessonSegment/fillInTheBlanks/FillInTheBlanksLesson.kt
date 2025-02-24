@@ -1,6 +1,10 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment.fillInTheBlanks
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -21,12 +25,18 @@ import coil.compose.rememberImagePainter
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.data.models.OptionsForFillInTheBlanks
+import com.alifba.alifba.presenation.main.logScreenView
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
-import com.alifba.alifba.ui_components.theme.darkPurple
-import com.alifba.alifba.ui_components.theme.lightPurple
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
+import com.alifba.alifba.ui_components.theme.navyBlue
+
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.OptionButton
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -36,6 +46,15 @@ fun FillInTheBlanksExerciseScreen(
     onNextClicked: () -> Unit,
     showNextButton: Boolean,
 ) {
+    LaunchedEffect(Unit) {
+        logScreenView("lesson_screen")
+    }
+    LaunchedEffect(Unit) {
+        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, "FillInTheBlanksExerciseScreen")
+            param(FirebaseAnalytics.Param.SCREEN_CLASS, "FillInTheBlanksExerciseScreen")
+        }
+    }
     val exerciseKey = segment.exercise.hashCode()
 
     // Correctly initialize blanksState with explicit type
@@ -83,6 +102,14 @@ fun FillInTheBlanksExerciseScreen(
             showDialog.value = true
         } else {
             Toast.makeText(context, "Wrong answer", Toast.LENGTH_SHORT).show()
+
+            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(100)
+            }
         }
     }
 
@@ -174,8 +201,8 @@ fun FillInTheBlanksExerciseScreen(
             CommonButton(
                 onClick = checkAnswer,
                 buttonText = "Check",
-                mainColor = lightPurple,
-                shadowColor = darkPurple,
+                mainColor = lightNavyBlue,
+                shadowColor = navyBlue,
                 textColor = white
             )
         }

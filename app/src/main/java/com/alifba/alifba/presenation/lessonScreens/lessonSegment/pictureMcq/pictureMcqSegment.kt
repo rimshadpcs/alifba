@@ -1,5 +1,9 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment.pictureMcq
 
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -30,12 +35,18 @@ import coil.compose.rememberImagePainter
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.data.models.PictureMcqItem
+import com.alifba.alifba.presenation.main.logScreenView
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
-import com.alifba.alifba.ui_components.theme.darkPurple
-import com.alifba.alifba.ui_components.theme.lightPurple
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
+import com.alifba.alifba.ui_components.theme.navyBlue
+
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.PictureButton
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText as CommonExplanationText
 
@@ -44,10 +55,18 @@ fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: ()
     val showNextButton = remember { mutableStateOf(false) }
     val showDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
     // Play audio if needed
     // PlayAudio(audioResId = segment.speech)
-
+    LaunchedEffect(Unit) {
+        logScreenView("lesson_screen")
+    }
+    LaunchedEffect(Unit) {
+        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, "PictureMcqSegment")
+            param(FirebaseAnalytics.Param.SCREEN_CLASS, "PictureMcqSegment")
+        }
+    }
     Column(
         modifier = Modifier
             .padding(16.dp)
@@ -75,7 +94,17 @@ fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: ()
                             showNextButton.value = true
                             showDialog.value = true
                         }
+                        else{
+                            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                            } else {
+                                @Suppress("DEPRECATION")
+                                vibrator.vibrate(100)
+                            }
+                        }
                     },
+
                     buttonImage = item.image,
                     buttonText = item.choice
                 )
@@ -102,8 +131,8 @@ fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: ()
             CommonButton(
                 onClick = onNextClicked,
                 buttonText = "Next",
-                mainColor = lightPurple,
-                shadowColor = darkPurple,
+                mainColor = lightNavyBlue,
+                shadowColor = navyBlue,
                 textColor = white
             )
         }

@@ -25,8 +25,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
-import com.alifba.alifba.ui_components.theme.darkPurple
-import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.smarttoolfactory.tutorial1_1basics.chapter6_graphics.PathSegmentInfo
@@ -41,6 +39,7 @@ import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterShape
 import kotlin.math.pow
 
 import android.graphics.RectF
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -48,64 +47,72 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.alifba.alifba.R
+import com.alifba.alifba.presenation.main.logScreenView
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
+import com.alifba.alifba.ui_components.theme.navyBlue
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
 import kotlin.math.atan2
 
-/**
- * Data class for a single "dot" in a letter (e.g., for Baa or Taa).
- */
-data class Dot(
-    val center: Offset,
-    val radius: Float,
-    var isTouched: Boolean = false
-)
-
-/**
- * Main composable:
- *  - User drags an arrow along [letterShape.mainPath].
- *  - After finishing the path, the user can tap the dots to finalize.
- *  - Once path+dots are done, a "Continue" button appears.
- */
 @Composable
 fun LetterTracingExercise(
     letterShape: LetterShape,
+
     onNextClicked: () -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        logScreenView("lesson_screen")
+    }
+    LaunchedEffect(Unit) {
+        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, "LetterTracingExercise")
+            param(FirebaseAnalytics.Param.SCREEN_CLASS, "LetterTracingExercise")
+        }
+    }
+
+
+
+    // Track whether we show the "burst" Lottie animation
+    val showDialog = remember { mutableStateOf(false) }
+
     // 1) States, coroutines
     val coroutineScope = rememberCoroutineScope()
     val translation = remember { mutableStateOf(Offset.Zero) }
-    val showDialog = remember { mutableStateOf(false) }
-
-    // 2) Path stuff
     val path = remember { Path() }
     val trackPath = remember { Path() }
     val userPath = remember { Path() }
     val pathMeasure = remember { PathMeasure() }
     val segmentInfoList = remember { mutableStateListOf<PathSegmentInfo>() }
 
-    // 3) Indices & booleans
     var currentIndex by remember { mutableIntStateOf(0) }
     var isTouched by remember { mutableStateOf(false) }
     var pathCompleted by remember { mutableStateOf(false) }
     var allDotsCompleted by remember { mutableStateOf(false) }
 
+    // Called when user completes path + dots
+    fun handleExerciseComplete() {
+        onNextClicked()
+    }
+
     var showResetButton by remember { mutableStateOf(false) }
-    // 4) Drawing constants
     val pathSegments = 500
     val nearestTouchDistance = 60f
     val searchWindow = 50
 
-    // 5) Painter for arrow
+    // Painter for arrow
     val arrowPainter = painterResource(id = R.drawable.down_arrow)
 
     fun resetTrace() {
         currentIndex = 0
         isTouched = false
         userPath.reset()
-        showResetButton = false
+        pathCompleted = false
+        allDotsCompleted = false
     }
 
-
-    // 6) Function to handle user dragging
+    // Handle user dragging
     fun handleDrag(currentPosition: Offset) {
         if (pathCompleted) return
 
@@ -147,12 +154,13 @@ fun LetterTracingExercise(
             }
         }
     }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Canvas(
             modifier = Modifier
-                .fillMaxSize()  // Changed to fillMaxSize for better centering
+                .fillMaxSize()
                 .padding(16.dp)
-                // Handle both drag and tap gestures
+                // Handle drag gestures
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = { offset ->
@@ -161,7 +169,6 @@ fun LetterTracingExercise(
                                 var minDist = Float.MAX_VALUE
                                 var startIndex = -1
 
-                                // Search in entire path, but prioritize points after current index
                                 for (idx in currentIndex until minOf(currentIndex + 20, segmentInfoList.size)) {
                                     val seg = segmentInfoList[idx]
                                     val distSq = (seg.position - offset).getDistanceSquared()
@@ -171,7 +178,7 @@ fun LetterTracingExercise(
                                     }
                                 }
 
-                                // If no close point found after current index, search from beginning
+                                // If not found near currentIndex, search from beginning
                                 if (minDist > nearestTouchDistance.pow(2)) {
                                     for (idx in 0 until currentIndex) {
                                         val seg = segmentInfoList[idx]
@@ -186,10 +193,7 @@ fun LetterTracingExercise(
                                 if (startIndex >= 0 && minDist < nearestTouchDistance.pow(2)) {
                                     isTouched = true
                                     currentIndex = startIndex
-                                    // Only move to new position if we're starting from a new point
-                                    if (startIndex <= currentIndex) {
-                                        userPath.moveTo(offset.x, offset.y)
-                                    }
+                                    userPath.moveTo(offset.x, offset.y)
                                 }
                             }
                         },
@@ -198,7 +202,7 @@ fun LetterTracingExercise(
                         }
                     )
                 }
-
+                // Handle tap gestures for the dots
                 .pointerInput(Unit) {
                     detectTapGestures { tapOffset ->
                         if (pathCompleted && !allDotsCompleted) {
@@ -215,6 +219,7 @@ fun LetterTracingExercise(
                             if (allTapped) {
                                 allDotsCompleted = true
                                 coroutineScope.launch {
+                                    // Show the burst animation briefly
                                     showDialog.value = true
                                     delay(1200)
                                     showDialog.value = false
@@ -223,7 +228,6 @@ fun LetterTracingExercise(
                         }
                     }
                 }
-
         ) {
             val canvasWidth = size.width
             val canvasHeight = size.height
@@ -233,7 +237,7 @@ fun LetterTracingExercise(
                 val bounds = RectF()
                 letterShape.mainPath.asAndroidPath().computeBounds(bounds, true)
 
-                // Calculate translation to center the letter both horizontally and vertically
+                // Calculate translation to center the letter
                 val dx = (canvasWidth - bounds.width()) / 2 - bounds.left
                 val dy = (canvasHeight - bounds.height()) / 2 - bounds.top
                 translation.value = Offset(dx, dy)
@@ -305,7 +309,7 @@ fun LetterTracingExercise(
                 }
             }
 
-            // Draw dots from letterShape with original colors
+            // Draw dots
             letterShape.dots.forEach { dot ->
                 val adjustedCenter = dot.center + translation.value
                 drawCircle(
@@ -315,34 +319,41 @@ fun LetterTracingExercise(
                 )
             }
         }
+
+        // Buttons at bottom
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
         ) {
-        if (allDotsCompleted) {
-            // Show Continue button only after everything is completed
-            CommonButton(
-                onClick = onNextClicked,
-                buttonText = "Continue",
-                shadowColor = darkPurple,
-                mainColor = lightPurple,
-                textColor = white
-            )
-        } else if (currentIndex > 0 && !pathCompleted) {
-            // Show Reset button only when user has started tracing but hasn't completed
-            CommonButton(
-                onClick = { resetTrace() },
-                buttonText = "Reset",
-                shadowColor = darkPurple,
-                mainColor = lightPurple,
-                textColor = white
-            )
+            when {
+                // Show "Next" if path + dots are completed
+                allDotsCompleted -> {
+                    CommonButton(
+                        onClick = { handleExerciseComplete() },
+                        buttonText = "Next",
+                        shadowColor = navyBlue,
+                        mainColor = lightNavyBlue,
+                        textColor = white
+                    )
+                }
+                // If user started drawing but hasn't finished
+                (currentIndex > 0 && !pathCompleted) -> {
+                    CommonButton(
+                        onClick = { resetTrace() },
+                        buttonText = "Reset",
+                        shadowColor = navyBlue,
+                        mainColor = lightNavyBlue,
+                        textColor = white
+                    )
+                }
+            }
         }
-    }
-        // Show animation only after all dots are completed
-        LottieAnimationDialog(showDialog, lottieFileRes = R.raw.burst)
 
-
+        // The "burst" Lottie animation when user taps all dots
+        LottieAnimationDialog(
+            showDialog = showDialog,
+            lottieFileRes = R.raw.tick
+        )
     }
 }
