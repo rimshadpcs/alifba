@@ -42,6 +42,7 @@ import com.alifba.alifba.presenation.lessonScreens.lessonSegment.DragAndDropLess
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.pictureMcq.PictureMcqSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.TextMcq.TextMcqSegment
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.cloudExercise.CloudTappingExercise
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.fillInTheBlanks.FillInTheBlanksExerciseScreen
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.flashCard.FlashCardLessonSegment
 import com.alifba.alifba.presenation.main.logLessonEvent
@@ -229,6 +230,45 @@ fun LessonContent(
                             }
                         )
                     }
+
+                    is LessonSegment.CloudTappingLesson -> {
+                        DisposableEffect(currentSegment) {
+                            viewModel.stopAudio()
+                            viewModel.startAudio(currentSegment.speech.toString())
+                            onDispose { viewModel.stopAudio() }
+                        }
+
+                        CloudTappingExercise(
+                            segment = currentSegment,
+                            onNextClicked = {
+                                val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
+                                logLessonEvent(
+                                    eventName = "segment_complete",
+                                    lessonId = lessonId,
+                                    levelId = levelId,
+                                    chapterId = lesson.id.toString(),
+                                    segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
+                                    xpEarned = accumulatedXp.value,
+                                    timeSpent = timeSpent
+                                )
+                                startTime.value = System.currentTimeMillis()
+
+                                handleNextSegment(
+                                    currentSegmentIndex,
+                                    totalSegments,
+                                    accumulatedXp,
+                                    showCompletionDialog,
+                                    currentSegment,
+                                    lessonId,
+                                    levelId,
+                                    lesson.id.toString(),
+                                    startTime.value
+                                )
+                            }
+                        )
+                    }
+
+
 
                     is LessonSegment.FlashCardExercise -> {
                         FlashCardLessonSegment(

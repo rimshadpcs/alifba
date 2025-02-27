@@ -40,7 +40,11 @@ import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createAlifShape
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createBaaShape
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createJeemShape
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createTaaShape
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.createThaaShape
 import com.alifba.alifba.presenation.main.logScreenView
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -55,7 +59,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.atan2
 
 @Composable
-fun LetterTracingAnimation(onContinueClicked: () -> Unit) {
+fun LetterTracingAnimation(
+    letterId: String?,
+    onContinueClicked: () -> Unit) {
 
     LaunchedEffect(Unit) {
         logScreenView("lesson_screen")
@@ -66,7 +72,17 @@ fun LetterTracingAnimation(onContinueClicked: () -> Unit) {
             param(FirebaseAnalytics.Param.SCREEN_CLASS, "LetterTracingAnimation")
         }
     }
-    val letterShape = remember { createBaaShape() }
+
+    val letterShape = remember {
+        when (letterId?.lowercase()) {
+            "alif" -> createAlifShape()
+            "baa"  -> createBaaShape()
+            "taa"  -> createTaaShape()
+            "thaa" -> createThaaShape()
+            "jeem"-> createJeemShape()
+            else   -> createBaaShape()
+        }
+    }
     val arrowPainter = painterResource(id = R.drawable.down_arrow)
     val handPainter = painterResource(id = R.drawable.hand)
 
@@ -75,7 +91,7 @@ fun LetterTracingAnimation(onContinueClicked: () -> Unit) {
     val pathMeasure = remember { PathMeasure() }
     val coroutineScope = rememberCoroutineScope()
     val animatable = remember { Animatable(0f) }
-    val handAlpha = remember { Animatable(0f) } // Controls fade effect
+    val handAlpha = remember { Animatable(0f) }
     val translation = remember { mutableStateOf(Offset.Zero) }
     var animationPhase by remember { mutableStateOf("path") }
     var currentDotIndex by remember { mutableIntStateOf(0) }

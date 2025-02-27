@@ -72,7 +72,7 @@ fun LetterTracingExercise(
         }
     }
 
-
+    val hasNoDots = remember { letterShape.dots.isEmpty() }
 
     // Track whether we show the "burst" Lottie animation
     val showDialog = remember { mutableStateOf(false) }
@@ -148,9 +148,24 @@ fun LetterTracingExercise(
             }
 
             // Check for completion
+//            if (nearestIndex >= segmentInfoList.size - 1) {
+//                isTouched = false
+//                pathCompleted = true
+//            }
             if (nearestIndex >= segmentInfoList.size - 1) {
                 isTouched = false
                 pathCompleted = true
+                // If there are no dots, we should consider the exercise complete
+                if (hasNoDots) {
+                    allDotsCompleted = true
+                    coroutineScope.launch {
+                        // Show the burst animation briefly
+                        showDialog.value = true
+                        delay(1200)
+                        showDialog.value = false
+                        // Can trigger any other completion animations here
+                    }
+                }
             }
         }
     }
@@ -328,7 +343,7 @@ fun LetterTracingExercise(
         ) {
             when {
                 // Show "Next" if path + dots are completed
-                allDotsCompleted -> {
+                (pathCompleted && (allDotsCompleted || hasNoDots)) -> {
                     CommonButton(
                         onClick = { handleExerciseComplete() },
                         buttonText = "Next",
@@ -346,6 +361,7 @@ fun LetterTracingExercise(
                         mainColor = lightNavyBlue,
                         textColor = white
                     )
+
                 }
             }
         }
