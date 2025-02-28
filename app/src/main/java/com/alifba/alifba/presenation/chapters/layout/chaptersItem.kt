@@ -44,7 +44,7 @@ fun ChapterPathItems(
     val borderColor = Color.White
     val mainIcon = when (lesson.chapterType) {
         "Story"    -> R.drawable.story
-        "Alphabet" -> R.drawable.alphabeticon
+        "Alphabet" -> R.drawable.alphab
         "Lesson"   -> R.drawable.book
         else       -> R.drawable.start
     }

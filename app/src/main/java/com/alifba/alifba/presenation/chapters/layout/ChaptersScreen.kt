@@ -2,6 +2,10 @@ package com.alifba.alifba.presenation.chapters
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -28,7 +33,10 @@ import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.home.layout.TopBarIcons
 import com.alifba.alifba.presenation.lessonScreens.domain.repository.LessonCacheRepository
 import com.alifba.alifba.ui_components.dialogs.BadgeEarnedSnackBar
+import com.alifba.alifba.ui_components.theme.black
+import com.alifba.alifba.ui_components.theme.darkCandyGreen
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
+import com.alifba.alifba.ui_components.theme.lightRed
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
@@ -49,7 +57,6 @@ fun ChaptersScreen(
     homeViewModel: HomeViewModel,
     profileViewModel: ProfileViewModel
 ) {
-
     LaunchedEffect(Unit) {
         Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
             param(FirebaseAnalytics.Param.SCREEN_NAME, "ChapterScreen")
@@ -64,25 +71,39 @@ fun ChaptersScreen(
     val levelItem = homeViewModel.levelItemList.find { it.levelId == levelId }
     val levelImage = levelItem?.image ?: R.drawable.levelone
 
-
     val userProfile by profileViewModel.userProfileState.collectAsState()
+
+    // Track loading state
+    var isLoading by remember { mutableStateOf(true) }
 
     // 1) Load chapters on first display
     LaunchedEffect(levelId) {
-
         Log.d("ChaptersScreen", "Fetching chapters for level: $levelId")
+        isLoading = true
         chaptersViewModel.loadChapters(levelId)
     }
 
     // 2) Observe chapters from ViewModel
     val chapters by chaptersViewModel.chapters.observeAsState(initial = emptyList())
 
+    // When chapters update, set loading to false
+    LaunchedEffect(chapters) {
+        if (chapters.isNotEmpty() || chapters.isEmpty() && !isLoading) {
+            // Small delay to ensure the UI has time to update
+            kotlinx.coroutines.delay(300)
+            isLoading = false
+        } else if (chapters.isEmpty() && isLoading) {
+            // Add a minimum loading time to prevent flickering
+            kotlinx.coroutines.delay(1000)
+            isLoading = false
+        }
+    }
+
     // 3) Observe badges
     val earnedBadge by chaptersViewModel.badgeEarnedEvent.collectAsState()
 
     // Track the currently selected chapter (for the bottom sheet)
     var selectedChapter by remember { mutableStateOf<Chapter?>(null) }
-
 
     // If a chapter is selected, show a bottom sheet
     if (selectedChapter != null) {
@@ -121,7 +142,6 @@ fun ChaptersScreen(
                     levelId = levelId,
                     navController = navController,
                     lessonCacheRepository = chaptersViewModel.lessonCacheRepository,
-//                    avatarRes = avatarRes,
                     profileViewModel = profileViewModel,
                     onDownloadCompleted = {
                         selectedChapter = null
@@ -132,16 +152,25 @@ fun ChaptersScreen(
         }
     }
 
-
     // Main UI
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background
-        Image(
-            painter = painterResource(id = R.drawable.chapterscreen_bg),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        // Background based on state
+        if (!isLoading && chapters.isEmpty()) {
+            // Empty state background (light color or different pattern)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF8F9FA)) // Light background for empty state
+            )
+        } else {
+            // Regular background for loading or chapters view
+            Image(
+                painter = painterResource(id = R.drawable.chapterscreen_bg),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         Column {
             // Top bar
@@ -180,25 +209,29 @@ fun ChaptersScreen(
                 }
             }
 
-            // Chapters list
+            // Content area
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)
             ) {
-                LazyChapterColumn(
-                    lessons = chapters,
-                    modifier = Modifier.fillMaxSize(),
-                    navController = navController,
-                    onChapterClick = { chapter ->
-                        if (chapter.isUnlocked || chapter.isCompleted) {
-                            selectedChapter = chapter
-                            coroutineScope.launch {
-                                sheetState.show()
+                when {
+                    isLoading -> LoadingAnimation()
+                    chapters.isEmpty() -> EmptyChaptersState()
+                    else -> LazyChapterColumn(
+                        lessons = chapters,
+                        modifier = Modifier.fillMaxSize(),
+                        navController = navController,
+                        onChapterClick = { chapter ->
+                            if (chapter.isUnlocked || chapter.isCompleted) {
+                                selectedChapter = chapter
+                                coroutineScope.launch {
+                                    sheetState.show()
+                                }
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
 
@@ -218,6 +251,92 @@ fun ChaptersScreen(
     }
 }
 
+/**
+ * Loading animation for chapters
+ */
+@Composable
+fun LoadingAnimation() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(60.dp),
+                color = black
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Loading lessons...",
+                color = black,
+                fontSize = 18.sp,
+                fontFamily = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+            )
+        }
+    }
+}
+
+/**
+ * Empty state display when no chapters are available
+ */
+@Composable
+fun EmptyChaptersState() {
+    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(white),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Construction worker or similar image
+        Image(
+            painter = painterResource(id = R.drawable.qna),  // Add this image to your project
+            contentDescription = "Under Construction",
+            modifier = Modifier
+                .size(350.dp)
+                .padding(bottom = 24.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        // Message text with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn() + expandVertically()
+        ) {
+            Text(
+                text = "Our lesson builders are hard at work! 🏗️",
+                fontFamily = alifbaFont,
+                fontSize = 24.sp,
+                color = navyBlue,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(initialAlpha = 0f, animationSpec = tween(delayMillis = 300)) +
+                    expandVertically(animationSpec = tween(delayMillis = 300))
+        ) {
+            Text(
+                text = "More lessons are coming soon!",
+                fontFamily = alifbaFont,
+                fontSize = 20.sp,
+                color = lightRed,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
 fun getAvatarImages(avatarName: String): Int {
     return when (avatarName) {
         "Deenasaur" -> R.drawable.deenasaur

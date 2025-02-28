@@ -33,5 +33,5 @@ val lightRed = Color(0xFFed4849)
 val mediumRed = Color(0xFFEA4041)
 val darkRed = Color(0xFFE13839)
 val black = Color(0xFF000000)
-val sage = Color(0xFF309466)
+val sage = Color(0xff00bf63)
 

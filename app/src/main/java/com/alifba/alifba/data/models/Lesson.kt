@@ -13,7 +13,19 @@ data class Lesson(
 
 sealed class LessonSegment {
 
-    data class LetterTracing( val letterId: String?,val speech: String? = null,val repeatCount: Int? = null): LessonSegment()
+    data class LetterTracing(
+        val letterId: String?,
+        val speech: String? = null,
+        val repeatCount: Int? = null)
+        : LessonSegment()
+
+    data class CloudTappingLesson(
+        val letterId: String?,
+        val speech: String?=null,
+        val targetLetter:String?=null,
+        val nonTargetLetters:List<String>?=null
+    ): LessonSegment()
+
     data class CommonLesson(
         val image: String = "",
         val description: String ="",

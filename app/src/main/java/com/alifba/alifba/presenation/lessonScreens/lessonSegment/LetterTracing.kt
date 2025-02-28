@@ -51,10 +51,11 @@ fun LetterTracing(
     var resetTrigger by remember { mutableStateOf(0) }
     // Decide which letter shape we’ll be tracing
     val shape = when (segment.letterId?.lowercase()) {
+        "alif" -> createAlifShape()
         "baa"  -> createBaaShape()
         "taa"  -> createTaaShape()
         "thaa" -> createThaaShape()
-        "alif" -> createAlifShape()
+        "jeem"-> createJeemShape()
         else   -> createBaaShape() // fallback
     }
 
@@ -63,6 +64,7 @@ fun LetterTracing(
             // 1) Optional: If you want an intro animation first
             showIntroAnimation -> {
                 LetterTracingAnimation(
+                    letterId = segment.letterId,
                     onContinueClicked = {
                         showIntroAnimation = false
                     }
@@ -140,7 +142,26 @@ data class DotData(
 
 
 private const val DOT_RADIUS = 24f
+fun createAlifShape(): LetterShape {
+    val mainPath = Path().apply {
+        // Starting point at the top with a slight edge
+        moveTo(200f, 80f)
 
+        // Add a tiny edge at the top
+        lineTo(205f, 85f)
+        lineTo(200f, 90f)
+
+        // Straight line down for most of the character
+        lineTo(200f, 500f)
+
+        // Sharp angular hook at the bottom instead of a curve
+        lineTo(190f, 530f)
+        lineTo(170f, 560f)
+    }
+
+    // Alif has no dots
+    return LetterShape(mainPath, dots = emptyList())
+}
 fun createBaaShape(): LetterShape {
     val mainPath = Path().apply {
         // Start from the rightmost point
@@ -191,21 +212,39 @@ fun createThaaShape(): LetterShape {
     return LetterShape(mainPath = mainPath, dots = listOf(dot1, dot2, dot3))
 }
 
-fun createAlifShape(): LetterShape{
+
+fun createJeemShape(): LetterShape {
     val mainPath = Path().apply {
-        moveTo(100f, 80f)
+        // Starting point - begin from right side
+        moveTo(400f, 350f)
+
+        // Horizontal line moving left
+        lineTo(250f, 350f)
+
+        // Create the bowl/cup shape that's characteristic of jeem
+        // First curve down and left
         cubicTo(
-            110f, 200f,  // First control point
-            90f, 400f,   // Second control point
-            100f, 600f   // End point
+            200f, 350f,  // First control point
+            150f, 370f,  // Second control point
+            120f, 420f   // End point - bottom of curve
         )
+
+        // Second curve to create the upward hook at the end
         cubicTo(
-            105f, 650f,  // First control point
-            120f, 680f,  // Second control point
-            140f, 690f   // End point
+            90f, 470f,   // First control point
+            120f, 520f,  // Second control point
+            170f, 510f   // End point - tip of the hook
         )
     }
-    return LetterShape(mainPath, dots = emptyList())
+
+    // Jeem has one dot INSIDE the bowl/cup, not below it
+    val dot = DotData(
+        center = Offset(170f, 420f),
+        radius = DOT_RADIUS
+    )
+
+    // Return the letter shape with the dot
+    return LetterShape(mainPath = mainPath, dots = listOf(dot))
 }
 
 fun Path.scale(scaleX: Float, scaleY: Float): Path {

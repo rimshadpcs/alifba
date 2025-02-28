@@ -124,25 +124,22 @@ class FireStoreLessonService(
                         speech = segmentData["speech"] as? String ?: "",
                     )
                 }
+                "cloudTappingLesson" -> {
+                    LessonSegment.CloudTappingLesson(
+                        letterId = segmentData["letterId"] as? String ?: "",
+                        speech = segmentData["speech"] as? String ?: "",
+                        targetLetter = segmentData["targetLetter"] as? String ?: "",
+                        nonTargetLetters = (segmentData["nonTargetLetters"] as? List<String>) ?: emptyList()
+                    ).also {
+                        Log.d("FirestoreLessonService", "Loaded CloudTappingLesson: targetLetter=${it.targetLetter}, nonTargetLetters=${it.nonTargetLetters}")
+                    }
+                }
+
 
 
                 else -> null
             }
         } ?: emptyList()
 
-//                Lesson(
-//                    id = (lessonData["id"] as? Long)?.toInt() ?: 0,
-//                    title = lessonData["title"] as? String ?: "",
-//                    segments = segments,
-//                    chapterType = lessonData["chapterType"] as? String ?: "",
-//                )
-//            }
-//
-//            lessons
-//        } catch (e: Exception) {
-//            Log.e("FirestoreLessonService", "Error fetching lessons from Firestore", e)
-//            emptyList()
-//        }
-//    }
     }
 }
