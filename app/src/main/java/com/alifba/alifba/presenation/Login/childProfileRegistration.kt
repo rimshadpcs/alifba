@@ -342,7 +342,7 @@ fun NameInputField(parentName: String, onParentNameChange: (String) -> Unit,
                    childName: String, onChildNameChange: (String) -> Unit) {
 
     CustomInputField(value = parentName, onValueChange = onParentNameChange, labelText = "Enter parent's name")
-    CustomInputField(value = childName, onValueChange = onChildNameChange, labelText = "Enter Child's Name")
+    CustomInputField(value = childName, onValueChange = onChildNameChange, labelText = "Enter Child's Nick Name")
 }
 @Composable
 fun AgeSelectionCards(onAgeSelected: (Int) -> Unit) {
