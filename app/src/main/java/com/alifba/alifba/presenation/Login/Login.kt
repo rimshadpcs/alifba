@@ -54,146 +54,194 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
     var password by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showEmailVerification by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = R.drawable.login_background),
-            contentDescription = "background",
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize(),
-
+    if (showEmailVerification) {
+        EmailVerificationScreen(
+            viewModel = viewModel,
+            navController = navController,
+            email = email
         )
+    } else {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(id = R.drawable.login_background),
+                contentDescription = "background",
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize(),
 
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AnimatedVisibility(visible = isSignUpVisible || isLoginVisible, enter = fadeIn(), exit = fadeOut()) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 50.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                )
+
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AnimatedVisibility(
+                    visible = isSignUpVisible || isLoginVisible,
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    Text(
-                        text = if (isSignUpVisible) "Sign Up" else "Log In",
-                        fontSize = 24.sp,
-                        color = navyBlue,
-                        fontFamily = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 50.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (isSignUpVisible) "Sign Up" else "Log In",
+                            fontSize = 24.sp,
+                            color = navyBlue,
+                            fontFamily = FontFamily(
+                                Font(
+                                    R.font.more_sugar_regular,
+                                    FontWeight.SemiBold
+                                )
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    CustomInputField(value = email, onValueChange = { email = it }, labelText = "Enter Email")
-                    PasswordInputField(value = password, onValueChange = { password = it }, labelText = "Enter Password")
+                        CustomInputField(
+                            value = email,
+                            onValueChange = { email = it },
+                            labelText = "Enter Email"
+                        )
+                        PasswordInputField(
+                            value = password,
+                            onValueChange = { password = it },
+                            labelText = "Enter Password"
+                        )
 
-                    if (isSignUpVisible) {
-                        PasswordInputField(value = repeatPassword, onValueChange = { repeatPassword = it }, labelText = "Repeat Password")
+                        if (isSignUpVisible) {
+                            PasswordInputField(
+                                value = repeatPassword,
+                                onValueChange = { repeatPassword = it },
+                                labelText = "Repeat Password"
+                            )
+                        }
+
+                        errorMessage?.let {
+                            Text(text = it, color = MaterialTheme.colorScheme.error)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
+                }
 
-                    errorMessage?.let {
-                        Text(text = it, color = MaterialTheme.colorScheme.error)
+                AnimatedVisibility(
+                    visible = !isSignUpVisible && !isLoginVisible,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        verticalArrangement = Arrangement.Bottom,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CommonButton(
+                            onClick = { isSignUpVisible = true },
+                            buttonText = "I'm new to Alifba",
+                            shadowColor = navyBlue,
+                            mainColor = lightNavyBlue,
+                            textColor = white
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        CommonButton(
+                            onClick = { isLoginVisible = true },
+                            buttonText = "I'm already with Alifba",
+                            shadowColor = navyBlue,
+                            mainColor = white,
+                            textColor = navyBlue
+                        )
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
-            }
 
-            AnimatedVisibility(visible = !isSignUpVisible && !isLoginVisible, enter = fadeIn(), exit = fadeOut()) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.Bottom,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                AnimatedVisibility(
+                    visible = isSignUpVisible || isLoginVisible,
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    CommonButton(
-                        onClick = { isSignUpVisible = true },
-                        buttonText = "I'm new to Alifba",
-                        shadowColor = navyBlue,
-                        mainColor = lightNavyBlue,
-                        textColor = white
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    CommonButton(
-                        onClick = { isLoginVisible = true },
-                        buttonText = "I'm already with Alifba",
-                        shadowColor = navyBlue,
-                        mainColor = white,
-                        textColor = navyBlue
-                    )
-                }
-            }
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalArrangement = Arrangement.Bottom,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CommonButton(
+                            onClick = {
+                                isLoading = true // Show loading animation
+                                if (isSignUpVisible) {
+                                    if (password == repeatPassword) {
+                                        viewModel.signUp(email, password,
 
-            AnimatedVisibility(visible = isSignUpVisible || isLoginVisible, enter = fadeIn(), exit = fadeOut()) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.Bottom,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CommonButton(
-                        onClick = {
-                            isLoading = true // Show loading animation
-                            if (isSignUpVisible) {
-                                if (password == repeatPassword) {
-                                    viewModel.signUp(email, password,
-                                        onSuccess = {
+                                            onSuccess = {
+                                                isLoading = false
+                                                showEmailVerification = true
+                                            },
+                                            onError = { error ->
+                                                isLoading = false
+                                                Toast.makeText(
+                                                    context,
+                                                    "Sign Up Failed: $error",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        )
+                                    } else {
+                                        isLoading = false
+                                        Toast.makeText(
+                                            context,
+                                            "Passwords do not match",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                } else {
+                                    viewModel.signIn(email, password,
+                                        onResult = { hasProfiles ->
                                             isLoading = false
-                                            navController.navigate("onboarding") {
+                                            navController.navigate(if (!hasProfiles) "createProfile" else "homeScreen") {
                                                 popUpTo("login") { inclusive = true }
                                             }
                                         },
                                         onError = { error ->
                                             isLoading = false
-                                            Toast.makeText(context, "Sign Up Failed: $error", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                "Login Failed: $error",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         }
                                     )
-                                } else {
-                                    isLoading = false
-                                    Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
                                 }
-                            } else {
-                                viewModel.signIn(email, password,
-                                    onResult = { hasProfiles ->
-                                        isLoading = false
-                                        navController.navigate(if (!hasProfiles) "createProfile" else "homeScreen") {
-                                            popUpTo("login") { inclusive = true }
-                                        }
-                                    },
-                                    onError = { error ->
-                                        isLoading = false
-                                        Toast.makeText(context, "Login Failed: $error", Toast.LENGTH_SHORT).show()
-                                    }
-                                )
-                            }
-                        },
-                        buttonText = if (isSignUpVisible) "Sign Up" else "Log In",
-                        shadowColor = navyBlue,
-                        mainColor = lightNavyBlue,
-                        textColor = white
-                    )
+                            },
+                            buttonText = if (isSignUpVisible) "Sign Up" else "Log In",
+                            shadowColor = navyBlue,
+                            mainColor = lightNavyBlue,
+                            textColor = white
+                        )
 
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    CommonButton(
-                        onClick = {
-                            isSignUpVisible = false
-                            isLoginVisible = false
-                        },
-                        buttonText = "Back",
-                        shadowColor = navyBlue,
-                        mainColor = white,
-                        textColor = navyBlue
-                    )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        CommonButton(
+                            onClick = {
+                                isSignUpVisible = false
+                                isLoginVisible = false
+                            },
+                            buttonText = "Back",
+                            shadowColor = navyBlue,
+                            mainColor = white,
+                            textColor = navyBlue
+                        )
+                    }
                 }
             }
         }
+
+        if (isLoading) {
+            LottieAnimationLoading(
+                showDialog = remember { mutableStateOf(true) },
+                lottieFileRes = R.raw.loading_lottie,
+                isTransparentBackground = true
+            )
+        }
+
+
     }
-
-    if (isLoading) {
-        LottieAnimationLoading(
-            showDialog = remember { mutableStateOf(true) },
-            lottieFileRes = R.raw.loading_lottie,
-            isTransparentBackground = true
-        )
-    }
-
-
-
 }

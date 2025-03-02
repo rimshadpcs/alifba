@@ -164,11 +164,11 @@ fun ProfileScreen(
 
                 // User Cards
                 val userCards = listOf(
-                    UserCardData(
-                        R.drawable.ladder,
-                        "Levels \nCompleted",
-                        "${userProfile?.levelsCompleted?.size ?: 0}"
-                    ),
+//                    UserCardData(
+//                        R.drawable.ladder,
+//                        "Levels \nCompleted",
+//                        "${userProfile?.levelsCompleted?.size ?: 0}"
+//                    ),
                     UserCardData(
                         R.drawable.book,
                         "Lessons \nCompleted",
@@ -180,7 +180,7 @@ fun ProfileScreen(
                         "${userProfile?.storiesCompleted?.size ?: 0}"
                     ),
                     UserCardData(
-                        R.drawable.alphabeticonprofile,
+                        R.drawable.alphab,
                         "Activities \nCompleted",
                         "${userProfile?.activitiesCompleted?.size ?: 0}"
                     ),
@@ -273,20 +273,6 @@ fun ProfileScreen(
                                     .padding(4.dp)
                             )
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Last row - centered card
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        UserCard(
-                            userCards.last(),
-                            elevation = 2.dp,
-                            modifier = Modifier.width(150.dp)
-                        )
                     }
                 }
 

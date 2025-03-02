@@ -11,6 +11,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -29,7 +30,9 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.Login.AuthViewModel
+import com.alifba.alifba.presenation.Login.EmailVerificationScreen
 import com.alifba.alifba.presenation.Login.LoginScreen
+import com.alifba.alifba.presenation.Login.ProfileRegistration
 import com.alifba.alifba.presenation.chapters.ChaptersScreen
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.chapters.layout.LevelInfoScreen
@@ -44,6 +47,7 @@ import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.home.layout.profile.AllBadgesScreen
 import com.alifba.alifba.presenation.home.layout.settings.AccountScreen
 import com.alifba.alifba.presenation.home.layout.settings.SettingsScreen
+import com.alifba.alifba.presenation.onboarding.OnboardingScreen
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
 
 
@@ -81,6 +85,15 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
     val navController = rememberNavController()
     AlifbaTheme {
         NavHost(navController, startDestination = "homeScreen") {
+
+            composable("login") {
+                // IMPORTANT: Pass the same navController from parent
+                LoginScreen(
+                    viewModel = authViewModel,
+                    navController = navController
+                )
+            }
+
             composable("homeScreen") {
                 HomeScreenWithScaffold(
                     navController,
@@ -89,8 +102,29 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                     authViewModel
                 )
             }
+
+
+//            composable("EmailVerification") {
+//                val emailValue by authViewModel.email.collectAsState()
+//                EmailVerificationScreen(
+//                    viewModel = authViewModel,
+//                    navController = navController,
+//                    email = emailValue ?: ""
+//                )
+//            }
             composable("profile") {
                 ProfileScreen(navController, profileViewModel)
+            }
+            composable("onboarding") {
+                OnboardingScreen(onComplete = {
+                    // When onboarding completes, navigate to profile registration
+                    navController.navigate("profileRegistration") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                })
+            }
+            composable("profileRegistration") {
+                ProfileRegistration(navController = navController)
             }
             composable("changeAvatar") {
                 ChangeAvatarScreen(navController = navController)
@@ -118,6 +152,8 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             composable("settings") {
                 SettingsScreen(navController)
             }
+
+
             composable("accountScreen") {
                 AccountScreen(authViewModel = authViewModel, navController = navController)
             }
@@ -152,9 +188,7 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                 )
             }
             // Add login screen route
-            composable("login") {
-                LoginScreen(viewModel = authViewModel, navController = navController)
-            }
+
         }
     }
 }
