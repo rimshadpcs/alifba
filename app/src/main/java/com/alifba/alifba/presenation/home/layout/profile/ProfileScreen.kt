@@ -164,11 +164,7 @@ fun ProfileScreen(
 
                 // User Cards
                 val userCards = listOf(
-//                    UserCardData(
-//                        R.drawable.ladder,
-//                        "Levels \nCompleted",
-//                        "${userProfile?.levelsCompleted?.size ?: 0}"
-//                    ),
+
                     UserCardData(
                         R.drawable.book,
                         "Lessons \nCompleted",
