@@ -2,7 +2,6 @@ package com.alifba.alifba.di
 
 import androidx.datastore.core.DataStore
 
-// DataStoreModule.kt
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences

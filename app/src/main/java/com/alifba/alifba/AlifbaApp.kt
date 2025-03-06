@@ -1,37 +1,64 @@
 package com.alifba.alifba
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
-import android.util.Log
-import androidx.work.Configuration
-import androidx.work.CoroutineWorker
-import androidx.work.ListenableWorker
-import androidx.work.WorkerParameters
+import android.os.Build
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
-import com.alifba.alifba.utils.NotificationUtils
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.analytics
-import dagger.MapKey
+import com.onesignal.OneSignal
+import com.onesignal.debug.LogLevel
 import dagger.hilt.android.HiltAndroidApp
-import javax.inject.Inject
-import kotlin.reflect.KClass
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class AlifbaApp : Application() {
 
 
-    lateinit var firebaseAnalytics: FirebaseAnalytics
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private val oneSignalAppId = "1e41357a-fa51-49ce-9470-af0fefbb69b9"
     override fun onCreate() {
         super.onCreate()
         SoundEffectManager.initialize(this)
         FirebaseApp.initializeApp(this)
-        NotificationUtils.createNotificationChannels(this)
+        createNotificationChannel()
         firebaseAnalytics = Firebase.analytics
+
+        OneSignal.Debug.logLevel = LogLevel.VERBOSE
+
+        // OneSignal Initialization
+        OneSignal.initWithContext(this, oneSignalAppId)
+
+        // requestPermission will show the native Android notification permission prompt.
+        // NOTE: It's recommended to use a OneSignal In-App Message to prompt instead.
+        CoroutineScope(Dispatchers.IO).launch {
+            OneSignal.Notifications.requestPermission(false)
+        }
+    }
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Lesson Reminder Channel"
+            val descriptionText = "Channel for daily lesson reminders"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel("lesson_reminder_channel", name, importance).apply {
+                description = descriptionText
+            }
+
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
     }
     override fun onTerminate() {
         super.onTerminate()
         SoundEffectManager.release()
     }
+
+
 }

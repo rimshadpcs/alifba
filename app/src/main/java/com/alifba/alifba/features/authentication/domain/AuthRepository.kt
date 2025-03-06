@@ -1,6 +1,6 @@
 package com.alifba.alifba.features.authentication.domain
 
-import com.alifba.alifba.presenation.Login.AuthState
+import com.alifba.alifba.presenation.login.AuthState
 
 interface AuthRepository {
     suspend fun signUpWithEmail(email: String, password: String): Result<Boolean>

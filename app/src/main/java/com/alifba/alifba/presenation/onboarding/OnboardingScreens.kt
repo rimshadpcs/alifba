@@ -18,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import androidx.compose.material3.Card
@@ -51,7 +50,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         OnboardingSlide(R.drawable.onboardingten)
     )
 
-    var currentSlide by remember { mutableStateOf(0) }
+    var currentSlide by remember { mutableIntStateOf(0) }
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -91,8 +90,10 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             ) {
                 onboardingSlides.forEachIndexed { index, _ ->
                     val isActive = index == currentSlide
-                    val size by animateDpAsState(if (isActive) 16.dp else 8.dp)
-                    val color by animateColorAsState(if (isActive) Color.White else Color.Gray)
+                    val size by animateDpAsState(if (isActive) 16.dp else 8.dp, label = "")
+                    val color by animateColorAsState(if (isActive) Color.White else Color.Gray,
+                        label = ""
+                    )
 
                     Box(
                         modifier = Modifier

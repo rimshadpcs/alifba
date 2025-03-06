@@ -1,6 +1,5 @@
-package com.alifba.alifba.presenation.Login
+package com.alifba.alifba.presenation.login
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -8,8 +7,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Button
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.ButtonDefaults
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,15 +26,19 @@ import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Card
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Icon
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.ui.platform.LocalContext
@@ -43,15 +49,12 @@ import androidx.compose.ui.util.lerp
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.theme.black
-import com.alifba.alifba.ui_components.theme.darkPink
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
-import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
@@ -374,7 +377,7 @@ fun AgeSelectionCards(onAgeSelected: (Int) -> Unit) {
             ) {
                 // Left Indicator
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowLeft,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                     contentDescription = "Scroll Left",
                     tint = lightNavyBlue.copy(alpha = 0.5f),
                     modifier = Modifier.size(24.dp)
@@ -382,7 +385,7 @@ fun AgeSelectionCards(onAgeSelected: (Int) -> Unit) {
 
                 // Right Indicator
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Scroll Right",
                     tint = lightNavyBlue.copy(alpha = 0.5f),
                     modifier = Modifier.size(24.dp)

@@ -4,4 +4,20 @@
     <style name="Theme.Alifba" parent="Theme.MaterialComponents.DayNight.NoActionBar" >
         <item name="android:statusBarColor">#045594</item>
     </style>
+    <!-- values/styles.xml -->
+    <style name="CustomTimePickerTheme" parent="Theme.Material3.Light.Dialog.Alert">
+        <!-- The key attributes to set color theming in the time picker: -->
+        <item name="android:colorControlActivated">@color/navy_blue</item>
+        <item name="android:colorControlHighlight">@color/navy_blue</item>
+        <item name="android:colorControlNormal">@color/navy_blue</item>
+
+        <!-- If you want a custom header background (clock face area) or text color,
+             you also need to point to a custom timePickerStyle -->
+        <item name="android:timePickerStyle">@style/CustomTimePickerStyle</item>
+    </style>
+
+    <style name="CustomTimePickerStyle" parent="@android:style/Widget.Material.Light.TimePicker">
+        <item name="android:headerBackground">@color/navy_blue</item>
+    </style>
+
 </resources>

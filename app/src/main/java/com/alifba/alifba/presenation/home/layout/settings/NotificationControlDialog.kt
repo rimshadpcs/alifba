@@ -1,95 +1,122 @@
 package com.alifba.alifba.presenation.home.layout.settings
 
+import android.app.TimePickerDialog
 import android.content.Context
-import android.content.Intent
-import android.os.Build
-import android.provider.Settings
-import androidx.annotation.RequiresApi
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationManagerCompat
-import com.alifba.alifba.ui_components.theme.black
-import com.alifba.alifba.ui_components.theme.lightNavyBlue
-import com.alifba.alifba.ui_components.theme.lightRed
+import androidx.compose.ui.unit.sp
+import com.alifba.alifba.R
+import com.alifba.alifba.service.LessonReminderReceiver
+import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
-import okio.blackholeSink
+import com.alifba.alifba.utils.ReminderPreferences
+import formatTime
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NotificationDialog(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     context: Context
 ) {
-    if (showDialog) {
+    var reminderTime by remember {
+        mutableStateOf(ReminderPreferences.getReminderTime(context))
+    }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    // Time Picker Logic using a local state variable
+    if (showTimePicker) {
+        TimePickerDialog(
+            context,
+            R.style.CustomTimePickerTheme,  // second parameter
+            { _, hourOfDay, minute ->
+                // Save the selected time
+                ReminderPreferences.setReminderTime(context, hourOfDay, minute)
+
+                // Set the reminder
+                LessonReminderReceiver.setDailyReminder(context, hourOfDay, minute)
+
+                // Update local state
+                reminderTime = Pair(hourOfDay, minute)
+
+                // Close both time picker and notification dialog
+                showTimePicker = false
+                onDismiss()
+            },
+            reminderTime.first,
+            reminderTime.second,
+            false
+        ).show()
+    }
+
+    if (showDialog && !showTimePicker) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            containerColor = Color.White, // Light background for the dialog
-            tonalElevation = 4.dp, // Slight elevation for contrast
+            containerColor = white,
             title = {
                 Text(
-                    text = "Notification Settings",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = black
+                    text = "Notifications & Reminders",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = navyBlue
                 )
             },
             text = {
-                Text(
-                    text =
-                        "Remember you need notifications to get lesson reminders",
-                    color = black
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        openAppNotificationSettings(context)
-                        onDismiss()
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        containerColor =  lightNavyBlue,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(
-                        text = "Open settings" ,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = white
-                    )
+                Column {
+                    // Current Reminder Time Display
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Daily Reminder Time",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Black
+                        )
+                        Text(
+                            text = formatTime(reminderTime.first, reminderTime.second),
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = navyBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Change Reminder Time Button
+                    Button(
+                        onClick = { showTimePicker = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = navyBlue, contentColor = white)
+                    ) {
+                        Text("Change Reminder Time")
+                    }
                 }
             },
-            dismissButton = {
-                TextButton(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.textButtonColors(
-                        containerColor = lightRed,
-                        contentColor = white
-                    )
-                ) {
-                    Text(text = "Cancel",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = white)
-
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Close", color = navyBlue)
                 }
             }
         )
     }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-fun openAppNotificationSettings(context: Context) {
-    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-    }
-    context.startActivity(intent)
-}
-
-fun areNotificationsEnabled(context: Context): Boolean {
-    return NotificationManagerCompat.from(context).areNotificationsEnabled()
 }

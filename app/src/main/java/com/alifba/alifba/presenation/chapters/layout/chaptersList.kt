@@ -44,9 +44,7 @@ import kotlinx.coroutines.delay
 fun LazyChapterColumn(
     lessons: List<Chapter>,
     modifier: Modifier = Modifier,
-    navController: NavController,
     onChapterClick: (Chapter) -> Unit,
-    viewModel: ChaptersViewModel = hiltViewModel()
 ) {
     val configuration = LocalConfiguration.current
     val constrainedModifier = if (configuration.screenWidthDp > 600) {

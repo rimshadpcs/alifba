@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.TabRowDefaults.Divider
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.alifba.alifba.R
 import com.alifba.alifba.ui_components.theme.black
-import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
@@ -71,7 +70,6 @@ fun SettingsScreen(navController: NavController) {
 
     // State variables
     var showNotificationDialog by remember { mutableStateOf(false) }
-    var isNotificationsEnabled by remember { mutableStateOf(false) }
     val isSoundEnabled = remember { mutableStateOf(SoundEffectManager.isSoundEnabled) }
 
     Box(
@@ -146,7 +144,7 @@ fun SettingsScreen(navController: NavController) {
             SettingsCard {
                 Column {
                     SettingsButton(
-                        text = "Notifications",
+                        text = "Notifications + Reminders",
                         icon = R.drawable.notification,
                         onClick = {
                             SoundEffectManager.playClickSound()
@@ -383,11 +381,3 @@ fun SettingsButton(
     }
 }
 
-// You'll need these imports for the enhanced version
-// import androidx.compose.foundation.background
-// import androidx.compose.foundation.layout.*
-// import androidx.compose.foundation.shape.RoundedCornerShape
-// import androidx.compose.material3.*
-// import androidx.compose.ui.graphics.Brush
-// import androidx.compose.ui.draw.clip
-// import android.content.Context

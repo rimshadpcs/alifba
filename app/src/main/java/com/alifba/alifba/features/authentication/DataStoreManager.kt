@@ -1,15 +1,11 @@
 package com.alifba.alifba.features.authentication
 
 import android.content.Context
-import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,11 +16,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
-
-//val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_prefs")
 
 
 @Singleton
@@ -38,7 +31,6 @@ class DataStoreManager @Inject constructor(
         val USER_ID = stringPreferencesKey("user_id")
         val EMAIL = stringPreferencesKey("email")
         val PASSWORD = stringPreferencesKey("password")
-        val USER_PROFILE_EXISTS = booleanPreferencesKey("user_profile_exists")
     }
 
     object ChapterPrefKeys {
@@ -61,15 +53,6 @@ class DataStoreManager @Inject constructor(
         .map { preferences -> preferences[PreferencesKeys.PASSWORD] }
         .stateIn(coroutineScope, SharingStarted.Eagerly, null)
 
-    init {
-        coroutineScope.launch {
-            userId.collect { id ->
-                // Log or handle collected userId
-                // Example:
-                // Log.d("DataStoreManager", "Collected userId: $id")
-            }
-        }
-    }
 
     suspend fun saveUserDetails(email: String, password: String, userId: String) {
         dataStore.edit { preferences ->

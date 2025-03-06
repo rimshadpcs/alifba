@@ -79,7 +79,7 @@ class ChaptersViewModel @Inject constructor(
                         iconResId = when (doc.getString("chapterType")) {
                             "Lessson" -> R.drawable.book  // Note: correct this if needed
                             "Story" -> R.drawable.story
-                            "Alphabet" -> R.drawable.alphabeticon
+                            "Alphabet" -> R.drawable.alphab
                             else -> R.drawable.start
                         },
                         // Use the numeric id (converted to string) for consistency
@@ -152,7 +152,7 @@ class ChaptersViewModel @Inject constructor(
                 else -> {
                     when (chapter.chapterType) {
                         "Story" -> R.drawable.book
-                        "Alphabet" -> R.drawable.alphabeticon
+                        "Alphabet" -> R.drawable.alphab
                         else -> R.drawable.start
                     }
                 }

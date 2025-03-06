@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.features.authentication.DataStoreManager
-import com.alifba.alifba.presenation.Login.UserProfile
+import com.alifba.alifba.presenation.login.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,7 +31,6 @@ class ProfileViewModel @Inject constructor(
 
     private var profileListenerRegistration: ListenerRegistration? = null
     private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading
 
     init {
         fetchUserProfile()

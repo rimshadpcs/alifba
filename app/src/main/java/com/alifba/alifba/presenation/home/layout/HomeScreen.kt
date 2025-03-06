@@ -1,11 +1,10 @@
 package com.alifba.alifba.presenation.home.layout
 
+import ShowReminderTimePicker
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,11 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,11 +44,13 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.home.HomeViewModel
-import com.alifba.alifba.presenation.home.layout.settings.areNotificationsEnabled
+import com.alifba.alifba.service.LessonReminderReceiver
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.utils.NotificationPermissionRationale
+import com.alifba.alifba.utils.ReminderPreferences
 import com.alifba.alifba.utils.requestNotificationPermission
 import com.alifba.alifba.utils.shouldAskNotifications
+import com.onesignal.notifications.internal.common.NotificationHelper.areNotificationsEnabled
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -60,46 +58,69 @@ import kotlinx.coroutines.launch
 fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
     val scrollState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
     val context = LocalContext.current
-    var (showPermissionDialog, setShowPermissionDialog) = remember { mutableStateOf(false) }
     var isNotificationsEnabled by remember { mutableStateOf(areNotificationsEnabled(context)) }
-
-    LaunchedEffect(Unit) {
-        // We only want to show our custom dialog if the permission hasn't been granted yet
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED) {
-            setShowPermissionDialog(true)
-        }
+    var showPermissionDialog by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) != PackageManager.PERMISSION_GRANTED &&
+                    !ReminderPreferences.isNotificationPermissionHandled(context)
+        )
+    }
+    var showReminderTimePicker by remember { mutableStateOf(false) }
+    var reminderTime by remember {
+        mutableStateOf(ReminderPreferences.getReminderTime(context))
     }
 
-    // If the user returns to this screen after granting permission, we should update the dialog state
-    LaunchedEffect(context) {
-        if (!context.shouldAskNotifications() && showPermissionDialog) {
-            setShowPermissionDialog(false)
-        }
+
+    // Function to set lesson reminder
+    fun setLessonReminder(context: Context, hour: Int, minute: Int) {
+        LessonReminderReceiver.setDailyReminder(context, hour, minute)
     }
 
+    // Handle notification permission dialog
     if (showPermissionDialog) {
         NotificationPermissionRationale(
             onDismiss = {
-                setShowPermissionDialog(false)
+                showPermissionDialog = false
+                // Set default reminder time if user declines
+                val defaultTime = Pair(18, 30)
+                ReminderPreferences.setReminderTime(context, defaultTime.first, defaultTime.second)
+                LessonReminderReceiver.setDailyReminder(context, defaultTime.first, defaultTime.second)
             },
             onAccept = {
-                setShowPermissionDialog(false)
+                showPermissionDialog = false
                 requestNotificationPermission(context)
+                // After permission is granted, show time picker
+                showReminderTimePicker = true
             }
         )
     }
+
+    if (showReminderTimePicker) {
+        ShowReminderTimePicker(
+            onTimeSet = { hour, minute ->
+                reminderTime = Pair(hour, minute)
+                showReminderTimePicker = false
+            },
+            title = "Choose a Reminder Time",
+            description = "Set the time for your daily lesson reminder."
+        )
+    }
+
+
+    // Set initial reminder
+    LaunchedEffect(Unit) {
+        setLessonReminder(context, reminderTime.first, reminderTime.second)
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
-
-        Spacer(modifier = Modifier.weight(.3f))  // This will push the LazyRow towards center if needed
-
+        Spacer(modifier = Modifier.weight(.3f))
         LazyRow(
-            reverseLayout = true, // List is reversed
+            reverseLayout = true,
             state = scrollState,
             modifier = Modifier
                 .fillMaxWidth()
@@ -108,16 +129,15 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
             items(viewModel.levelItemList.size) { index ->
                 val item = viewModel.levelItemList[index]
                 Box(modifier = Modifier.padding(horizontal = 8.dp)) {
-                LessonMenuItems(
-                    image = item.image,
-                    name = item.name,
-                    onClick = {
-                        navController.navigate("lessonPathScreen/${item.levelId}")  // Navigate with levelId
-                    }
-                )
+                    LessonMenuItems(
+                        image = item.image,
+                        name = item.name,
+                        onClick = {
+                            navController.navigate("lessonPathScreen/${item.levelId}")
+                        }
+                    )
+                }
             }
-            }
-
         }
 
         // Navigation arrows at the bottom
@@ -137,7 +157,6 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController) {
                             delay(100)
                             val itemIndex = (scrollState.firstVisibleItemIndex + 1).coerceAtMost(viewModel.levelItemList.size - 1)
                             scrollState.animateScrollToItem(itemIndex)
-
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)

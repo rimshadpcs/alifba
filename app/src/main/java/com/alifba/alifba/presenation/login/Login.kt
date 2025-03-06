@@ -1,4 +1,4 @@
-package com.alifba.alifba.presenation.Login
+package com.alifba.alifba.presenation.login
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
@@ -31,8 +30,6 @@ import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -42,18 +39,17 @@ import androidx.navigation.NavController
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
 import com.alifba.alifba.ui_components.widgets.textFields.PasswordInputField
-import kotlinx.coroutines.flow.first
+
 @Composable
 fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavController) {
     val context = LocalContext.current
-    val authState by viewModel.authState.collectAsState()
     var isSignUpVisible by remember { mutableStateOf(false) }
     var isLoginVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) } // Loading state
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val errorMessage by remember { mutableStateOf<String?>(null) }
     var showEmailVerification by remember { mutableStateOf(false) }
 
     if (showEmailVerification) {

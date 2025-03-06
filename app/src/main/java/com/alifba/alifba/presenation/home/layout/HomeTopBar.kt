@@ -1,6 +1,5 @@
 package com.alifba.alifba.presenation.home.layout
 
-import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
@@ -20,17 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
+
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,29 +36,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.alifba.alifba.R
-import com.alifba.alifba.presenation.Login.AuthViewModel
+import com.alifba.alifba.presenation.login.AuthViewModel
 import com.alifba.alifba.presenation.home.layout.profile.getAvatarHeadShots
-import com.alifba.alifba.ui_components.theme.black
 import com.alifba.alifba.ui_components.theme.darkCandyGreen
-import com.alifba.alifba.ui_components.theme.lightCandyGreen
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightRed
 import com.alifba.alifba.ui_components.theme.navyBlue
-import com.alifba.alifba.ui_components.theme.sage
 import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.buttons.MCQChoiceButton
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

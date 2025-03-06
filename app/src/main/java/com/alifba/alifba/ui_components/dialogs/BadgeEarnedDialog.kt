@@ -30,7 +30,6 @@ import com.alifba.alifba.ui_components.theme.white
 
 @Composable
 fun BadgeEarnedSnackBar(badge: Badge, onDismiss: () -> Unit) {
-    // State to control visibility
     var isVisible by remember { mutableStateOf(true) }
 
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))

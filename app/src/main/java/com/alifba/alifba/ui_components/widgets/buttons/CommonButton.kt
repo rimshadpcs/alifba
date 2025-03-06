@@ -34,7 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
-import com.alifba.alifba.ui_components.theme.darkYellow
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
@@ -79,9 +78,6 @@ object SoundEffectManager {
         prefs.edit().putBoolean("sound_enabled", enabled).apply()
     }
 
-    fun setVolume(volume: Float) {
-        this.volume = volume.coerceIn(0f, 1f)
-    }
 
     fun playClickSound() {
         if (_isSoundEnabled) {

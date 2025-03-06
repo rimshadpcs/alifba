@@ -1,6 +1,6 @@
 package com.alifba.alifba.features.authentication.domain
 
-import com.alifba.alifba.presenation.Login.AuthState
+import com.alifba.alifba.presenation.login.AuthState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.OAuthProvider

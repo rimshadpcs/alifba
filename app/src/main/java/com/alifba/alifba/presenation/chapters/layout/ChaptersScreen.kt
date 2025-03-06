@@ -34,7 +34,6 @@ import com.alifba.alifba.presenation.home.layout.TopBarIcons
 import com.alifba.alifba.presenation.lessonScreens.domain.repository.LessonCacheRepository
 import com.alifba.alifba.ui_components.dialogs.BadgeEarnedSnackBar
 import com.alifba.alifba.ui_components.theme.black
-import com.alifba.alifba.ui_components.theme.darkCandyGreen
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightRed
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -221,7 +220,6 @@ fun ChaptersScreen(
                     else -> LazyChapterColumn(
                         lessons = chapters,
                         modifier = Modifier.fillMaxSize(),
-                        navController = navController,
                         onChapterClick = { chapter ->
                             if (chapter.isUnlocked || chapter.isCompleted) {
                                 selectedChapter = chapter
@@ -538,9 +536,9 @@ fun ChapterDownloadBottomSheetContent(
 }
 
 sealed class DownloadState {
-    object Initial : DownloadState()
-    object Downloading : DownloadState()
-    object Cached : DownloadState()
+    data object Initial : DownloadState()
+    data object Downloading : DownloadState()
+    data object Cached : DownloadState()
     object Downloaded : DownloadState()
     object Error : DownloadState()
 }

@@ -1,6 +1,7 @@
 package com.alifba.alifba.presenation.main
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
@@ -32,15 +33,16 @@ import com.alifba.alifba.R
 import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.features.authentication.OnboardingDataStoreManager
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
-import com.alifba.alifba.presenation.Login.AuthViewModel
-import com.alifba.alifba.presenation.Login.LoginScreen
-import com.alifba.alifba.presenation.Login.ProfileRegistration
+import com.alifba.alifba.presenation.login.AuthViewModel
+import com.alifba.alifba.presenation.login.LoginScreen
+import com.alifba.alifba.presenation.login.ProfileRegistration
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.main.layout.AlifbaMainScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.onboarding.OnboardingScreen
+import com.alifba.alifba.service.logNotificationEvent
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
 import com.google.firebase.Firebase
@@ -64,13 +66,19 @@ class MainActivity : ComponentActivity() {
     private val chaptersViewModel: ChaptersViewModel by viewModels()
     private val profileViewModel:ProfileViewModel by viewModels()
     val Context.dataStore by preferencesDataStore(name = "settings")
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Track notifications when app is already running
+        trackNotificationIfNeeded(intent)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installSplashScreen()
         val onboardingDataStore = OnboardingDataStoreManager(applicationContext)
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         actionBar?.hide()
-
+        trackNotificationIfNeeded(intent)
         setContent {
             val navController = rememberNavController()
             val firebaseUser = FirebaseAuth.getInstance().currentUser
@@ -148,6 +156,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+private fun trackNotificationIfNeeded(intent: Intent?) {
+    if (intent?.getBooleanExtra("track_notification", false) == true) {
+        val notificationType = intent.getStringExtra("notification_type") ?: "unknown"
+        val notificationTime = intent.getLongExtra("notification_time", 0)
+
+        // Log the notification click event
+        logNotificationEvent(
+            eventName = "notification_click",
+            notificationType = notificationType,
+            notificationTime = notificationTime,
+            clickTime = System.currentTimeMillis()
+        )
+    }
+}
+
 
 
 fun logScreenView(screenName: String) {

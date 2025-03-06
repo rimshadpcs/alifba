@@ -11,10 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,9 +32,8 @@ fun OptionButton(onClick: () -> Unit, buttonText: String) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val coroutineScope = rememberCoroutineScope()
-    var isSelected by remember { mutableStateOf(false) }
     // Animate the offset for the press effect to simulate a shadow
-    val padding by animateDpAsState(targetValue = if (isPressed) 6.dp else 8.dp)
+    val padding by animateDpAsState(targetValue = if (isPressed) 6.dp else 8.dp, label = "")
 
     // Button
     Box(
