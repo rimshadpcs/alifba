@@ -159,7 +159,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-
+    implementation ("com.onesignal:OneSignal:[5.0.0, 5.1.99]")
     kapt ("androidx.room:room-compiler:2.6.1")
 }
 

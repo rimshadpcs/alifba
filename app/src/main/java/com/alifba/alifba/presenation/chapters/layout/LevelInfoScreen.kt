@@ -1,7 +1,6 @@
 package com.alifba.alifba.presenation.chapters.layout
 
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,18 +21,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.alifba.alifba.R
-import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
@@ -42,7 +37,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.analytics
 import com.google.firebase.analytics.logEvent
-import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun LevelInfoScreen(
@@ -59,7 +53,6 @@ fun LevelInfoScreen(
     }
 
 
-    val context = LocalContext.current
     LaunchedEffect(levelId) {
         chaptersViewModel.getLevelSummary(levelId)
     }
@@ -132,7 +125,7 @@ fun LevelInfoScreen(
 
             Spacer(modifier = Modifier.padding(8.dp))
             LevelInfoRow(
-                icon = R.drawable.stories,
+                icon = R.drawable.story,
                 label = "Stories",
                 count = (levelSummary?.totalStories ?: 0).toString(),
                 alifbaFont = alifbaFont
@@ -152,7 +145,7 @@ fun LevelInfoScreen(
 
             // Activities Row
             LevelInfoRow(
-                icon = R.drawable.alifbata,
+                icon = R.drawable.alphab,
                 label = "Activities",
                 count = (levelSummary?.totalActivities ?: 0).toString(),
                 alifbaFont = alifbaFont

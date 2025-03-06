@@ -1,6 +1,5 @@
 package com.alifba.alifba.presenation.home.layout.profile
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Button
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,7 +45,7 @@ import androidx.compose.ui.util.lerp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.R
-import com.alifba.alifba.presenation.Login.Avatar
+import com.alifba.alifba.presenation.login.Avatar
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.ui_components.theme.black
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -142,7 +143,6 @@ fun ChangeAvatarScreen(
         )
     }
 }
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AvatarCarousels(
     selectedAvatarName: androidx.compose.runtime.MutableState<String>,

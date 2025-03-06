@@ -41,7 +41,6 @@ fun LessonMenuItems(
     image: Int,
     name: String,
     onClick: () -> Unit,
-    // Optionally, allow passing a play icon resource; ensure you have such a drawable.
     playIcon: Int = R.drawable.play
 ) {
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))

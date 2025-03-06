@@ -305,6 +305,7 @@ fun ProfileScreen(
                         )
                     }
 
+                    // In your ProfileScreen's achievements section, replace the existing Row with this:
                     if (earnedBadges.isEmpty()) {
                         Box(
                             modifier = Modifier
@@ -321,39 +322,72 @@ fun ProfileScreen(
                             )
                         }
                     } else {
-                        // FIXED: Adaptive badge display based on device
+                        // Adaptive layout based on badge count
+                        val badgeCount = earnedBadges.size
                         if (isTablet) {
-                            // Grid layout for tablet - show more badges in a grid
+                            // For tablets
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(180.dp)
                                     .padding(vertical = 16.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                                horizontalArrangement = Arrangement.Center
                             ) {
+                                // Add spacing to center when there are few badges
+                                if (badgeCount < 5) {
+                                    Spacer(modifier = Modifier.weight(0.5f))
+                                }
+
+                                // Display badges
                                 earnedBadges.take(5).forEach { badge ->
                                     Box(
                                         modifier = Modifier
                                             .weight(1f)
                                             .padding(horizontal = 8.dp)
                                     ) {
-                                        BadgeCard(badge)
+                                        BadgeCard(
+                                            badge = badge,
+                                            fixedWidth = if (badgeCount <= 2) 120.dp else null
+                                        )
                                     }
+                                }
+
+                                // Add spacing to center when there are few badges
+                                if (badgeCount < 5) {
+                                    Spacer(modifier = Modifier.weight(0.5f))
                                 }
                             }
                         } else {
-                            // Row layout for phones
+                            // For phones
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(140.dp)
                                     .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                                horizontalArrangement = Arrangement.Center
                             ) {
+                                // Add spacing to center when there are few badges
+                                if (badgeCount < 3) {
+                                    Spacer(modifier = Modifier.weight(0.5f))
+                                }
+
+                                // Display badges
                                 earnedBadges.take(3).forEach { badge ->
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        BadgeCard(badge)
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(horizontal = if (badgeCount <= 2) 8.dp else 4.dp)
+                                    ) {
+                                        BadgeCard(
+                                            badge = badge,
+                                            fixedWidth = if (badgeCount <= 2) 100.dp else null
+                                        )
                                     }
+                                }
+
+                                // Add spacing to center when there are few badges
+                                if (badgeCount < 3) {
+                                    Spacer(modifier = Modifier.weight(0.5f))
                                 }
                             }
                         }
@@ -624,10 +658,12 @@ fun UserCard(
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BadgeCard(badge: Badge) {
+fun BadgeCard(
+    badge: Badge,
+    fixedWidth: Dp? = null
+) {
     val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
     var showBottomSheet by remember { mutableStateOf(false) }
 
@@ -644,16 +680,28 @@ fun BadgeCard(badge: Badge) {
         }
     }
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        modifier = Modifier
+    // Use the modifier with either fixed width or fillMaxWidth
+    val cardModifier = if (fixedWidth != null) {
+        Modifier
+            .width(fixedWidth)
+            .aspectRatio(1f)
+            .padding(2.dp)
+            .clickable { showBottomSheet = true }
+    } else {
+        Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
             .padding(2.dp)
-            .clickable { showBottomSheet = true },
+            .clickable { showBottomSheet = true }
+    }
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
+        modifier = cardModifier,
         colors = CardDefaults.cardColors(white)
     ) {
+        // The rest of your card content remains the same
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -661,7 +709,7 @@ fun BadgeCard(badge: Badge) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Badge Image - Increased size to fill more space
+            // Badge Image
             Image(
                 painter = rememberAsyncImagePainter(badge.imageUrl),
                 contentDescription = badge.title,
@@ -672,7 +720,7 @@ fun BadgeCard(badge: Badge) {
                 contentScale = ContentScale.Fit
             )
 
-            // Badge Name - Better spacing and weight
+            // Badge Name
             Text(
                 text = badge.name,
                 fontSize = 12.sp,
@@ -688,7 +736,6 @@ fun BadgeCard(badge: Badge) {
         }
     }
 }
-
 data class UserCardData(
     val imageRes: Int,
     val title: String,

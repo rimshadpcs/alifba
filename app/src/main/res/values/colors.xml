@@ -8,4 +8,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="status_bar">#045594</color>
+    <color name="navy_blue">#526ff6</color>
+
 </resources>

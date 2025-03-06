@@ -1,4 +1,4 @@
-package com.alifba.alifba.presenation.lessonScreens.lessonSegment.DragAndDropLesson
+package com.alifba.alifba.presenation.lessonScreens.lessonSegment.dragAndDropLesson
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

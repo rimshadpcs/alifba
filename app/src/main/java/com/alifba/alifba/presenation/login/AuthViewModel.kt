@@ -1,4 +1,4 @@
-package com.alifba.alifba.presenation.Login
+package com.alifba.alifba.presenation.login
 
 import android.content.Context
 import android.util.Log

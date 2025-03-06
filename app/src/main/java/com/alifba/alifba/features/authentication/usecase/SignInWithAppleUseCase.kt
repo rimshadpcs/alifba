@@ -1,7 +1,7 @@
 package com.alifba.alifba.features.authentication.usecase
 
 import com.alifba.alifba.features.authentication.domain.AuthRepository
-import com.alifba.alifba.presenation.Login.AuthState
+import com.alifba.alifba.presenation.login.AuthState
 import javax.inject.Inject
 
 class SignInWithAppleUseCase @Inject constructor(

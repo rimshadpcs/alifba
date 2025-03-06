@@ -37,8 +37,8 @@ import com.alifba.alifba.data.models.Lesson
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
-import com.alifba.alifba.presenation.lessonScreens.lessonSegment.CommonLesson.CommonLessonSegment
-import com.alifba.alifba.presenation.lessonScreens.lessonSegment.DragAndDropLesson.DragDropLessonScreen
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.commonLesson.CommonLessonSegment
+import com.alifba.alifba.presenation.lessonScreens.lessonSegment.dragAndDropLesson.DragDropLessonScreen
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.pictureMcq.PictureMcqSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.TextMcq.TextMcqSegment
@@ -46,16 +46,8 @@ import com.alifba.alifba.presenation.lessonScreens.lessonSegment.cloudExercise.C
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.fillInTheBlanks.FillInTheBlanksExerciseScreen
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.flashCard.FlashCardLessonSegment
 import com.alifba.alifba.presenation.main.logLessonEvent
-import com.alifba.alifba.ui_components.theme.darkPink
-import com.alifba.alifba.ui_components.theme.darkPurple
-import com.alifba.alifba.ui_components.theme.darkRed
-import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.theme.lightPurple
-import com.alifba.alifba.ui_components.theme.lightRed
-import com.alifba.alifba.ui_components.theme.mediumNavyBlue
-import com.alifba.alifba.ui_components.theme.mediumRed
 import com.alifba.alifba.ui_components.theme.mediumpurple
-import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.widgets.StripedProgressIndicator
 import kotlinx.coroutines.delay
 

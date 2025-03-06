@@ -1,4 +1,4 @@
-package com.alifba.alifba.presenation.Login
+package com.alifba.alifba.presenation.login
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
@@ -40,6 +39,7 @@ import com.alifba.alifba.ui_components.theme.lightRed
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
+import com.onesignal.OneSignal
 import kotlinx.coroutines.delay
 
 @Composable
@@ -149,6 +149,8 @@ fun EmailVerificationScreen(
                     onClick = {
                         isLoading = true
                         isCheckingVerification = true
+                        val userEmail = "user@example.com" // Capture from signup
+                        OneSignal.User.addEmail(userEmail)
                     },
                     buttonText = "I've Verified My Email",
                     shadowColor = navyBlue,

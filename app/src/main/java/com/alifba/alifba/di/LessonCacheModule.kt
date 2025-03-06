@@ -1,7 +1,6 @@
 package com.alifba.alifba.di
 
 import android.content.Context
-import androidx.room.Room
 import com.alifba.alifba.data.db.DatabaseProvider
 import com.alifba.alifba.data.db.LessonCacheDao
 import com.alifba.alifba.data.db.LessonCacheDatabase

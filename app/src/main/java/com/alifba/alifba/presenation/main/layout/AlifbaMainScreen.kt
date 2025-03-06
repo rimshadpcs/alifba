@@ -11,13 +11,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -29,10 +27,9 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.alifba.alifba.R
-import com.alifba.alifba.presenation.Login.AuthViewModel
-import com.alifba.alifba.presenation.Login.EmailVerificationScreen
-import com.alifba.alifba.presenation.Login.LoginScreen
-import com.alifba.alifba.presenation.Login.ProfileRegistration
+import com.alifba.alifba.presenation.login.AuthViewModel
+import com.alifba.alifba.presenation.login.LoginScreen
+import com.alifba.alifba.presenation.login.ProfileRegistration
 import com.alifba.alifba.presenation.chapters.ChaptersScreen
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.chapters.layout.LevelInfoScreen
@@ -52,7 +49,7 @@ import com.alifba.alifba.ui_components.theme.AlifbaTheme
 
 
 @Composable
-fun HomeScreenWithScaffold(navController: NavController,homeViewModel: HomeViewModel, chaptersViewModel: ChaptersViewModel,authViewModel: AuthViewModel) {
+fun HomeScreenWithScaffold(navController: NavController,homeViewModel: HomeViewModel,authViewModel: AuthViewModel) {
     Scaffold(topBar = {
         Column {
             Spacer(modifier = Modifier.height(2.dp)) // Spacer on top of the TopAppBar
@@ -98,7 +95,7 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                 HomeScreenWithScaffold(
                     navController,
                     homeViewModel,
-                    chaptersViewModel = chaptersViewModel,
+                    //chaptersViewModel = chaptersViewModel,
                     authViewModel
                 )
             }
@@ -255,16 +252,4 @@ fun LottieAnimationScreen() {
 fun MockHomeScreen() {
     // This is a placeholder for preview purposes, adjust as needed.
     //Text("Home Screen", modifier = Modifier.align(Alignment.Center))
-}
-
-@Composable
-fun HomeTopBar() {
-    // Placeholder TopAppBar for preview
-    Text("Top App Bar", modifier = Modifier.padding(16.dp))
-}
-
-// Assuming AlifbaTheme is defined somewhere in your code.
-@Composable
-fun AlifbaTheme(content: @Composable () -> Unit) {
-    content()
 }
