@@ -15,9 +15,10 @@ android {
     defaultConfig {
         applicationId = "com.alifba.alifba"
         minSdk = 25
-        targetSdk = 33
-        versionCode = 1
-        versionName = "1.0"
+        //noinspection EditedTargetSdkVersion
+        targetSdk = 34
+        versionCode = 3
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
