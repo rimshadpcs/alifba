@@ -149,8 +149,6 @@ fun EmailVerificationScreen(
                     onClick = {
                         isLoading = true
                         isCheckingVerification = true
-                        val userEmail = "user@example.com" // Capture from signup
-                        OneSignal.User.addEmail(userEmail)
                     },
                     buttonText = "I've Verified My Email",
                     shadowColor = navyBlue,

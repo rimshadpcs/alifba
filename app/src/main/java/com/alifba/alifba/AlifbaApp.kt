@@ -35,11 +35,6 @@ class AlifbaApp : Application() {
         // OneSignal Initialization
         OneSignal.initWithContext(this, oneSignalAppId)
 
-        // requestPermission will show the native Android notification permission prompt.
-        // NOTE: It's recommended to use a OneSignal In-App Message to prompt instead.
-        CoroutineScope(Dispatchers.IO).launch {
-            OneSignal.Notifications.requestPermission(false)
-        }
     }
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

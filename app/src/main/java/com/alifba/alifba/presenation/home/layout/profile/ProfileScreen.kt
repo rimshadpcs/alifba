@@ -466,7 +466,7 @@ fun ProfileScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(avatarSize) // Use animated size
+                                .size(avatarSize)
                                 .clickable {
                                     navController.navigate("changeAvatar")
                                 }
