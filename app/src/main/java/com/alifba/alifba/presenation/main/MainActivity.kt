@@ -144,7 +144,9 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("homeScreen") {
-                            AlifbaMainScreen(lessonScreenViewModel, homeViewModel, chaptersViewModel,authViewModel,profileViewModel)
+                            // Only reach this after successful login
+                            authViewModel.fetchUserProfile() // Ensure profile is loaded
+                            AlifbaMainScreen(lessonScreenViewModel, homeViewModel, chaptersViewModel, authViewModel, profileViewModel)
                         }
                     }
                 }
@@ -222,13 +224,13 @@ fun SplashScreenDummy(modifier: Modifier = Modifier) {
     }
 }
 
-
-
-    @Preview(showBackground = true)
-    @Composable
-    fun AlifbaLessonPreview() {
-        AlifbaTheme {
-            val dummyNavController = rememberNavController()
-            HomeScreen(HomeViewModel(), dummyNavController)
-        }
-    }
+//
+//
+//    @Preview(showBackground = true)
+//    @Composable
+//    fun AlifbaLessonPreview() {
+//        AlifbaTheme {
+//            val dummyNavController = rememberNavController()
+//            HomeScreen(HomeViewModel(), dummyNavController)
+//        }
+//    }

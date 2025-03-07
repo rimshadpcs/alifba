@@ -1,7 +1,9 @@
 package com.alifba.alifba.presenation.home.layout.settings
 
+import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,40 +26,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.alifba.alifba.R
 import com.alifba.alifba.service.LessonReminderReceiver
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.utils.ReminderPreferences
+import com.alifba.alifba.utils.requestNotificationPermission
 import formatTime
-
 @Composable
 fun NotificationDialog(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     context: Context
 ) {
-    var reminderTime by remember {
-        mutableStateOf(ReminderPreferences.getReminderTime(context))
-    }
+    var reminderTime by remember { mutableStateOf(ReminderPreferences.getReminderTime(context)) }
     var showTimePicker by remember { mutableStateOf(false) }
 
-    // Time Picker Logic using a local state variable
     if (showTimePicker) {
         TimePickerDialog(
             context,
-            R.style.CustomTimePickerTheme,  // second parameter
+            R.style.CustomTimePickerTheme,
             { _, hourOfDay, minute ->
-                // Save the selected time
                 ReminderPreferences.setReminderTime(context, hourOfDay, minute)
-
-                // Set the reminder
                 LessonReminderReceiver.setDailyReminder(context, hourOfDay, minute)
-
-                // Update local state
                 reminderTime = Pair(hourOfDay, minute)
-
-                // Close both time picker and notification dialog
                 showTimePicker = false
                 onDismiss()
             },
@@ -81,7 +74,6 @@ fun NotificationDialog(
             },
             text = {
                 Column {
-                    // Current Reminder Time Display
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -99,10 +91,7 @@ fun NotificationDialog(
                             )
                         )
                     }
-
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    // Change Reminder Time Button
                     Button(
                         onClick = { showTimePicker = true },
                         modifier = Modifier.fillMaxWidth(),
@@ -113,8 +102,27 @@ fun NotificationDialog(
                 }
             },
             confirmButton = {
+                TextButton(onClick = {
+                    // Only call permission request when user taps this button.
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                           requestNotificationPermission(context)
+                        }
+                    }
+                    // Mark permission as handled by saving the current reminder time.
+                    ReminderPreferences.setReminderTime(context, reminderTime.first, reminderTime.second)
+                    onDismiss()
+                }) {
+                    Text("Enable Notifications", color = navyBlue)
+                }
+            },
+            dismissButton = {
                 TextButton(onClick = onDismiss) {
-                    Text("Close", color = navyBlue)
+                    Text("Skip", color = navyBlue)
                 }
             }
         )

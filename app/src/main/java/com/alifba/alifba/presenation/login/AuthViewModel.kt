@@ -8,6 +8,7 @@ import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.features.authentication.OnboardingDataStoreManager
 import com.alifba.alifba.features.authentication.usecase.SignInUseCase
 import com.alifba.alifba.features.authentication.usecase.SignUpUseCase
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
@@ -31,10 +32,6 @@ class AuthViewModel @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
-    // --------------------------------------------------
-    // STATE AND DATA FLOWS
-    // --------------------------------------------------
-
     val email: StateFlow<String?> = dataStoreManager.email
     val password: StateFlow<String?> = dataStoreManager.password
     val userId: StateFlow<String?> = dataStoreManager.userId
@@ -50,9 +47,6 @@ class AuthViewModel @Inject constructor(
 
     val hasCompletedOnboarding: Flow<Boolean> = onboardingDataStoreManager.hasCompletedOnboarding
 
-    // --------------------------------------------------
-    // SIGN UP
-    // --------------------------------------------------
 
     fun signUp(email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
@@ -70,6 +64,7 @@ class AuthViewModel @Inject constructor(
                         viewModelScope.launch {
                             onboardingDataStoreManager.setOnboardingCompleted(false)
                             _authState.value = AuthState.Success
+
                             onSuccess()
                         }
                     },
@@ -85,10 +80,6 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
-
-    // --------------------------------------------------
-    // SIGN IN
-    // --------------------------------------------------
 
     fun signIn(email: String, password: String, onResult: (Boolean) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
@@ -142,10 +133,6 @@ class AuthViewModel @Inject constructor(
             }
     }
 
-    // --------------------------------------------------
-    // CHECK FOR CHILD PROFILES
-    // --------------------------------------------------
-
     suspend fun checkForChildProfiles(): Boolean {
         val currentUid = dataStoreManager.userId.first()
         Log.d("AuthViewModel", "checkForChildProfiles: userId = $currentUid")
@@ -175,10 +162,6 @@ class AuthViewModel @Inject constructor(
             false
         }
     }
-
-    // --------------------------------------------------
-    // CREATE/UPDATE PROFILE DATA
-    // --------------------------------------------------
 
     fun sendProfileDataToFireStore(
         parentName: String,
@@ -235,7 +218,7 @@ class AuthViewModel @Inject constructor(
                         userId = uid
                     )
                 }
-                fetchAndSaveFcmToken(uid)
+               fetchAndSaveFcmToken(uid)
                 _profileCreationState.value = ProfileCreationState.Success
             }
             .addOnFailureListener { e ->
@@ -243,10 +226,6 @@ class AuthViewModel @Inject constructor(
                 _profileCreationState.value = ProfileCreationState.Error(e.localizedMessage ?: "Unknown error")
             }
     }
-
-    // --------------------------------------------------
-    // TIMEZONE HANDLING (OPTIONAL)
-    // --------------------------------------------------
 
     suspend fun updateTimeZoneIfNeeded(context: Context, userId: String) {
         val currentTimeZone = TimeZone.getDefault().id
@@ -268,10 +247,6 @@ class AuthViewModel @Inject constructor(
                 Log.e("TimeZone", "Error updating time zone: ${e.localizedMessage}")
             }
     }
-
-    // --------------------------------------------------
-    // FETCH USER PROFILE
-    // --------------------------------------------------
 
     fun fetchUserProfile() {
         viewModelScope.launch {
@@ -347,10 +322,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    // --------------------------------------------------
-    // LOGOUT
-    // --------------------------------------------------
-
     fun logout() {
         viewModelScope.launch {
             auth.signOut()
@@ -358,10 +329,6 @@ class AuthViewModel @Inject constructor(
             _userProfileState.value = null
         }
     }
-
-    // --------------------------------------------------
-    // EMAIL VERIFICATION
-    // --------------------------------------------------
 
     fun resendVerificationEmail(onSuccess: () -> Unit, onError: (String) -> Unit) {
         val user = auth.currentUser
@@ -400,29 +367,41 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    // --------------------------------------------------
-    // DELETE USER ACCOUNT
-    // --------------------------------------------------
-
-    fun deleteUserAccount(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun deleteUserAccount(
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+        userPassword: String
+    ) {
         viewModelScope.launch {
             try {
                 val currentUser = auth.currentUser ?: throw Exception("No user is currently logged in")
                 val uid = currentUser.uid
 
-                // Delete any subcollections first
-                deleteUserSubcollections(uid)
+                // Reauthenticate the user using the password provided.
+                val credential = EmailAuthProvider.getCredential(currentUser.email!!, userPassword)
+                currentUser.reauthenticate(credential).addOnCompleteListener { reauthTask ->
+                    if (reauthTask.isSuccessful) {
+                        // Delete any subcollections and Firestore document.
+                        viewModelScope.launch {
+                            deleteUserSubcollections(uid)
+                            firestore.collection("users").document(uid).delete().await()
+                        }
 
-                // Then delete the user's document in Firestore
-                firestore.collection("users").document(uid).delete().await()
-
-                // Finally delete the user from Firebase Auth
-                currentUser.delete().await()
-
-                // Clear local DataStore if needed
-                dataStoreManager.clearUserDetails()
-
-                onSuccess()
+                        // Delete the Firebase Auth user.
+                        currentUser.delete().addOnCompleteListener { deleteTask ->
+                            if (deleteTask.isSuccessful) {
+                                viewModelScope.launch {
+                                dataStoreManager.clearUserDetails()
+                                }
+                                onSuccess()
+                            } else {
+                                onError(deleteTask.exception?.localizedMessage ?: "Deletion failed")
+                            }
+                        }
+                    } else {
+                        onError(reauthTask.exception?.localizedMessage ?: "Reauthentication failed")
+                    }
+                }
             } catch (e: Exception) {
                 onError(e.message ?: "Unknown error occurred")
             }
@@ -443,10 +422,6 @@ class AuthViewModel @Inject constructor(
             doc.reference.delete().await()
         }
     }
-
-    // --------------------------------------------------
-    // INTERNAL HELPERS
-    // --------------------------------------------------
 
     private fun sendEmailVerification(onSuccess: () -> Unit, onError: (String) -> Unit) {
         val user = auth.currentUser
@@ -484,10 +459,6 @@ class AuthViewModel @Inject constructor(
     }
 }
 
-
-// --------------------------------------------------
-// HELPER DATA CLASSES
-// --------------------------------------------------
 
 data class UserProfile(
     val parentName: String,

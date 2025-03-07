@@ -14,6 +14,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -27,7 +29,10 @@ fun PasswordInputField(
     value: String,
     onValueChange: (String) -> Unit,
     labelText: String,
-    modifier: Modifier = Modifier
+    leadingIcon: @Composable (() -> Unit)? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction = ImeAction.Next,
+    onImeAction: () -> Unit = {}
 ) {
     var passwordVisibility by remember { mutableStateOf(false) }
     val alifbaFont = FontFamily(
@@ -65,7 +70,7 @@ fun PasswordInputField(
                     Icon(painter = painterResource(id = image), contentDescription = null)
                 }
             },
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             shape = RoundedCornerShape(16.dp),

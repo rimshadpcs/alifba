@@ -1,6 +1,9 @@
 package com.alifba.alifba.presenation.home.layout.settings
 
+import DeleteAccountDialog
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -307,90 +310,35 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
 
     // Delete Account Confirmation Dialog with improved styling
     if (showDeleteConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmDialog = false },
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = lightRed,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Delete Account",
-                        fontFamily = alifbaFont,
-                        color = navyBlue,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            text = {
-                Text(
-                    text = "Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently removed.",
-                    fontFamily = alifbaFont,
-                    color = navyBlue,
-                    fontSize = 16.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        coroutineScope.launch { deleteUserAccount(authViewModel, navController) }
-                        showDeleteConfirmDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = lightRed),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.padding(8.dp)
-                ) {
-                    Text(
-                        text = "Delete",
-                        color = white,
-                        fontFamily = alifbaFont,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            },
-            dismissButton = {
-                Button(
-                    onClick = { showDeleteConfirmDialog = false },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = lightNavyBlue),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.padding(8.dp)
-                ) {
-                    Text(
-                        text = "Cancel",
-                        color = white,
-                        fontFamily = alifbaFont,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            },
-            backgroundColor = white,
-            shape = RoundedCornerShape(16.dp)
+        DeleteAccountDialog(
+            authViewModel = authViewModel,
+            navController = navController,
+            onDismiss = { showDeleteConfirmDialog = false }
         )
     }
-}
 
-// Add this extension function to fix the missing Spacer width method
-fun deleteUserAccount(authViewModel: AuthViewModel, navController: NavController) {
-    // Call the ViewModel method to handle account deletion
+}
+fun deleteUserAccount(
+    authViewModel: AuthViewModel,
+    navController: NavController,
+    userPassword: String,
+    context: Context
+) {
     authViewModel.deleteUserAccount(
         onSuccess = {
-            // Navigate to login screen after successful deletion
             navController.navigate("login") {
                 popUpTo("homeScreen") { inclusive = true }
             }
         },
         onError = { errorMessage ->
-            // Handle error (you might want to show a Toast here)
+            // Show a toast for the error (e.g., wrong password)
+            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             Log.e("AccountScreen", "Error deleting account: $errorMessage")
-        }
+        },
+        userPassword = userPassword
     )
 }
+
+
+
 fun Modifier.width(dp: Number) = padding(horizontal = dp.toInt().dp / 2)

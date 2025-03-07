@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,27 +48,34 @@ import com.alifba.alifba.ui_components.theme.AlifbaTheme
 
 
 @Composable
-fun HomeScreenWithScaffold(navController: NavController,homeViewModel: HomeViewModel,authViewModel: AuthViewModel) {
-    Scaffold(topBar = {
-        Column {
-            Spacer(modifier = Modifier.height(2.dp)) // Spacer on top of the TopAppBar
-            HomeTopBar(navController,authViewModel)
+fun HomeScreenWithScaffold(
+    navController: NavController,
+    homeViewModel: HomeViewModel,
+    authViewModel: AuthViewModel
+) {
+    Scaffold(
+        topBar = {
+            Column {
+                Spacer(modifier = Modifier.height(2.dp)) // Spacer on top of the TopAppBar
+                HomeTopBar(navController, authViewModel)
+            }
+        },
+        content = { paddingValues ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                LottieAnimationScreen()
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                // Pass 'true' here because the HomeScreen is shown only after a successful login.
+                HomeScreen(homeViewModel, navController, isUserLoggedIn = true)
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
-    }, content = { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-
-            LottieAnimationScreen()
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-            HomeScreen(homeViewModel, navController)
-            Spacer(modifier = Modifier.weight(1f))
-        }
-    })
+    )
 }
 
 @Composable
@@ -100,15 +106,6 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                 )
             }
 
-
-//            composable("EmailVerification") {
-//                val emailValue by authViewModel.email.collectAsState()
-//                EmailVerificationScreen(
-//                    viewModel = authViewModel,
-//                    navController = navController,
-//                    email = emailValue ?: ""
-//                )
-//            }
             composable("profile") {
                 ProfileScreen(navController, profileViewModel)
             }
