@@ -26,48 +26,52 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.home.HomeViewModel
-import com.alifba.alifba.service.LessonReminderReceiver
+import com.alifba.alifba.presenation.home.layout.settings.NotificationDialog
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.utils.ReminderPreferences
-import com.alifba.alifba.presenation.home.layout.settings.NotificationDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    navController: androidx.navigation.NavController,
+    navController: NavController,
     isUserLoggedIn: Boolean
 ) {
     val scrollState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // Only show the reminder dialog if the permission hasn't been handled yet.
+    // Read the user’s preferred reminder time.
+    var reminderTime by remember {
+        mutableStateOf(ReminderPreferences.getReminderTime(context))
+    }
+
+    // Show the reminder dialog only if notifications haven’t been “handled” yet.
     var showReminderDialog by remember {
         mutableStateOf(!ReminderPreferences.isNotificationPermissionHandled(context))
     }
 
-    // Optionally, always (re)schedule the daily reminder using the stored time.
-    var reminderTime by remember { mutableStateOf(ReminderPreferences.getReminderTime(context)) }
-    LaunchedEffect(Unit) {
-        LessonReminderReceiver.setDailyReminder(context, reminderTime.first, reminderTime.second)
-    }
+    // -- Removed the old LaunchedEffect that automatically scheduled the alarm. --
 
-
+    // If the dialog should show, display it. The user decides to skip or enable.
     if (showReminderDialog) {
         NotificationDialog(
             showDialog = showReminderDialog,
-            onDismiss = { showReminderDialog = false },
+            onDismiss = {
+                showReminderDialog = false
+            },
             context = context
         )
     }
 
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.weight(0.3f))
+
+        // Example of a scrollable row of items (lessons).
         LazyRow(
             reverseLayout = true,
             state = scrollState,
@@ -89,7 +93,7 @@ fun HomeScreen(
             }
         }
 
-        // Navigation arrows at the bottom remain unchanged.
+        // Navigation arrows at the bottom to scroll left/right through the LazyRow.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -97,7 +101,10 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (scrollState.firstVisibleItemIndex + scrollState.layoutInfo.visibleItemsInfo.size < viewModel.levelItemList.size) {
+            if (scrollState.firstVisibleItemIndex +
+                scrollState.layoutInfo.visibleItemsInfo.size <
+                viewModel.levelItemList.size
+            ) {
                 Button(
                     onClick = {
                         coroutineScope.launch {

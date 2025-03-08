@@ -1,6 +1,5 @@
 package com.alifba.alifba.service
 
-import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -17,73 +16,80 @@ import com.google.firebase.analytics.analytics
 import java.util.Calendar
 
 class LessonReminderReceiver : BroadcastReceiver() {
+
     override fun onReceive(context: Context, intent: Intent) {
-        // Create and show notification
+        // When the alarm fires, create and display the notification.
         createLessonReminderNotification(context)
     }
 
-    @SuppressLint("MissingPermission")
+    /**
+     * Builds and displays the lesson reminder notification.
+     */
     private fun createLessonReminderNotification(context: Context) {
-        Log.d("LessonReminder", "Creating notification")
+        Log.d(TAG, "Creating notification")
 
-        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        // Prepare an intent to launch the app when the notification is tapped.
+        val launchIntent = context.packageManager
+            .getLaunchIntentForPackage(context.packageName)
+            ?.apply {
+                putExtra("track_notification", true)
+                putExtra("notification_type", "daily_reminder")
+                putExtra("notification_time", System.currentTimeMillis())
+            }
 
-        intent?.apply {
-            putExtra("track_notification", true)
-            putExtra("notification_type", "daily_reminder")
-            putExtra("notification_time", System.currentTimeMillis())
-        }
         val pendingIntent = PendingIntent.getActivity(
             context,
             0,
-            intent,
+            launchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notificationMessages = listOf(
+        // Define a set of notification messages.
+        val messages = listOf(
             "Assalamu Alaikum! 🌟 Let’s begin today’s lesson, Bismillah!",
             "Yay! Another chance to learn and grow InshaAllah! 🤩",
             "Ready to explore something new? Let’s say Bismillah and go! 🚀",
-            "Your daily lesson is here,Ace it Inshallah! 📚",
+            "Your daily lesson is here, Ace it Inshallah! 📚",
             "Alhamdulillah for another day of fun learning! 🌈",
             "Time to unlock your awesomeness—Bismillah! 🌟",
             "Bright minds, big dreams! Let’s dive into today’s adventure! 💡",
             "Each lesson brings you closer to your goals—MashaAllah! 💫",
             "Learning is an amazing journey—ready, set, Bismillah! 🎉"
         )
-        val randomMessage = notificationMessages.random()
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val randomMessage = messages.random()
+
+        // Build the notification.
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.alifbatransround)
-            .setContentTitle("Your lessons are waiting \uD83C\uDF19 ")
+            .setContentTitle("Your lessons are waiting \uD83C\uDF19")
             .setContentText(randomMessage)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .build()
 
+        // Try displaying the notification.
         try {
-            with(NotificationManagerCompat.from(context)) {
-                notify(NOTIFICATION_ID, builder.build())
-                Log.d("LessonReminder", "Notification sent successfully")
-            }
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+            Log.d(TAG, "Notification sent successfully")
         } catch (e: SecurityException) {
-            Log.e("LessonReminder", "Permission error: ${e.message}")
+            Log.e(TAG, "Notification error: ${e.message}")
         }
-
-
     }
 
     companion object {
         private const val CHANNEL_ID = "lesson_reminder_channel"
         private const val NOTIFICATION_ID = 1
         private const val REQUEST_CODE = 100
+        private const val TAG = "LessonReminder"
 
-        // Method to set a daily reminder at a specific time
-// In LessonReminderReceiver
-        @SuppressLint("MissingPermission", "ObsoleteSdkInt", "ScheduleExactAlarm")
+        /**
+         * Schedules a daily reminder alarm at the specified [hour] and [minute].
+         * If the time is in the past for today, the alarm is scheduled for the next day.
+         */
         fun setDailyReminder(context: Context, hour: Int, minute: Int) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
             val intent = Intent(context, LessonReminderReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
@@ -92,37 +98,57 @@ class LessonReminderReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            // Use setExactAndAllowWhileIdle for more reliable alarms
+            // Configure the calendar time for the alarm.
             val calendar = Calendar.getInstance().apply {
                 timeInMillis = System.currentTimeMillis()
                 set(Calendar.HOUR_OF_DAY, hour)
                 set(Calendar.MINUTE, minute)
                 set(Calendar.SECOND, 0)
-
-                // If the time is in the past, add a day
                 if (timeInMillis <= System.currentTimeMillis()) {
                     add(Calendar.DAY_OF_YEAR, 1)
                 }
             }
 
-            // Use setExactAndAllowWhileIdle for more reliable alarms
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // On Android 12+ check if the app can schedule exact alarms.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    // Schedule an exact alarm.
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        calendar.timeInMillis,
+                        pendingIntent
+                    )
+                    Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
+                } else {
+                    // Fallback: schedule an inexact alarm instead of forcing system settings.
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        calendar.timeInMillis,
+                        pendingIntent
+                    )
+                    Log.w(TAG, "Exact alarm permission not granted; scheduled inexact alarm for ${calendar.time}")
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     calendar.timeInMillis,
                     pendingIntent
                 )
+                Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
             } else {
+                // For older versions, setExact is allowed without special permissions.
                 alarmManager.setExact(
                     AlarmManager.RTC_WAKEUP,
                     calendar.timeInMillis,
                     pendingIntent
                 )
+                Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
             }
-
-            Log.d("LessonReminder", "Reminder set for ${calendar.time}")
         }
-        // Method to cancel the reminder
+
+        /**
+         * Cancels any previously scheduled daily reminder alarm.
+         */
         fun cancelReminder(context: Context) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(context, LessonReminderReceiver::class.java)
@@ -132,12 +158,15 @@ class LessonReminderReceiver : BroadcastReceiver() {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-
             alarmManager.cancel(pendingIntent)
-            Log.d("LessonReminder", "Reminder canceled")
+            Log.d(TAG, "Reminder canceled")
         }
     }
 }
+
+/**
+ * Logs notification events to Firebase Analytics.
+ */
 fun logNotificationEvent(
     eventName: String,
     notificationType: String,
