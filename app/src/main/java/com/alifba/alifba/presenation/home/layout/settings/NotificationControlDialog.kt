@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,25 +35,27 @@ import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.utils.ReminderPreferences
 import com.alifba.alifba.utils.requestNotificationPermission
 import formatTime
+
 @Composable
 fun NotificationDialog(
     showDialog: Boolean,
     onDismiss: () -> Unit,
     context: Context
 ) {
-    var reminderTime by remember { mutableStateOf(ReminderPreferences.getReminderTime(context)) }
+    var reminderTime by remember {
+        mutableStateOf(ReminderPreferences.getReminderTime(context))
+    }
     var showTimePicker by remember { mutableStateOf(false) }
 
+    // Show TimePicker when user taps “Change Reminder Time”
     if (showTimePicker) {
         TimePickerDialog(
             context,
             R.style.CustomTimePickerTheme,
             { _, hourOfDay, minute ->
                 ReminderPreferences.setReminderTime(context, hourOfDay, minute)
-                LessonReminderReceiver.setDailyReminder(context, hourOfDay, minute)
                 reminderTime = Pair(hourOfDay, minute)
                 showTimePicker = false
-                onDismiss()
             },
             reminderTime.first,
             reminderTime.second,
@@ -60,9 +63,16 @@ fun NotificationDialog(
         ).show()
     }
 
+    // Show AlertDialog only if showDialog == true and user is not picking time
     if (showDialog && !showTimePicker) {
         AlertDialog(
-            onDismissRequest = onDismiss,
+            /**
+             * Provide an empty lambda here to prevent dismissing the dialog
+             * by tapping outside or pressing back.
+             */
+            onDismissRequest = {
+                // Do nothing
+            },
             containerColor = white,
             title = {
                 Text(
@@ -95,33 +105,57 @@ fun NotificationDialog(
                     Button(
                         onClick = { showTimePicker = true },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = navyBlue, contentColor = white)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = navyBlue,
+                            contentColor = white
+                        )
                     ) {
                         Text("Change Reminder Time")
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    // Only call permission request when user taps this button.
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                        if (ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.POST_NOTIFICATIONS
-                            ) != PackageManager.PERMISSION_GRANTED
-                        ) {
-                           requestNotificationPermission(context)
+                TextButton(
+                    onClick = {
+                        // Request notification permission on Android 13+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                requestNotificationPermission(context)
+                            }
                         }
+
+                        // Schedule daily reminder
+                        LessonReminderReceiver.setDailyReminder(
+                            context,
+                            reminderTime.first,
+                            reminderTime.second
+                        )
+
+                        // Mark it handled
+                        ReminderPreferences.setNotificationPermissionHandled(
+                            context,
+                            true
+                        )
+
+                        // Dismiss dialog
+                        onDismiss()
                     }
-                    // Mark permission as handled by saving the current reminder time.
-                    ReminderPreferences.setReminderTime(context, reminderTime.first, reminderTime.second)
-                    onDismiss()
-                }) {
+                ) {
                     Text("Enable Notifications", color = navyBlue)
                 }
             },
             dismissButton = {
-                TextButton(onClick = onDismiss) {
+                TextButton(
+                    onClick = {
+                        // User chose to skip
+                        onDismiss()
+                    }
+                ) {
                     Text("Skip", color = navyBlue)
                 }
             }

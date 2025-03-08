@@ -22,6 +22,13 @@ object ReminderPreferences {
         }
     }
 
+    fun setNotificationPermissionHandled(context: Context, handled: Boolean) {
+        getPreferences(context).edit().apply {
+            putBoolean(KEY_NOTIFICATION_PERMISSION_HANDLED, handled)
+            apply()
+        }
+    }
+
     fun getReminderTime(context: Context): Pair<Int, Int> {
         val prefs = getPreferences(context)
         // Default to 6:30 PM if not set

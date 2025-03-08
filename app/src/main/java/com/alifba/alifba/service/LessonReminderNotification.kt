@@ -7,13 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.alifba.alifba.R
 import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.analytics
 import java.util.Calendar
 
@@ -114,6 +112,7 @@ class LessonReminderReceiver : BroadcastReceiver() {
             // On Android 12+ check if the app can schedule exact alarms.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {
+                    // Schedule an exact alarm.
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         calendar.timeInMillis,
@@ -121,10 +120,7 @@ class LessonReminderReceiver : BroadcastReceiver() {
                     )
                     Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
                 } else {
-                    // Optionally, direct the user to grant exact alarm permission.
-                    val settingsIntent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                    context.startActivity(settingsIntent)
-                    // Fallback: schedule an inexact alarm.
+                    // Fallback: schedule an inexact alarm instead of forcing system settings.
                     alarmManager.setAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         calendar.timeInMillis,
@@ -140,6 +136,7 @@ class LessonReminderReceiver : BroadcastReceiver() {
                 )
                 Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
             } else {
+                // For older versions, setExact is allowed without special permissions.
                 alarmManager.setExact(
                     AlarmManager.RTC_WAKEUP,
                     calendar.timeInMillis,
