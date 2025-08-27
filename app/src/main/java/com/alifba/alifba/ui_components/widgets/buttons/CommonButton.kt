@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -108,7 +110,8 @@ fun CommonButton(
     }
 
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
     )
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -156,7 +159,9 @@ fun CommonButton(
             Text(
                 text = buttonText,
                 fontFamily = alifbaFont,
-                color = textColor
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                fontSize = 18.sp
             )
         }
     }

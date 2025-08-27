@@ -60,7 +60,7 @@ fun LevelInfoScreen(
     Log.d("LevelInfoScreen", "Loading level summary for levelId: $levelId")
 
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.Normal)
+        Font(R.font.vag_round, FontWeight.Bold)
     )
     Log.d("LevelInfoScreen", "Current levelSummary: $levelSummary")
     Column(
@@ -89,7 +89,7 @@ fun LevelInfoScreen(
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = navyBlue,
-                fontFamily = alifbaFont
+                fontFamily = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
             )
             // Empty box for symmetry
             Box(modifier = Modifier.size(48.dp))
@@ -106,6 +106,7 @@ fun LevelInfoScreen(
                 Modifier.padding(16.dp),
                 fontSize = 20.sp,
                 fontFamily = alifbaFont,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 color = Color.Gray
             )

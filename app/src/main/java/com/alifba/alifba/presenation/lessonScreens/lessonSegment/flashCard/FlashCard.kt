@@ -40,7 +40,7 @@ fun FlashCard(
     modifier: Modifier = Modifier
 ) {
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Bold)
     )
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
@@ -67,7 +67,8 @@ fun FlashCard(
                     color = white,
                     fontSize = 30.sp,
                     textAlign = TextAlign.Center,
-                    fontFamily = alifbaFont
+                    fontFamily = alifbaFont,
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(64.dp))
                 Text(
@@ -75,7 +76,8 @@ fun FlashCard(
                     fontSize = 18.sp,
                     color = white,
                     textAlign = TextAlign.Center,
-                    fontFamily = alifbaFont
+                    fontFamily = alifbaFont,
+                    fontWeight = FontWeight.Bold
                 )
             }
 

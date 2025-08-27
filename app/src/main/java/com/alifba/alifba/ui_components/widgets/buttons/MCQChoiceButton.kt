@@ -33,7 +33,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, shadowColor: Color) {
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
     )
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -83,8 +84,10 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, s
             Text(
                 text = buttonText,
                 fontFamily = alifbaFont,
+                fontWeight = FontWeight.Bold,
                 color = Color.White,
-                fontSize = 24.sp
+                fontSize = 26.sp,
+                letterSpacing = 0.8.sp
             )
         }
     }

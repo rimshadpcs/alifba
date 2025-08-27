@@ -1,7 +1,6 @@
 package com.alifba.alifba.ui_components.widgets.texts
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -11,6 +10,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,35 +23,25 @@ import com.alifba.alifba.R
 fun CommonExplanationText(text: String = "",modifier: Modifier) {
 
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
     )
+    
     Text(
         text = text,
-        style = LocalTextStyle.current.merge(
-            TextStyle(
-                lineHeight = 1.5.em,
-                platformStyle = PlatformTextStyle(
-                    includeFontPadding = false
-                ),
-                lineHeightStyle = LineHeightStyle(
-                    alignment = LineHeightStyle.Alignment.Center,
-                    trim = LineHeightStyle.Trim.None
-                )
-            )
-        )
-        ,
-        color = Color.Gray,
         fontFamily = alifbaFont,
+        fontWeight = FontWeight.Bold,
         fontSize = 25.sp,
-        modifier =
-        Modifier
-            .padding(12.dp)
+        color = Color.Gray,
+        lineHeight = 1.5.em,
+        modifier = Modifier.padding(12.dp)
     )
 }
-@Preview()
+@Preview(showBackground = true)
 @Composable
-fun NextButton() {
+fun CommonExplanationTextPreview() {
     CommonExplanationText(
+        text = "This is the first letter of the Arabic alphabet. It makes the 'a' sound as in 'apple'.",
         modifier = Modifier
     )
 }

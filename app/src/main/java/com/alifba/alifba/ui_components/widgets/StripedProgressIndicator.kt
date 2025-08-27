@@ -33,7 +33,7 @@ fun StripedProgressIndicator(
             .clip(clipShape)
             .fillMaxWidth()
             .background(backgroundColor)
-            .height(24.dp)
+            .height(18.dp)
     ) {
         // Progress-filled striped area
         Box(

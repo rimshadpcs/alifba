@@ -160,7 +160,7 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                                 color = navyBlue,
                                 fontFamily = FontFamily(
                                     Font(
-                                        R.font.more_sugar_regular,
+                                        R.font.vag_round,
                                         FontWeight.Bold
                                     )
                                 ),
@@ -230,7 +230,7 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                             color = white,
                             fontFamily = FontFamily(
                                 Font(
-                                    R.font.more_sugar_regular,
+                                    R.font.vag_round,
                                     FontWeight.Bold
                                 )
                             ),

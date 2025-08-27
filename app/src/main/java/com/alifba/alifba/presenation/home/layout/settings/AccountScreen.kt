@@ -76,7 +76,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
     val userProfile = authViewModel.userProfileState.collectAsState().value
     val coroutineScope = rememberCoroutineScope()
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Bold)
     )
 
     // Replace the background color with white and use black for borders
@@ -197,7 +197,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 text = userProfile?.parentName ?: "Loading...",
                                 style = TextStyle(
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                     color = textHighlightColor
                                 ),
                                 fontFamily = alifbaFont,
@@ -232,7 +232,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 text = userProfile?.email ?: "Loading...",
                                 style = TextStyle(
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                     color = textHighlightColor
                                 ),
                                 fontFamily = alifbaFont,
@@ -267,7 +267,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 text = userProfile?.userId ?: "Loading...",
                                 style = TextStyle(
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                     color = textHighlightColor
                                 ),
                                 fontFamily = alifbaFont,

@@ -85,7 +85,7 @@ fun FillInTheBlanksExerciseScreen(
     val context = LocalContext.current
     val showDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
 
     val checkAnswer = {
         val normalizedUserAnswer = blanksState.value.entries

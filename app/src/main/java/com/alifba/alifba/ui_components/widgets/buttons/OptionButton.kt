@@ -23,12 +23,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 @Composable
 fun OptionButton(onClick: () -> Unit, buttonText: String) {
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val alifbaFont = FontFamily(
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
+    )
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -58,7 +62,10 @@ fun OptionButton(onClick: () -> Unit, buttonText: String) {
         Text(
             text = buttonText,
             fontFamily = alifbaFont,
+            fontWeight = FontWeight.Bold,
             color = Color.White,
+            fontSize = 17.sp,
+            letterSpacing = 0.6.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

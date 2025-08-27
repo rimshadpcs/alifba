@@ -36,7 +36,7 @@ fun PasswordInputField(
 ) {
     var passwordVisibility by remember { mutableStateOf(false) }
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.SemiBold)
     )
     Column {
         OutlinedTextField(

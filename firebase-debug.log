@@ -1,0 +1,53 @@
+[debug] [2025-02-21T17:26:08.463Z] ----------------------------------------------------------------------
+[debug] [2025-02-21T17:26:08.464Z] Command:       /Users/rimshad/.nvm/versions/node/v18.20.5/bin/node /Users/rimshad/.nvm/versions/node/v18.20.5/bin/firebase deploy --only functions
+[debug] [2025-02-21T17:26:08.464Z] CLI Version:   13.31.2
+[debug] [2025-02-21T17:26:08.464Z] Platform:      darwin
+[debug] [2025-02-21T17:26:08.465Z] Node Version:  v18.20.5
+[debug] [2025-02-21T17:26:08.468Z] Time:          Fri Feb 21 2025 17:26:08 GMT+0000 (Greenwich Mean Time)
+[debug] [2025-02-21T17:26:08.468Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-21T17:26:08.554Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-21T17:26:08.554Z] > authorizing via signed-in user (rimshad@alifba.xyz)
+[debug] [2025-02-21T17:26:08.554Z] [iam] checking project alifba-app for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2025-02-21T17:26:08.554Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:08.554Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:08.555Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-app:testIamPermissions [none]
+[debug] [2025-02-21T17:26:08.555Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-app:testIamPermissions x-goog-quota-user=projects/alifba-app
+[debug] [2025-02-21T17:26:08.555Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-app:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-02-21T17:26:09.956Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-app:testIamPermissions 200
+[debug] [2025-02-21T17:26:09.956Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/alifba-app:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-02-21T17:26:09.956Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:09.956Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:09.956Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/alifba-app/serviceAccounts/alifba-app@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-02-21T17:26:09.956Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/alifba-app/serviceAccounts/alifba-app@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-02-21T17:26:11.696Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/alifba-app/serviceAccounts/alifba-app@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-02-21T17:26:11.696Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/alifba-app/serviceAccounts/alifba-app@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'alifba-app'...
+[info] 
+[info] i  deploying functions 
+[debug] [2025-02-21T17:26:11.697Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:11.697Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:11.697Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/alifba-app [none]
+[debug] [2025-02-21T17:26:13.129Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/alifba-app 200
+[debug] [2025-02-21T17:26:13.129Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/alifba-app {"projectNumber":"301870169287","projectId":"alifba-app","lifecycleState":"ACTIVE","name":"alifba-app","labels":{"firebase":"enabled"},"createTime":"2024-08-09T01:51:14.715435Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[debug] [2025-02-21T17:26:13.129Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:13.129Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:13.129Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:13.129Z] Checked if tokens are valid: true, expires at: 1740160508382
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[debug] [2025-02-21T17:26:13.130Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:13.130Z] Checked if tokens are valid: true, expires at: 1740160508382
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-02-21T17:26:13.130Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:13.130Z] Checked if tokens are valid: true, expires at: 1740160508382
+[debug] [2025-02-21T17:26:13.130Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/alifba-app/services/cloudfunctions.googleapis.com [none]
+[debug] [2025-02-21T17:26:13.130Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/alifba-app/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/alifba-app
+[debug] [2025-02-21T17:26:13.131Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/alifba-app/services/runtimeconfig.googleapis.com [none]
+[debug] [2025-02-21T17:26:13.131Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/alifba-app/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/alifba-app
+[debug] [2025-02-21T17:26:13.131Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/alifba-app/services/cloudbuild.googleapis.com [none]
+[debug] [2025-02-21T17:26:13.131Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/alifba-app/services/cloudbuild.googleapis.com x-goog-quota-user=projects/alifba-app
+[debug] [2025-02-21T17:26:13.132Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/alifba-app/services/artifactregistry.googleapis.com [none]
+[debug] [2025-02-21T17:26:13.132Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/alifba-app/services/artifactregistry.googleapis.com x-goog-quota-user=projects/alifba-app

@@ -94,7 +94,8 @@ fun DragDropLessonScreen(segment: LessonSegment.DragAndDropExperiment, onNextCli
             text = segment.question,
             style = MaterialTheme.typography.bodyLarge,
             color = Color.Gray,
-            fontFamily = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal)),
+            fontFamily = FontFamily(Font(R.font.vag_round, FontWeight.Bold)),
+            fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(12.dp)
         )
         TouchPressDraggable(modifier = Modifier.fillMaxSize()) {

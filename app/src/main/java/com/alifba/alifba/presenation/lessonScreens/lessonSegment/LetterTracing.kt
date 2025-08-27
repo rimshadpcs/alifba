@@ -14,7 +14,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -34,7 +37,7 @@ fun LetterTracing(
     segment: LessonSegment.LetterTracing,
     onNextClicked: () -> Unit
 ) {
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Normal))
     // How many times to trace (fallback to 3 if not provided by backend)
     val timesToTrace = segment.repeatCount ?: 3
 
@@ -212,41 +215,89 @@ fun createThaaShape(): LetterShape {
     return LetterShape(mainPath = mainPath, dots = listOf(dot1, dot2, dot3))
 }
 
-
 fun createJeemShape(): LetterShape {
     val mainPath = Path().apply {
-        // Starting point - begin from right side
-        moveTo(400f, 350f)
+        // Set fill type for proper hole rendering
+        fillType = PathFillType.EvenOdd
 
-        // Horizontal line moving left
-        lineTo(250f, 350f)
+        // OUTER PATH - Start with horizontal line then curve
+        moveTo(400f, 180f)
+        lineTo(200f, 180f)  // Horizontal line top edge
+        lineTo(200f, 220f)  // Left edge of horizontal bar (going down)
 
-        // Create the bowl/cup shape that's characteristic of jeem
-        // First curve down and left
+        // Now curve down to form the C shape
         cubicTo(
-            200f, 350f,  // First control point
-            150f, 370f,  // Second control point
-            120f, 420f   // End point - bottom of curve
+            150f, 220f,   // Control point 1
+            120f, 270f,   // Control point 2
+            120f, 340f    // End point - left side
         )
 
-        // Second curve to create the upward hook at the end
+        // Bottom curve
         cubicTo(
-            90f, 470f,   // First control point
-            120f, 520f,  // Second control point
-            170f, 510f   // End point - tip of the hook
+            120f, 410f,   // Control point 1
+            180f, 470f,   // Control point 2
+            280f, 470f    // End point - bottom center
         )
+
+        // Right curve going back up
+        cubicTo(
+            380f, 470f,   // Control point 1
+            440f, 410f,   // Control point 2
+            440f, 340f    // End point - right side
+        )
+
+        // Top right curve
+        cubicTo(
+            440f, 270f,   // Control point 1
+            410f, 220f,   // Control point 2
+            360f, 220f    // End point
+        )
+
+        lineTo(400f, 220f)  // Right edge of horizontal bar
+        close()  // Back to start
+
+        // INNER PATH - the hole in the middle
+        moveTo(240f, 260f)
+
+        // Inner left curve
+        cubicTo(
+            200f, 260f,   // Control point 1
+            180f, 290f,   // Control point 2
+            180f, 340f    // End point
+        )
+
+        // Inner bottom curve
+        cubicTo(
+            180f, 390f,   // Control point 1
+            210f, 420f,   // Control point 2
+            280f, 420f    // End point
+        )
+
+        // Inner right curve
+        cubicTo(
+            350f, 420f,   // Control point 1
+            380f, 390f,   // Control point 2
+            380f, 340f    // End point
+        )
+
+        // Inner top curve
+        cubicTo(
+            380f, 290f,   // Control point 1
+            360f, 260f,   // Control point 2
+            320f, 260f    // End point
+        )
+
+        lineTo(240f, 260f)  // Close inner path
+        close()
     }
 
-    // Jeem has one dot INSIDE the bowl/cup, not below it
     val dot = DotData(
-        center = Offset(170f, 420f),
+        center = Offset(350f, 200f),  // On the horizontal line
         radius = DOT_RADIUS
     )
 
-    // Return the letter shape with the dot
     return LetterShape(mainPath = mainPath, dots = listOf(dot))
 }
-
 fun Path.scale(scaleX: Float, scaleY: Float): Path {
     val scalePath = Path()
     val matrix = android.graphics.Matrix()

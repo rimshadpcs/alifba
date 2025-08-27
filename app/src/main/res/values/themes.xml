@@ -2,7 +2,9 @@
 <resources>
 
     <style name="Theme.Alifba" parent="Theme.MaterialComponents.DayNight.NoActionBar" >
-        <item name="android:statusBarColor">#045594</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
     </style>
     <!-- values/styles.xml -->
     <style name="CustomTimePickerTheme" parent="Theme.Material3.Light.Dialog.Alert">

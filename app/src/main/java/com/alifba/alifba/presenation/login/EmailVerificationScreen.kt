@@ -109,7 +109,8 @@ fun EmailVerificationScreen(
                     text = "Email Verification Required",
                     fontSize = 24.sp,
                     color = navyBlue,
-                    fontFamily = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold)),
+                    fontFamily = FontFamily(Font(R.font.vag_round, FontWeight.Bold)),
+                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
 

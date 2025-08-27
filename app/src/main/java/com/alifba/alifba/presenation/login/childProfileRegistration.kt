@@ -69,7 +69,7 @@ fun ProfileRegistration(
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val halfScreenHeight = screenHeight / 2
     val alifbaFont: FontFamily = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Bold)
     )
     val authViewModel: AuthViewModel = hiltViewModel()
     val context = LocalContext.current
@@ -137,6 +137,7 @@ fun ProfileRegistration(
             text = "Choose Avatar",
             style = MaterialTheme.typography.h6,
             fontFamily = alifbaFont,
+            fontWeight = FontWeight.Bold,
             color = navyBlue,
             textAlign = TextAlign.Center,
             modifier = Modifier
@@ -213,7 +214,7 @@ fun AvatarCarousel(
     )
 
     val alifbaFont: FontFamily = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Bold)
     )
 
     val configuration = LocalConfiguration.current
@@ -286,6 +287,7 @@ fun AvatarCarousel(
                         .align(Alignment.TopCenter)
                         .offset(y = (-avatarSize * 0.12f)),
                     fontFamily = alifbaFont,
+                    fontWeight = FontWeight.Bold,
                     color = black,
                     fontSize = (avatarSize.value * 0.12f).sp,
                 )
@@ -351,7 +353,7 @@ fun NameInputField(parentName: String, onParentNameChange: (String) -> Unit,
 fun AgeSelectionCards(onAgeSelected: (Int) -> Unit) {
     var selectedAge by remember { mutableStateOf<Int?>(null) }
     val alifbaFont: FontFamily = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Bold)
     )
     Column(
         modifier = Modifier
@@ -362,6 +364,7 @@ fun AgeSelectionCards(onAgeSelected: (Int) -> Unit) {
             text = "How old is your child?",
             style = MaterialTheme.typography.subtitle1,
             fontFamily = alifbaFont,
+            fontWeight = FontWeight.Bold,
             color = navyBlue,
             modifier = Modifier.padding(bottom = 8.dp)
         )

@@ -32,7 +32,7 @@ fun GoogleAndAppleSignInButtons(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // Google Sign-In Button
         val alifbaFont = FontFamily(
-            Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+            Font(R.font.vag_round, FontWeight.SemiBold)
         )
         val context = LocalContext.current
         Button(
