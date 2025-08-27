@@ -1,5 +1,4 @@
-import org.gradle.internal.impldep.org.junit.experimental.categories.Categories.CategoryFilter.include
-
+import org.gradle.api.JavaVersion
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -17,8 +16,8 @@ android {
         minSdk = 25
         //noinspection EditedTargetSdkVersion
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -121,6 +120,18 @@ dependencies {
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.2.2")
     implementation("io.coil-kt:coil-svg:2.2.2")
+    
+    // Shimmer effect
+    implementation("com.valentinilk.shimmer:compose-shimmer:1.2.0")
+    
+    // Media notification support
+    implementation("androidx.media:media:1.7.0")
+    
+    // Palette for color extraction
+    implementation("androidx.palette:palette-ktx:1.0.0")
+    
+    // AndroidSVG for SVG parsing and rendering
+    implementation("com.caverock:androidsvg-aar:1.4")
 
     // Splash screen
     implementation("androidx.core:core-splashscreen:1.0.1")
@@ -152,6 +163,9 @@ dependencies {
     implementation ("androidx.compose.compiler:compiler:1.5.3")
     implementation ("androidx.room:room-runtime:2.6.1")
     implementation ("androidx.room:room-ktx:2.6.1")
+
+    implementation("io.insert-koin:koin-android:3.4.2")
+
     // Testing dependencies
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

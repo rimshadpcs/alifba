@@ -2,6 +2,7 @@ package com.alifba.alifba.presenation.main
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
@@ -75,9 +76,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installSplashScreen()
+        // Lock to portrait by default - will be changed programmatically when needed
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         val onboardingDataStore = OnboardingDataStoreManager(applicationContext)
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
-        actionBar?.hide()
         trackNotificationIfNeeded(intent)
         setContent {
             val navController = rememberNavController()
@@ -156,6 +157,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    // Function to change orientation programmatically
+    fun setOrientation(orientation: Int) {
+        requestedOrientation = orientation
     }
 }
 

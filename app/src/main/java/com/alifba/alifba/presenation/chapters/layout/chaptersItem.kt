@@ -23,11 +23,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.graphicsLayer
+//import androidx.compose.ui.graphics.Color.Companion.White // White is available by default
+import com.alifba.alifba.ui_components.theme.lightPurple
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.chapters.models.Chapter
+//import com.alifba.alifba.ui_components.theme.darkerNavy // Assuming darkerNavy is not used here
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -39,19 +45,20 @@ fun ChapterPathItems(
 ) {
 
     // 1) Setup icons, sizes, offset
-    val imageSize = 75.dp
+    val imageSize = 200.dp
     val cornerIconSize = 38.dp
-    val borderColor = Color.White
+    // val borderColor = lightPurple // borderColor is declared but not used
+
     val mainIcon = when (lesson.chapterType) {
-        "Story"    -> R.drawable.story
+        "Story"    -> R.drawable.storyisland
         "Alphabet" -> R.drawable.alphab
-        "Lesson"   -> R.drawable.book
+        "Lesson" -> R.drawable.lessonisland
         else       -> R.drawable.start
     }
     val cornerIcon = when {
         lesson.isCompleted -> R.drawable.tick
-        lesson.isLocked    -> R.drawable.padlock
-        else               -> R.drawable.start
+        //lesson.isLocked    -> R.drawable.padlock // We will gray out the image instead
+        else -> R.drawable.start
     }
 
     // Zigzag offset logic
@@ -65,9 +72,12 @@ fun ChapterPathItems(
         label = "Scale"
     )
     val offsetY by animateDpAsState(
-        targetValue = if (isPressed) 0.dp else 5.dp,
+        targetValue = if (isPressed) 0.dp else 5.dp, // This creates the "press down" effect
         label = "OffsetY"
     )
+    val grayscaleMatrix = ColorMatrix().apply {
+        setToSaturation(0f) // 0f for grayscale, 1f for original colors
+    }
     val coroutineScope = rememberCoroutineScope()
     Log.d("LessonPathItems", "Chapter ${lesson.id} - isCompleted: ${lesson.isCompleted}")
 
@@ -81,79 +91,74 @@ fun ChapterPathItems(
         // Container with animation and click handling
         Box(
             modifier = Modifier
-                .size(imageSize + 24.dp)
+                .size(imageSize + 24.dp) // Overall clickable area
                 .offset(x = horizontalOffset)
                 .scale(scale)
                 .clickable(
                     interactionSource = interactionSource,
-                    indication = null,
+                    indication = null, // No ripple effect
                     onClick = {
                         coroutineScope.launch {
-                            delay(100) // tiny delay to show press effect
+                            delay(100) // tiny delay to allow press animation to show
                             onClick()
                         }
                     }
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Shadow (slightly larger and offset down)
+            // This Box is for the main image and its "press down" animation
             Box(
                 modifier = Modifier
-                    .size(imageSize + 8.dp)
-                    .offset(y = 5.dp)
-                    .clip(CircleShape)
-                    .background(Color(0x40000000))  // Translucent black for shadow
-            )
-
-            // White border ring
-            Box(
-                modifier = Modifier
-                    .size(imageSize + 16.dp)
-                    .padding(bottom = offsetY)  // animate up/down on press
-                    .border(8.dp, borderColor, CircleShape)
-                    .padding(4.dp)
-                    .clip(CircleShape)
-                    .background(Color.White),
+                    .size(imageSize + 16.dp) // Size of the main image container
+                    .offset(y = offsetY)  // animate up/down on press. When not pressed, it's 5.dp down.
+                    // When pressed, it moves to 0.dp (up by 5.dp)
+                    .padding(4.dp), // Inner padding, if needed
                 contentAlignment = Alignment.Center
-            ) {
+            )
+            {
                 // Main icon (centered)
+                val currentImageSize = when (lesson.chapterType) {
+                    "Story", "Lesson" -> imageSize + 20.dp // Make storyisland and lessonisland larger
+                    else -> imageSize - 16.dp
+                }
                 Image(
                     painter = painterResource(id = mainIcon),
                     contentDescription = lesson.chapterType,
-                    modifier = Modifier.size(imageSize - 16.dp)
+                    modifier = Modifier
+                        .size(currentImageSize)
+                        .graphicsLayer(alpha = if (lesson.isLocked) 0.6f else 1.0f), // Apply transparency
+                    colorFilter = if (lesson.isLocked) {
+                        ColorFilter.colorMatrix(grayscaleMatrix) // Apply grayscale
+                    } else {
+                        null
+                    }
                 )
             }
 
-            // Corner icon (top-right), with proper positioning and larger size
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 8.dp, y = 8.dp)  // Adjusted for larger size
-                    .size(cornerIconSize)
-                    .clip(CircleShape)
-                    .border(2.dp, Color.White, CircleShape)
-                    .background(
-                        when {
-                            lesson.isCompleted -> Color(0xFFFFFFFF)
-                            lesson.isLocked -> Color(0xFFFFFFFF)
-                            else -> Color(0xFFFFFFFF)
-                        }
-                    ),
-                contentAlignment = Alignment.Center,
-
-
-            ) {
-                Image(
-                    painter = painterResource(id = cornerIcon),
-                    contentDescription = when {
-                        lesson.isCompleted -> "Completed"
-                        lesson.isLocked -> "Locked"
-                        else -> "Start"
-                    },
+            // Corner icon (top-right)
+            // Only show corner icon if not locked
+            if (!lesson.isLocked) {
+                Box(
                     modifier = Modifier
-                        .size(cornerIconSize - 4.dp)  // Adjusted for visibility
-                        .padding(2.dp),
-                )
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-30).dp, y = 4.dp) // Position relative to the parent Box
+                        .size(cornerIconSize)
+                        .clip(CircleShape)
+                        .border(2.dp, Color.White, CircleShape)
+                        .background(Color.White), // Simplified background
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(id = cornerIcon),
+                        contentDescription = when {
+                            lesson.isCompleted -> "Completed"
+                            else -> "Start"
+                        },
+                        modifier = Modifier
+                            .size(cornerIconSize - 4.dp) // Slightly smaller than its container
+                            .padding(2.dp), // Padding within the corner icon's background
+                    )
+                }
             }
         }
     }

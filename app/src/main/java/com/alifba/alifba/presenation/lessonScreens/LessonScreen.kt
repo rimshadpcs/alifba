@@ -3,12 +3,21 @@ package com.alifba.alifba.presenation.lessonScreens
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,12 +33,19 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.R
@@ -37,6 +53,7 @@ import com.alifba.alifba.data.models.Lesson
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
+import com.alifba.alifba.ui_components.dialogs.BadgeEarnedSnackBar
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.commonLesson.CommonLessonSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.dragAndDropLesson.DragDropLessonScreen
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
@@ -46,9 +63,17 @@ import com.alifba.alifba.presenation.lessonScreens.lessonSegment.cloudExercise.C
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.fillInTheBlanks.FillInTheBlanksExerciseScreen
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.flashCard.FlashCardLessonSegment
 import com.alifba.alifba.presenation.main.logLessonEvent
+import com.alifba.alifba.ui_components.theme.darkRed
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightPurple
+import com.alifba.alifba.ui_components.theme.lightRed
+import com.alifba.alifba.ui_components.theme.mediumRed
 import com.alifba.alifba.ui_components.theme.mediumpurple
+import com.alifba.alifba.ui_components.theme.navyBlue
+import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.StripedProgressIndicator
+import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import kotlinx.coroutines.delay
 
 @Composable
@@ -147,6 +172,8 @@ fun LessonContent(
     val currentSegmentIndex = remember { mutableStateOf(0) }
     val accumulatedXp = remember { mutableStateOf(0) }
     val isAudioCompleted by viewModel.isAudioCompleted.observeAsState(false)
+    val isAudioPlaying by viewModel.isAudioPlaying.observeAsState(false)
+    val earnedBadge by chaptersViewModel.badgeEarnedEvent.collectAsState()
     val startTime = remember { mutableStateOf(System.currentTimeMillis()) }
     val totalSegments = lesson.segments.size
     val progress = if (totalSegments > 0) {
@@ -165,18 +192,68 @@ fun LessonContent(
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Back arrow button (show only if not on first segment)
+                if (currentSegmentIndex.value > 0) {
+                    IconButton(onClick = { 
+                        // Go back to previous segment
+                        if (currentSegmentIndex.value > 0) {
+                            viewModel.stopAudio()
+                            currentSegmentIndex.value--
+                        }
+                    }) {
+                        Card(
+                            modifier = Modifier.size(40.dp),
+                            shape = CircleShape,
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = 0.5.dp, 
+                                color = Color.Black.copy(alpha = 0.1f)
+                            )
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.backarrow),
+                                    contentDescription = "Previous Segment",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                
                 StripedProgressIndicator(
                     modifier = Modifier.weight(1f),
                     progress = progress,
-                    stripeColorSecondary = lightPurple,
+                    stripeColorSecondary = lightNavyBlue,
                     backgroundColor = Color.LightGray,
-                    stripeColor = mediumpurple
+                    stripeColor = navyBlue
                 )
                 IconButton(onClick = { showCancelDialog.value = true }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.close),
-                        contentDescription = "Cancel Session"
-                    )
+                    Card(
+                        modifier = Modifier.size(40.dp),
+                        shape = CircleShape,
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = 0.5.dp, 
+                            color = Color.Black.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.close),
+                                contentDescription = "Cancel Session",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -292,6 +369,7 @@ fun LessonContent(
                         CommonLessonSegment(
                             segment = currentSegment,
                             showNextButton = isAudioCompleted, // if you want gating by audio
+                            isAudioPlaying = isAudioPlaying,
                             onNextClicked = {
                                 val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
                                 logLessonEvent(
@@ -464,25 +542,18 @@ fun LessonContent(
 
             // Cancel (Exit) dialog
             if (showCancelDialog.value) {
-                AlertDialog(
-                    onDismissRequest = { showCancelDialog.value = false },
-                    title = { Text(text = "Cancel Lesson?") },
-                    text = { Text("Are you sure you want to cancel this lesson?") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            showCancelDialog.value = false
-                            navigateToChapterScreen()
-                            navController.navigate("lessonPathScreen/$levelId") {
-                                popUpTo("homeScreen") { inclusive = false }
-                            }
-                        }) {
-                            Text("Yes")
+                CustomCancelDialog(
+                    onConfirm = {
+                        SoundEffectManager.playClickSound()
+                        showCancelDialog.value = false
+                        navigateToChapterScreen()
+                        navController.navigate("homeScreen") {
+                            popUpTo("homeScreen") { inclusive = true }
                         }
                     },
-                    dismissButton = {
-                        TextButton(onClick = { showCancelDialog.value = false }) {
-                            Text("No")
-                        }
+                    onDismiss = {
+                        SoundEffectManager.playClickSound()
+                        showCancelDialog.value = false
                     }
                 )
             }
@@ -524,13 +595,21 @@ fun LessonContent(
 
                         // Then navigate back
                         navigateToChapterScreen()
-                        navController.navigate("lessonPathScreen/$levelId") {
-                            popUpTo("homeScreen") { inclusive = false }
+                        navController.navigate("homeScreen") {
+                            popUpTo("homeScreen") { inclusive = true }
                         }
                     }
                 }
             }
         }
+    }
+    
+    // Show badge earned snackbar
+    earnedBadge?.let { badge ->
+        BadgeEarnedSnackBar(
+            badge = badge,
+            onDismiss = { chaptersViewModel.clearBadgeEvent() }
+        )
     }
 }
 
@@ -571,6 +650,100 @@ private fun handleNextSegment(
             timeSpent = timeSpent
         )
         showDialog.value = true
+    }
+}
+
+@Composable
+fun CustomCancelDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val alifbaFont = FontFamily(
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
+    )
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = white),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Warning Icon
+                Image(
+                    painter = painterResource(id = R.drawable.close),
+                    contentDescription = "Warning",
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            color = navyBlue.copy(alpha = 0.1f),
+                            shape = CircleShape
+                        )
+                        .padding(12.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Title
+                Text(
+                    text = "Cancel Lesson?",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = alifbaFont,
+                    color = navyBlue,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Message
+                Text(
+                    text = "Are you sure you want to cancel this lesson? Your progress will be lost.",
+                    fontSize = 16.sp,
+                    fontFamily = alifbaFont,
+                    color = navyBlue.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 22.sp
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Cancel Button
+                    CommonButton(
+                        onClick = onDismiss,
+                        buttonText = "Stay",
+                        mainColor = lightRed,
+                        shadowColor = darkRed,
+                        textColor = white,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    // Confirm Button
+                    CommonButton(
+                        onClick = onConfirm,
+                        buttonText = "Leave",
+                        mainColor = lightNavyBlue,
+                        shadowColor = navyBlue,
+                        textColor = white,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
     }
 }
 

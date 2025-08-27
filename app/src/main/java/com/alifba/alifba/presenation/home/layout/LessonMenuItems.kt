@@ -43,7 +43,7 @@ fun LessonMenuItems(
     onClick: () -> Unit,
     playIcon: Int = R.drawable.play
 ) {
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.Normal))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Normal))
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     Column(

@@ -33,7 +33,7 @@ import com.alifba.alifba.data.models.DropItem
 @Composable
 fun DropCard(dropItem: DropItem, onItemDropped: (DragItem) -> Unit) {
     val dragItems = remember { mutableStateMapOf<Int, DragItem>() }
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.SemiBold))
 
     DropTarget<DragItem>(
         modifier = Modifier

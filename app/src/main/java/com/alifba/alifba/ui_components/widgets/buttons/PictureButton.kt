@@ -46,7 +46,7 @@ fun PictureButton(onClick: () -> Unit, buttonImage: String, buttonText: String) 
         animationSpec = spring(), label = ""
     )
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.SemiBold)
     )
 
     Box(

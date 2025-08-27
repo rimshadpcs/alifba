@@ -64,7 +64,7 @@ fun ParentGate(
     var answer by remember { mutableStateOf("") }
     var question by remember { mutableStateOf(generateQuestion()) }
     var showError by remember { mutableStateOf(false) }
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
     // Add a white surface background
     Box(
         modifier = Modifier
@@ -99,7 +99,8 @@ fun ParentGate(
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 color = navyBlue,
-                fontFamily = alifbaFont
+                fontFamily = alifbaFont,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -109,7 +110,8 @@ fun ParentGate(
                 text = "Please solve this math problem:",
                 style = MaterialTheme.typography.bodyLarge,
                 color = navyBlue,
-                fontFamily = alifbaFont
+                fontFamily = alifbaFont,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -119,7 +121,8 @@ fun ParentGate(
                 style = MaterialTheme.typography.headlineLarge,
                 textAlign = TextAlign.Center,
                 color = darkCandyGreen,
-                fontFamily = alifbaFont
+                fontFamily = alifbaFont,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -136,7 +139,8 @@ fun ParentGate(
                         modifier = Modifier.padding(horizontal = 8.dp),
                         style = MaterialTheme.typography.headlineMedium,
                         color = navyBlue,
-                        fontFamily = alifbaFont
+                        fontFamily = alifbaFont,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -146,7 +150,8 @@ fun ParentGate(
                     text = "Incorrect answer. Try again!",
                     color = lightRed,
                     modifier = Modifier.padding(top = 8.dp),
-                    fontFamily = alifbaFont
+                    fontFamily = alifbaFont,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
@@ -448,7 +453,8 @@ private fun NumberButton(
         ) {
             Text(
                 text = text,
-                fontFamily = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold)),
+                fontFamily = FontFamily(Font(R.font.vag_round, FontWeight.Bold)),
+                fontWeight = FontWeight.Bold,
                 color = Color.White,
                 fontSize = 24.sp
 

@@ -1,27 +1,23 @@
 package com.alifba.alifba.presenation.home.layout.profile
 
 import android.util.Log
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
-import androidx.compose.material3.Text
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,36 +27,36 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.zIndex
+import kotlin.math.max
+import kotlin.math.min
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.alifba.alifba.R
-import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
+import com.alifba.alifba.presenation.home.layout.ParentGate
+import com.alifba.alifba.presenation.login.UserProfile
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.analytics
@@ -72,6 +68,35 @@ fun ProfileScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel
 ) {
+    // Show ParentGate as full screen overlay if needed
+    var showParentGate by remember { mutableStateOf(false) }
+    
+    if (showParentGate) {
+        ParentGate(
+            onVerified = {
+                showParentGate = false
+                navController.navigate("settings")
+            },
+            onDismiss = {
+                showParentGate = false
+            }
+        )
+    } else {
+        // Call the actual profile screen implementation
+        ProfileScreenWithoutTopBar(
+            navController = navController,
+            profileViewModel = profileViewModel,
+            onSettingsClick = { showParentGate = true }
+        )
+    }
+}
+
+@Composable
+fun ProfileScreenWithoutTopBar(
+    navController: NavController,
+    profileViewModel: ProfileViewModel,
+    onSettingsClick: () -> Unit = {}
+) {
     LaunchedEffect(Unit) {
         Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
             param(FirebaseAnalytics.Param.SCREEN_NAME, "ProfileScreen")
@@ -81,42 +106,62 @@ fun ProfileScreen(
 
     val userProfile by profileViewModel.userProfileState.collectAsState()
     val earnedBadges by profileViewModel.earnedBadges.collectAsState()
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
-
-    // Scroll state for coordinator-like behavior
-    val scrollState = rememberScrollState()
-
-    // Calculate header collapse progress (0 to 1)
-    val headerHeightPx = with(LocalDensity.current) { 160.dp.toPx() }
-    val headerCollapsedHeightPx = with(LocalDensity.current) { 80.dp.toPx() }
-    val collapseRange = headerHeightPx - headerCollapsedHeightPx
-    val collapseProgress = (scrollState.value / collapseRange).coerceIn(0f, 1f)
-
-    // Header height animation
-    val headerHeight by animateDpAsState(
-        targetValue = lerp(160.dp, 80.dp, collapseProgress),
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
-    )
-
-    // Avatar size animation
-    val avatarSize by animateDpAsState(
-        targetValue = lerp(100.dp, 60.dp, collapseProgress),
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
-    )
-
-    // Text size animation
-    val nameTextSize by animateFloatAsState(
-        targetValue = lerp(24f, 18f, collapseProgress),
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
-    )
-
-    // Alpha values for smooth transition - FIXED: Ensure complete fade transition
-    val headerAlpha = (1f - collapseProgress).coerceIn(0f, 1f)
-    val collapsedHeaderAlpha = collapseProgress.coerceIn(0f, 1f)
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
 
     // Window size class for responsive layout
     val windowSize = rememberWindowSizeClass()
     val isTablet = windowSize.widthSizeClass >= WindowWidthSizeClass.Medium
+    
+    // Scroll state for collapsing header effect
+    val scrollState = rememberLazyListState()
+    
+    // Animation parameters matching Swift code exactly
+    val baseHeaderHeight = 160.dp
+    val collapsedHeaderHeight = 80.dp
+    val collapseRange = baseHeaderHeight - collapsedHeaderHeight
+    
+    // Calculate scroll-based animations
+    val scrollOffset = remember {
+        derivedStateOf {
+            scrollState.firstVisibleItemScrollOffset.toFloat()
+        }
+    }
+    
+    val collapseProgress = remember {
+        derivedStateOf {
+            min(max(scrollOffset.value / collapseRange.value, 0f), 1f)
+        }
+    }
+    
+    val headerHeight by remember {
+        derivedStateOf {
+            baseHeaderHeight - (collapseProgress.value * collapseRange.value).dp
+        }
+    }
+    
+    val avatarSize by remember {
+        derivedStateOf {
+            100.dp - (collapseProgress.value * (100f - 60f)).dp
+        }
+    }
+    
+    val nameTextSize by remember {
+        derivedStateOf {
+            (24f - (collapseProgress.value * (24f - 18f))).sp
+        }
+    }
+    
+    val headerAlpha by remember {
+        derivedStateOf {
+            1f - collapseProgress.value
+        }
+    }
+    
+    val collapsedHeaderAlpha by remember {
+        derivedStateOf {
+            collapseProgress.value
+        }
+    }
 
     LaunchedEffect(Unit) {
         try {
@@ -133,45 +178,38 @@ fun ProfileScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(white)
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(white)) {
         // Main scrollable content
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
+        LazyColumn(
+            state = scrollState,
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Spacer for header area
-            Spacer(modifier = Modifier.height(headerHeight))
-
-            // Rest of the content
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = if (isTablet) 24.dp else 16.dp)
-            ) {
-                // Progress Overview Section
+            // Spacer item to account for header height
+            item {
+                Spacer(modifier = Modifier.height(headerHeight))
+            }
+            
+            // Progress Overview Section
+            item {
                 Text(
                     text = "Progress Overview",
                     fontSize = if (isTablet) 22.sp else 20.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
                     fontFamily = alifbaFont,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = if (isTablet) 24.dp else 16.dp, vertical = 8.dp)
                 )
+            }
 
-                // User Cards
+            // User Stats Cards
+            item {
                 val userCards = listOf(
-
                     UserCardData(
-                        R.drawable.book,
+                        R.drawable.lessonbook,
                         "Lessons \nCompleted",
                         "${userProfile?.lessonsCompleted?.size ?: 0}"
                     ),
                     UserCardData(
-                        R.drawable.story,
+                        R.drawable.storybook,
                         "Stories \nCompleted",
                         "${userProfile?.storiesCompleted?.size ?: 0}"
                     ),
@@ -197,88 +235,92 @@ fun ProfileScreen(
                     )
                 )
 
-                // FIXED: Layout for tablet vs phone
-                if (isTablet) {
-                    // Tablet layout - 4 cards per row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        userCards.take(4).forEach { card ->
-                            UserCard(
-                                card,
-                                elevation = 2.dp,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(4.dp)
-                                    .heightIn(max = 160.dp)
-                            )
+                Column(
+                    modifier = Modifier.padding(horizontal = if (isTablet) 24.dp else 16.dp)
+                ) {
+                    // Layout for tablet vs phone
+                    if (isTablet) {
+                        // Tablet layout - 4 cards per row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            userCards.take(4).forEach { card ->
+                                UserCard(
+                                    card,
+                                    elevation = 2.dp,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .heightIn(max = 160.dp)
+                                )
+                            }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    // Second row - 3 cards
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        userCards.subList(4, 7).forEach { card ->
-                            UserCard(
-                                card,
-                                elevation = 2.dp,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(4.dp)
-                                    .heightIn(max = 160.dp)
-                            )
+                        // Second row - 2 cards + spacers for balance
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            userCards.subList(4, 6).forEach { card ->
+                                UserCard(
+                                    card,
+                                    elevation = 2.dp,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .heightIn(max = 160.dp)
+                                )
+                            }
+                            // Add empty space for balance
+                            Spacer(modifier = Modifier.weight(1f))
                         }
-                        // Add an empty space for balance
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                } else {
-                    // Phone layout - 3 cards per row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        userCards.take(3).forEach { card ->
-                            UserCard(
-                                card,
-                                elevation = 2.dp,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(4.dp)
-                            )
+                    } else {
+                        // Phone layout - 3 cards per row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            userCards.take(3).forEach { card ->
+                                UserCard(
+                                    card,
+                                    elevation = 2.dp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    // Second row - 3 cards
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        userCards.subList(3, 6).forEach { card ->
-                            UserCard(
-                                card,
-                                elevation = 2.dp,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(4.dp)
-                            )
+                        // Second row - 3 cards
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            userCards.subList(3, 6).forEach { card ->
+                                UserCard(
+                                    card,
+                                    elevation = 2.dp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
+            }
 
+            
+            // Spacer
+            item {
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // FIXED: Achievements Section with adequate spacing
+            }
+            
+            // Achievements Section
+            item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(horizontal = if (isTablet) 24.dp else 16.dp, vertical = 8.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -290,7 +332,7 @@ fun ProfileScreen(
                         Text(
                             text = "Achievements",
                             fontSize = if (isTablet) 22.sp else 20.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = FontWeight.Bold,
                             fontFamily = alifbaFont,
                         )
                         Text(
@@ -299,13 +341,14 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Normal,
                             color = navyBlue,
                             modifier = Modifier.clickable {
+                                SoundEffectManager.playClickSound()
                                 navController.navigate("allBadges")
                             },
                             fontFamily = alifbaFont,
                         )
                     }
 
-                    // In your ProfileScreen's achievements section, replace the existing Row with this:
+                    // Badges display
                     if (earnedBadges.isEmpty()) {
                         Box(
                             modifier = Modifier
@@ -331,7 +374,7 @@ fun ProfileScreen(
                                     .fillMaxWidth()
                                     .height(180.dp)
                                     .padding(vertical = 16.dp),
-                                horizontalArrangement = Arrangement.Center
+                                horizontalArrangement = if (badgeCount < 5) Arrangement.Center else Arrangement.spacedBy(8.dp)
                             ) {
                                 // Add spacing to center when there are few badges
                                 if (badgeCount < 5) {
@@ -341,9 +384,7 @@ fun ProfileScreen(
                                 // Display badges
                                 earnedBadges.take(5).forEach { badge ->
                                     Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(horizontal = 8.dp)
+                                        modifier = if (badgeCount < 5) Modifier.weight(1f) else Modifier.weight(1f)
                                     ) {
                                         BadgeCard(
                                             badge = badge,
@@ -364,7 +405,7 @@ fun ProfileScreen(
                                     .fillMaxWidth()
                                     .height(140.dp)
                                     .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.Center
+                                horizontalArrangement = if (badgeCount < 3) Arrangement.Center else Arrangement.spacedBy(4.dp)
                             ) {
                                 // Add spacing to center when there are few badges
                                 if (badgeCount < 3) {
@@ -374,9 +415,7 @@ fun ProfileScreen(
                                 // Display badges
                                 earnedBadges.take(3).forEach { badge ->
                                     Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(horizontal = if (badgeCount <= 2) 8.dp else 4.dp)
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         BadgeCard(
                                             badge = badge,
@@ -393,278 +432,161 @@ fun ProfileScreen(
                         }
                     }
                 }
-
-                // Extra space at bottom - FIXED: More space for content safety
+            }
+            
+            // Extra space at bottom for navigation
+            item {
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }
-
-        // FIXED: Floating header that collapses - improved shadow and transition
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(headerHeight)
-                .background(white)
-                .drawWithCache {
-                    onDrawBehind {
-                        // Add shadow as the header collapses - smoother shadow
-                        if (collapseProgress > 0f) {
-                            drawRect(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.LightGray.copy(alpha = 0.15f * collapseProgress),
-                                        Color.Transparent
-                                    ),
-                                    startY = size.height - 4.dp.toPx(),
-                                    endY = size.height + 10.dp.toPx()
-                                ),
-                                size = Size(size.width, 10.dp.toPx())
-                            )
-                        }
-                    }
-                }
-                .zIndex(10f) // Ensure header is above other content
+        
+        // Floating header with expand/collapse animation
+        Column(
+            modifier = Modifier.fillMaxWidth().zIndex(1f)
         ) {
-            // Expanded header content (fades out during scroll)
+            // Minimal top spacing for status bar
+            Spacer(modifier = Modifier.height(8.dp))
+            
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(headerAlpha)
-                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .height(headerHeight)
+                    .background(white)
+                    .shadow(
+                        elevation = (collapsedHeaderAlpha * 4).dp,
+                        spotColor = navyBlue.copy(alpha = 0.15f)
+                    )
             ) {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.goback),
-                            contentDescription = "Back",
-                            modifier = Modifier
-                                .clickable { navController.popBackStack() }
-                                .size(36.dp),
-                        )
-                        Text(
-                            text = "My Profile",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = navyBlue,
-                            fontFamily = alifbaFont
-                        )
-                        Box(modifier = Modifier.size(24.dp))
-                    }
-
-                    // Avatar and info row
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(avatarSize)
-                                .clickable {
-                                    navController.navigate("changeAvatar")
-                                }
-                        ) {
-                            // Avatar Image
-                            Image(
-                                painter = if (userProfile != null) {
-                                    painterResource(id = getAvatarHeadShots(userProfile!!.avatar))
-                                } else {
-                                    painterResource(id = R.drawable.avatar9)
-                                },
-                                contentDescription = "User Avatar",
-                                modifier = Modifier
-                                    .size(avatarSize) // Use animated size
-                                    .clip(CircleShape)
-                                    .background(lightNavyBlue),
-                                contentScale = ContentScale.Crop
-                            )
-
-                            // Pencil Icon - scale with avatar
-                            Image(
-                                painter = painterResource(id = R.drawable.pencil),
-                                contentDescription = "Edit Avatar",
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .size(avatarSize.times(0.24f)) // Scale with avatar
-                                    .background(white, CircleShape)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Column {
-                            Text(
-                                text = userProfile?.childName ?: "Loading...",
-                                fontSize = with(LocalDensity.current) { nameTextSize.sp },
-                                fontWeight = FontWeight.Bold,
-                                color = navyBlue,
-                                fontFamily = alifbaFont
-                            )
-                            Text(
-                                text = "Age: ${userProfile?.age ?: "--"}",
-                                fontSize = with(LocalDensity.current) { (nameTextSize - 4f).sp },
-                                color = navyBlue,
-                                fontFamily = alifbaFont
-                            )
-                        }
-                    }
-                }
-            }
-
-            // FIXED: Collapsed header content with better transition
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(collapsedHeaderAlpha)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.goback),
-                        contentDescription = "Back",
-                        modifier = Modifier
-                            .clickable { navController.popBackStack() }
-                            .size(36.dp),
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Small avatar
-                    Image(
-                        painter = if (userProfile != null) {
-                            painterResource(id = getAvatarHeadShots(userProfile!!.avatar))
-                        } else {
-                            painterResource(id = R.drawable.avatar9)
-                        },
-                        contentDescription = "User Avatar",
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(lightNavyBlue),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Text(
-                        text = userProfile?.childName ?: "Loading...",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = navyBlue,
-                        fontFamily = alifbaFont
-                    )
-                }
+                // Expanded header (fades out on scroll)
+                ExpandedHeader(
+                    userProfile = userProfile,
+                    avatarSize = avatarSize,
+                    nameTextSize = nameTextSize,
+                    alpha = headerAlpha,
+                    onAvatarClick = { navController.navigate("changeAvatar") },
+                    onSettingsClick = { 
+                        SoundEffectManager.playClickSound()
+                        onSettingsClick()
+                    },
+                    alifbaFont = alifbaFont
+                )
+                
+                // Collapsed header (fades in on scroll)
+                CollapsedHeader(
+                    userProfile = userProfile,
+                    alpha = collapsedHeaderAlpha,
+                    onAvatarClick = { navController.navigate("changeAvatar") },
+                    onSettingsClick = { 
+                        SoundEffectManager.playClickSound()
+                        onSettingsClick()
+                    },
+                    alifbaFont = alifbaFont
+                )
             }
         }
+
     }
 }
 
-// Helper function to detect window size class for responsiveness
+// Data class for user cards
+data class UserCardData(
+    val imageRes: Int,
+    val title: String,
+    val description: String
+)
+
+// Window size class for responsive layout
 @Composable
 fun rememberWindowSizeClass(): WindowSizeClass {
     val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val screenHeight = configuration.screenHeightDp.dp
-
     return WindowSizeClass(
         widthSizeClass = when {
-            screenWidth < 600.dp -> WindowWidthSizeClass.Compact
-            screenWidth < 840.dp -> WindowWidthSizeClass.Medium
+            configuration.screenWidthDp < 600 -> WindowWidthSizeClass.Compact
+            configuration.screenWidthDp < 840 -> WindowWidthSizeClass.Medium
             else -> WindowWidthSizeClass.Expanded
         },
         heightSizeClass = when {
-            screenHeight < 480.dp -> WindowHeightSizeClass.Compact
-            screenHeight < 900.dp -> WindowHeightSizeClass.Medium
+            configuration.screenHeightDp < 480 -> WindowHeightSizeClass.Compact
+            configuration.screenHeightDp < 900 -> WindowHeightSizeClass.Medium
             else -> WindowHeightSizeClass.Expanded
         }
     )
 }
-
-// Window size classes similar to Material Design 3
-enum class WindowWidthSizeClass { Compact, Medium, Expanded }
-enum class WindowHeightSizeClass { Compact, Medium, Expanded }
 
 data class WindowSizeClass(
     val widthSizeClass: WindowWidthSizeClass,
     val heightSizeClass: WindowHeightSizeClass
 )
 
-// Helper function to interpolate between two values based on progress
-private fun lerp(start: Float, stop: Float, fraction: Float): Float {
-    return start + fraction * (stop - start)
-}
+enum class WindowWidthSizeClass { Compact, Medium, Expanded }
+enum class WindowHeightSizeClass { Compact, Medium, Expanded }
 
-private fun lerp(start: Dp, stop: Dp, fraction: Float): Dp {
-    return start + (stop - start) * fraction
-}@Composable
+// UserCard composable
+@Composable
 fun UserCard(
     cardData: UserCardData,
     elevation: Dp,
-    modifier: Modifier = Modifier.fillMaxWidth()
+    modifier: Modifier = Modifier
 ) {
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
-
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
+    
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(elevation),
-        modifier = modifier.height(150.dp),
+        modifier = modifier
+            .height(150.dp),
         colors = CardDefaults.cardColors(white)
     ) {
-        // Rest of your card implementation remains the same
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Card Image
             Image(
                 painter = painterResource(id = cardData.imageRes),
                 contentDescription = cardData.title,
                 modifier = Modifier
-                    .height(60.dp)
-                    .fillMaxWidth(),
-                contentScale = ContentScale.Inside
+                    .height(50.dp)
+                    .padding(bottom = 4.dp),
+                contentScale = ContentScale.Fit
             )
-            Spacer(modifier = Modifier.height(4.dp))
+
+            // Card Title
             Text(
                 text = cardData.title,
                 fontSize = 12.sp,
-                fontFamily = alifbaFont,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = cardData.description,
-                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = alifbaFont,
                 textAlign = TextAlign.Center,
-                color = lightNavyBlue,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                color = navyBlue,
+                maxLines = 2
+            )
+
+            // Card Description (Stats Value)
+            Text(
+                text = cardData.description,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = alifbaFont,
+                textAlign = TextAlign.Center,
+                color = androidx.compose.ui.graphics.Color.Blue,
+                maxLines = 1
             )
         }
     }
 }
+
+// BadgeCard composable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BadgeCard(
-    badge: Badge,
+    badge: com.alifba.alifba.data.models.Badge,
     fixedWidth: Dp? = null
 ) {
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
     var showBottomSheet by remember { mutableStateOf(false) }
 
     if (showBottomSheet) {
@@ -686,13 +608,19 @@ fun BadgeCard(
             .width(fixedWidth)
             .aspectRatio(1f)
             .padding(2.dp)
-            .clickable { showBottomSheet = true }
+            .clickable { 
+                SoundEffectManager.playClickSound()
+                showBottomSheet = true 
+            }
     } else {
         Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
             .padding(2.dp)
-            .clickable { showBottomSheet = true }
+            .clickable { 
+                SoundEffectManager.playClickSound()
+                showBottomSheet = true 
+            }
     }
 
     Card(
@@ -701,7 +629,6 @@ fun BadgeCard(
         modifier = cardModifier,
         colors = CardDefaults.cardColors(white)
     ) {
-        // The rest of your card content remains the same
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -727,21 +654,89 @@ fun BadgeCard(
                 fontWeight = FontWeight.Medium,
                 fontFamily = alifbaFont,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .weight(0.3f)
-                    .padding(horizontal = 4.dp)
+                color = navyBlue,
+                modifier = Modifier.weight(0.3f)
             )
         }
     }
 }
-data class UserCardData(
-    val imageRes: Int,
-    val title: String,
-    val description: String
-)
 
+@Composable
+fun BadgeDetailsBottomSheet(
+    badge: com.alifba.alifba.data.models.Badge,
+    onDismiss: () -> Unit
+) {
+    val alifbaFont = FontFamily(
+        Font(R.font.vag_round, FontWeight.Bold)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Badge Image
+        Image(
+            painter = rememberAsyncImagePainter(badge.imageUrl),
+            contentDescription = badge.title,
+            modifier = Modifier
+                .size(120.dp)
+                .padding(bottom = 16.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        // Badge Title
+        Text(
+            text = badge.title,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = alifbaFont,
+            color = navyBlue,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Badge Name
+        Text(
+            text = badge.name,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Normal,
+            fontFamily = alifbaFont,
+            color = navyBlue,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Badge Description
+        Text(
+            text = badge.description,
+            fontSize = 16.sp,
+            fontFamily = alifbaFont,
+            color = navyBlue,
+            textAlign = TextAlign.Center,
+            lineHeight = 20.sp
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Optional: Add a close button
+        com.alifba.alifba.ui_components.widgets.buttons.CommonButton(
+            buttonText = "Close",
+            mainColor = lightNavyBlue,
+            shadowColor = navyBlue,
+            textColor = white,
+            onClick = {
+                SoundEffectManager.playClickSound()
+                onDismiss()
+            }
+        )
+    }
+}
+
+// Avatar helper function
 fun getAvatarHeadShots(avatarName: String): Int {
     return when (avatarName) {
         "Deenasaur" -> R.drawable.deenasaur_head
@@ -756,78 +751,19 @@ fun getAvatarHeadShots(avatarName: String): Int {
         "Sabracorn" -> R.drawable.sabracorn_head
         "Sadiqling" -> R.drawable.sadiqling_head
         "Sidqhog" -> R.drawable.sidqhog_head
-
-        else -> R.drawable.avatar9
+        else -> R.drawable.avatar9 // Default fallback
     }
 }
 
-@Composable
-fun BadgeDetailsBottomSheet(
-    badge: Badge,
-    onDismiss: () -> Unit
-) {
-    val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Badge Title
-        Text(
-            text = badge.name,
-            fontFamily = alifbaFont,
-            color = navyBlue,
-            fontSize = 23.sp,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(bottom = 16.dp)
-        )
-
-        // Badge Image
-        Image(
-            painter = rememberAsyncImagePainter(badge.imageUrl),
-            contentDescription = badge.title,
-            modifier = Modifier
-                .size(150.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Fit
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Badge Description
-        Text(
-            text = badge.description,
-            fontFamily = alifbaFont,
-            color = navyBlue,
-            fontSize = 16.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Optional: Add a close button
-        CommonButton(
-            buttonText = "Close",
-            mainColor = lightNavyBlue,
-            shadowColor = navyBlue,
-            textColor = white,
-            onClick = onDismiss
-        )
-    }
-}
 @Composable
 fun AllBadgesScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel
 ) {
     val earnedBadges by profileViewModel.earnedBadges.collectAsState()
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
+    val windowSize = rememberWindowSizeClass()
+    val isTablet = windowSize.widthSizeClass >= WindowWidthSizeClass.Medium
 
     Column(
         modifier = Modifier
@@ -839,88 +775,266 @@ fun AllBadgesScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Back Button
             Image(
-                painter = painterResource(id = R.drawable.goback),
+                painter = painterResource(id = R.drawable.backarrow),
                 contentDescription = "Back",
                 modifier = Modifier
-                    .clickable { navController.popBackStack() }
-                    .size(36.dp),
+                    .size(32.dp)
+                    .clickable {
+                        SoundEffectManager.playClickSound()
+                        navController.popBackStack()
+                    }
             )
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            // Title
             Text(
-                text = "My Achievements",
+                text = "All Badges",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = alifbaFont,
+                color = navyBlue
+            )
+        }
+        
+        if (earnedBadges.isEmpty()) {
+            // Empty state
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Empty state icon
+                    Image(
+                        painter = painterResource(id = R.drawable.quizzesnew),
+                        contentDescription = "No badges",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .padding(bottom = 24.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                    
+                    Text(
+                        text = "No Badges Yet",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = alifbaFont,
+                        color = navyBlue,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "Complete lessons and activities to earn your first badge!",
+                        fontSize = 16.sp,
+                        fontFamily = alifbaFont,
+                        color = navyBlue.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+        } else {
+            // Badges grid
+            val columns = if (isTablet) 4 else 3
+            val rows = (earnedBadges.size + columns - 1) / columns
+            
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(rows) { rowIndex ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        repeat(columns) { columnIndex ->
+                            val badgeIndex = rowIndex * columns + columnIndex
+                            if (badgeIndex < earnedBadges.size) {
+                                Box(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    BadgeCard(
+                                        badge = earnedBadges[badgeIndex],
+                                        fixedWidth = null
+                                    )
+                                }
+                            } else {
+                                // Empty space for grid alignment
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+                
+                // Bottom spacing for navigation
+                item {
+                    Spacer(modifier = Modifier.height(100.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ExpandedHeader(
+    userProfile: UserProfile?,
+    avatarSize: Dp,
+    nameTextSize: androidx.compose.ui.unit.TextUnit,
+    alpha: Float,
+    onAvatarClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    alifbaFont: FontFamily
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .graphicsLayer(alpha = alpha),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Avatar with edit button
+            Box(
+                modifier = Modifier
+                    .size(avatarSize)
+                    .clickable { onAvatarClick() }
+            ) {
+                // Avatar Image
+                Image(
+                    painter = if (userProfile != null) {
+                        painterResource(id = getAvatarHeadShots(userProfile.avatar))
+                    } else {
+                        painterResource(id = R.drawable.avatar9)
+                    },
+                    contentDescription = "User Avatar",
+                    modifier = Modifier
+                        .size(avatarSize)
+                        .clip(CircleShape)
+                        .background(lightNavyBlue),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Pencil Icon - scales with avatar
+                Image(
+                    painter = painterResource(id = R.drawable.pencil),
+                    contentDescription = "Edit Avatar",
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(avatarSize * 0.24f)
+                        .background(white, CircleShape)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column {
+                Text(
+                    text = userProfile?.childName ?: "Loading...",
+                    fontSize = nameTextSize,
+                    fontWeight = FontWeight.Bold,
+                    color = navyBlue,
+                    fontFamily = alifbaFont
+                )
+                Text(
+                    text = "Age: ${userProfile?.age ?: "--"}",
+                    fontSize = (nameTextSize.value - 4f).sp,
+                    color = navyBlue,
+                    fontFamily = alifbaFont
+                )
+            }
+        }
+        
+        // Settings button aligned with profile picture
+        Image(
+            painter = painterResource(id = R.drawable.setting),
+            contentDescription = "Settings",
+            modifier = Modifier
+                .size(36.dp)
+                .clickable { onSettingsClick() }
+        )
+    }
+}
+
+@Composable
+fun CollapsedHeader(
+    userProfile: UserProfile?,
+    alpha: Float,
+    onAvatarClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    alifbaFont: FontFamily
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .graphicsLayer(alpha = alpha),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Small avatar and name centered
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable { onAvatarClick() }
+            ) {
+                if (userProfile != null) {
+                    Image(
+                        painter = painterResource(id = getAvatarHeadShots(userProfile.avatar)),
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(lightNavyBlue),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.avatar9),
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(lightNavyBlue),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = userProfile?.childName ?: "Loading...",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = navyBlue,
                 fontFamily = alifbaFont
             )
-            // Empty box for symmetry
-            Box(modifier = Modifier.size(24.dp))
         }
 
-        // Stats Section
-        Card(
+        // Settings button on the right
+        Image(
+            painter = painterResource(id = R.drawable.setting),
+            contentDescription = "Settings",
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            colors = CardDefaults.cardColors(lightNavyBlue.copy(alpha = 0.1f)),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "${earnedBadges.size}",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = navyBlue,
-                        fontFamily = alifbaFont
-                    )
-                    Text(
-                        text = "Earned",
-                        fontSize = 14.sp,
-                        color = navyBlue,
-                        fontFamily = alifbaFont
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        //text = "${12 - earnedBadges.size}", // Assuming total badges is 12
-                        text = "many more",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = navyBlue,
-                        fontFamily = alifbaFont
-                    )
-                    Text(
-                        text = "Remaining",
-                        fontSize = 14.sp,
-                        color = navyBlue,
-                        fontFamily = alifbaFont
-                    )
-                }
-            }
-        }
-
-        // All Badges Grid
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3), // 3 items per row
-//            contentPadding = PaddingValues(4.dp), // Padding around the entire grid
-            horizontalArrangement = Arrangement.spacedBy(4.dp), // Space between columns
-            verticalArrangement = Arrangement.spacedBy(4.dp), // Space between rows
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(earnedBadges) { badge ->
-                BadgeCard(badge)
-            }
-        }
-
+                .size(36.dp)
+                .clickable { onSettingsClick() }
+        )
     }
 }

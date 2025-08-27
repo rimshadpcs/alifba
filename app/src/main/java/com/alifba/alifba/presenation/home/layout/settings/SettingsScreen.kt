@@ -57,7 +57,7 @@ import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 @Composable
 fun SettingsScreen(navController: NavController) {
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Bold)
     )
     val context = LocalContext.current
 
@@ -285,7 +285,8 @@ fun SettingsCategoryHeader(title: String) {
             text = title,
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp,
-            color = navyBlue
+            color = navyBlue,
+            fontFamily = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
         )
     }
 }
@@ -317,7 +318,7 @@ fun SettingsButton(
     isToggled: Boolean = false
 ) {
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Bold)
     )
 
     Row(
@@ -353,7 +354,7 @@ fun SettingsButton(
             ),
             color = Color.DarkGray,
             fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Bold,
             fontFamily = alifbaFont,
             modifier = Modifier.weight(1f)
         )

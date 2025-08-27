@@ -34,7 +34,7 @@ class LessonScreenViewModel  @Inject constructor(
     private val fireStore: FirebaseFirestore = FirebaseFirestore.getInstance()
 
 ): ViewModel() {
-    private val mediaPlayer: MediaPlayer? by lazy { MediaPlayer() }
+    private var mediaPlayer: MediaPlayer? = null
     private var currentAudioResId: String? = null
     private var applicationContext: Context? = null // Store the Context
     private val _isAudioCompleted = MutableLiveData<Boolean>(false)
@@ -66,15 +66,23 @@ class LessonScreenViewModel  @Inject constructor(
     }
     private fun configureMediaPlayer(dataSource: () -> Unit) {
         try {
-            if (mediaPlayer?.isPlaying == true) {
-                mediaPlayer?.stop()
-                mediaPlayer?.reset()
+            mediaPlayer?.let { player ->
+                if (player.isPlaying) {
+                    player.stop()
+                }
+                player.reset()
+            } ?: run {
+                mediaPlayer = MediaPlayer()
             }
             dataSource()
             mediaPlayer?.prepareAsync()
             mediaPlayer?.setOnPreparedListener { mp ->
                 mp.start()
                 _isAudioPlaying.value = true // Now playing
+            }
+            mediaPlayer?.setOnCompletionListener {
+                _isAudioCompleted.value = true
+                _isAudioPlaying.value = false
             }
         } catch (e: Exception) {
             Log.e("LessonScreenViewModel", "Error configuring MediaPlayer: ", e)

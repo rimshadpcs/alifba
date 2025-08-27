@@ -37,8 +37,9 @@ import com.alifba.alifba.presenation.lessonScreens.LessonScreen
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.home.layout.profile.ChangeAvatarScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
+import com.alifba.alifba.presenation.home.layout.HomeScreenWithNavigation
 import com.alifba.alifba.presenation.home.layout.HomeTopBar
-import com.alifba.alifba.presenation.home.layout.profile.ProfileScreen
+import com.alifba.alifba.presenation.home.layout.profile.ProfileScreenWithNavigation
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.home.layout.profile.AllBadgesScreen
 import com.alifba.alifba.presenation.home.layout.settings.AccountScreen
@@ -51,31 +52,16 @@ import com.alifba.alifba.ui_components.theme.AlifbaTheme
 fun HomeScreenWithScaffold(
     navController: NavController,
     homeViewModel: HomeViewModel,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    profileViewModel: ProfileViewModel
 ) {
-    Scaffold(
-        topBar = {
-            Column {
-                Spacer(modifier = Modifier.height(2.dp)) // Spacer on top of the TopAppBar
-                HomeTopBar(navController, authViewModel)
-            }
-        },
-        content = { paddingValues ->
-            Box(modifier = Modifier.fillMaxSize()) {
-                LottieAnimationScreen()
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                Spacer(modifier = Modifier.weight(1f))
-                // Pass 'true' here because the HomeScreen is shown only after a successful login.
-                HomeScreen(homeViewModel, navController, isUserLoggedIn = true)
-                Spacer(modifier = Modifier.weight(1f))
-            }
-        }
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Background animation
+        LottieAnimationScreen()
+        
+        // Main content without top bar
+        HomeScreenWithNavigation(homeViewModel, navController, isUserLoggedIn = true, profileViewModel)
+    }
 }
 
 @Composable
@@ -98,16 +84,17 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             }
 
             composable("homeScreen") {
+
                 HomeScreenWithScaffold(
                     navController,
                     homeViewModel,
-                    //chaptersViewModel = chaptersViewModel,
-                    authViewModel
+                    authViewModel,
+                    profileViewModel
                 )
             }
 
             composable("profile") {
-                ProfileScreen(navController, profileViewModel)
+                ProfileScreenWithNavigation(navController, profileViewModel, homeViewModel)
             }
             composable("onboarding") {
                 OnboardingScreen(onComplete = {
@@ -154,18 +141,7 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             composable("allBadges") {
                 AllBadgesScreen(navController = navController, profileViewModel = profileViewModel)
             }
-            composable("lessonPathScreen/{levelId}") { backStackEntry ->
-                val levelId = backStackEntry.arguments?.getString("levelId") ?: return@composable
-                // PASS THE SAME chaptersViewModel HERE
-                ChaptersScreen(
-                    navController = navController,
-                    levelId = levelId,
-                    chaptersViewModel = chaptersViewModel,
-                    homeViewModel = homeViewModel,
-                    profileViewModel = profileViewModel,
-
-                )
-            }
+            // Removed lessonPathScreen route - chapters are now displayed directly in HomeScreen
             composable("lessonScreen/{lessonId}/{levelId}") { backStackEntry ->
                 val lessonId = backStackEntry.arguments?.getString("lessonId")?.toIntOrNull()
                     ?: return@composable
@@ -175,7 +151,7 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                     levelId = levelId,
                     navController = navController,
                     navigateToChapterScreen = {
-                        navController.navigate("lessonPathScreen/$levelId")
+                        navController.navigate("homeScreen")
                     },
                     viewModel = lessonViewModel,
                     chaptersViewModel = chaptersViewModel
@@ -229,18 +205,18 @@ fun LottieAnimationScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         // Background Image
         Image(
-            painter = painterResource(id = R.drawable.newbg), // Ensure this resource is available
+            painter = painterResource(id = R.drawable.homebg), // Ensure this resource is available
             contentDescription = "Background Image",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // This scales the image to fill the size of its container
         )
 
         // Lottie Animation
-        LottieAnimation(
-            composition = composition,
-            iterations = LottieConstants.IterateForever,
-            modifier = Modifier.fillMaxSize() // Ensures the Lottie animation covers the full area of the box
-        )
+//        LottieAnimation(
+//            composition = composition,
+//            iterations = LottieConstants.IterateForever,
+//            modifier = Modifier.fillMaxSize() // Ensures the Lottie animation covers the full area of the box
+//        )
     }
 }
 

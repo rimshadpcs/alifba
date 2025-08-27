@@ -32,7 +32,7 @@ import com.alifba.alifba.ui_components.theme.white
 fun BadgeEarnedSnackBar(badge: Badge, onDismiss: () -> Unit) {
     var isVisible by remember { mutableStateOf(true) }
 
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
     // Automatically dismiss after 2 seconds
     LaunchedEffect(badge) {
         kotlinx.coroutines.delay(2000)

@@ -272,8 +272,12 @@ fun LoadingAnimation() {
             Text(
                 text = "Loading lessons...",
                 color = black,
-                fontSize = 18.sp,
-                fontFamily = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+                fontSize = 20.sp,
+                fontFamily = FontFamily(
+                    Font(R.font.vag_round, FontWeight.Normal),
+                    Font(R.font.vag_round_boldd, FontWeight.Bold)
+                ),
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -284,7 +288,10 @@ fun LoadingAnimation() {
  */
 @Composable
 fun EmptyChaptersState() {
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val alifbaFont = FontFamily(
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
+    )
 
     Column(
         modifier = Modifier
@@ -310,7 +317,11 @@ fun EmptyChaptersState() {
         ) {
             Text(
                 text = "Our lesson builders are hard at work! 🏗️",
-                fontFamily = alifbaFont,
+                fontFamily = FontFamily(
+                    Font(R.font.vag_round, FontWeight.Normal),
+                    Font(R.font.vag_round_boldd, FontWeight.Bold)
+                ),
+                fontWeight = FontWeight.Bold,
                 fontSize = 24.sp,
                 color = navyBlue,
                 textAlign = TextAlign.Center,
@@ -328,7 +339,9 @@ fun EmptyChaptersState() {
             Text(
                 text = "More lessons are coming soon!",
                 fontFamily = alifbaFont,
-                fontSize = 20.sp,
+                fontWeight = FontWeight.Black,
+                fontSize = 22.sp,
+                letterSpacing = 0.8.sp,
                 color = lightRed,
                 textAlign = TextAlign.Center
             )
@@ -377,7 +390,10 @@ fun ChapterDownloadBottomSheetContent(
     }
 
 
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular, FontWeight.SemiBold))
+    val alifbaFont = FontFamily(
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
+    )
     val coroutineScope = rememberCoroutineScope()
 
     // Track the UI state (Initial, Downloading, Cached, Downloaded, Error)
@@ -446,6 +462,7 @@ fun ChapterDownloadBottomSheetContent(
         Text(
             text = chapter.title,
             fontFamily = alifbaFont,
+            fontWeight = FontWeight.Bold,
             color = navyBlue,
             fontSize = 23.sp,
             modifier = Modifier

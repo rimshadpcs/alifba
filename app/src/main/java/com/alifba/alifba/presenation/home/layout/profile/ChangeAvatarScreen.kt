@@ -75,8 +75,12 @@ fun ChangeAvatarScreen(
     }
 
     val alifbaFont = FontFamily(
-        Font(R.font.more_sugar_regular)
+        Font(R.font.vag_round)
     )
+    val alifbaFontBold = FontFamily(
+        Font(R.font.vag_round_boldd)
+    )
+
 
     // Retrieve the user's current avatar
     val userProfile by profileViewModel.userProfileState.collectAsState()
@@ -109,7 +113,7 @@ fun ChangeAvatarScreen(
             Text(
                 text = "Choose Avatar",
                 style = MaterialTheme.typography.titleLarge,
-                fontFamily = alifbaFont,
+                fontFamily = alifbaFontBold,
                 color = white,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -163,7 +167,7 @@ fun AvatarCarousels(
         Avatar(R.drawable.sidqhog, "Sidqhog")
     )
 
-    val alifbaFont = FontFamily(Font(R.font.more_sugar_regular))
+    val alifbaFont = FontFamily(Font(R.font.vag_round))
     val avatarsSize = avatars.size
 
     // Find the index of the current avatar (defaulting to 0 if not found)
@@ -233,12 +237,15 @@ fun AvatarCarousels(
                     modifier = Modifier.size(avatarDisplaySize)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                val alifbaFontBold = FontFamily(
+                    Font(R.font.vag_round_boldd)
+                )
                 Text(
                     text = avatars[actualPage].name,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .offset(y = (-30).dp),
-                    fontFamily = alifbaFont,
+                    fontFamily = alifbaFontBold,
                     color = black,
                     fontSize = 24.sp,
                 )
