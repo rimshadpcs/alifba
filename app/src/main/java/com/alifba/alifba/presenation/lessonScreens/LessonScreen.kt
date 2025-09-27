@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -173,12 +174,15 @@ fun LessonContent(
     val accumulatedXp = remember { mutableStateOf(0) }
     val isAudioCompleted by viewModel.isAudioCompleted.observeAsState(false)
     val isAudioPlaying by viewModel.isAudioPlaying.observeAsState(false)
-    val earnedBadge by chaptersViewModel.badgeEarnedEvent.collectAsState()
+    val earnedBadges by chaptersViewModel.badgeEarnedEvent.collectAsState()
     val startTime = remember { mutableStateOf(System.currentTimeMillis()) }
     val totalSegments = lesson.segments.size
     val progress = if (totalSegments > 0) {
         currentSegmentIndex.value / totalSegments.toFloat()
     } else 0f
+    
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
 
     Box(
         modifier = Modifier
@@ -188,7 +192,7 @@ fun LessonContent(
         Column {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 12.dp)
+                    .padding(horizontal = if (isTablet) 16.dp else 12.dp)
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -202,7 +206,7 @@ fun LessonContent(
                         }
                     }) {
                         Card(
-                            modifier = Modifier.size(40.dp),
+                            modifier = Modifier.size(if (isTablet) 60.dp else 40.dp),
                             shape = CircleShape,
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -218,7 +222,7 @@ fun LessonContent(
                                 Image(
                                     painter = painterResource(id = R.drawable.backarrow),
                                     contentDescription = "Previous Segment",
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(if (isTablet) 30.dp else 20.dp)
                                 )
                             }
                         }
@@ -226,7 +230,9 @@ fun LessonContent(
                 }
                 
                 StripedProgressIndicator(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = if (isTablet) 16.dp else 12.dp),
                     progress = progress,
                     stripeColorSecondary = lightNavyBlue,
                     backgroundColor = Color.LightGray,
@@ -234,7 +240,7 @@ fun LessonContent(
                 )
                 IconButton(onClick = { showCancelDialog.value = true }) {
                     Card(
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(if (isTablet) 60.dp else 40.dp),
                         shape = CircleShape,
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -250,7 +256,7 @@ fun LessonContent(
                             Image(
                                 painter = painterResource(id = R.drawable.close),
                                 contentDescription = "Cancel Session",
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(if (isTablet) 30.dp else 20.dp)
                             )
                         }
                     }
@@ -577,13 +583,7 @@ fun LessonContent(
                         delay(2000)
                         showCompletionDialog.value = false
 
-                        // Add XP at the end
-                        viewModel.updateLessonProgress(
-                            lessonId = lessonId,
-                            levelId = levelId,
-                            chapterId = lesson.id.toString(),
-                            earnedXP = accumulatedXp.value
-                        )
+                        // Progress is now handled by ChaptersViewModel only
 
                         // Mark the chapter as complete in Firestore
                         chaptersViewModel.checkAndMarkChapterCompletion(
@@ -598,19 +598,15 @@ fun LessonContent(
                         navController.navigate("homeScreen") {
                             popUpTo("homeScreen") { inclusive = true }
                         }
+                        android.util.Log.d("LessonScreen", "Completed lesson, navigated to homeScreen")
                     }
                 }
             }
         }
     }
     
-    // Show badge earned snackbar
-    earnedBadge?.let { badge ->
-        BadgeEarnedSnackBar(
-            badge = badge,
-            onDismiss = { chaptersViewModel.clearBadgeEvent() }
-        )
-    }
+    // Badge notification will be shown in HomeScreen instead of here
+    // to avoid duplicate dialogs and interference with chapter state updates
 }
 
 
