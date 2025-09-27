@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.work.WorkManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.workDataOf
@@ -85,7 +86,8 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     navController: NavController,
     isUserLoggedIn: Boolean,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    chaptersViewModel: com.alifba.alifba.presenation.chapters.ChaptersViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
@@ -130,8 +132,8 @@ fun HomeScreen(
         }
     }
 
-    // Observe badges
-    val earnedBadge by viewModel.badgeEarnedEvent.collectAsState()
+    // Observe badges from ChaptersViewModel (where badge awarding logic exists)
+    val earnedBadges by chaptersViewModel.badgeEarnedEvent.collectAsState()
 
     // Track the currently selected chapter (for the bottom sheet)
     var selectedChapter by remember { mutableStateOf<Chapter?>(null) }
@@ -198,36 +200,22 @@ fun HomeScreen(
             }
         }
 
-        // Show Badge Earned Snackbar if we have a new badge
-        earnedBadge?.let { badge ->
+        // Show Badge Earned Snackbar if we have new badges
+        if (earnedBadges.isNotEmpty()) {
             Box(
                 modifier = Modifier
                     .align(androidx.compose.ui.Alignment.TopCenter)
                     .zIndex(2f)
             ) {
                 BadgeEarnedSnackBar(
-                    badge = badge,
-                    onDismiss = { viewModel.clearBadgeEvent() }
+                    badges = earnedBadges,
+                    onDismiss = { chaptersViewModel.clearBadgeEvent() }
                 )
             }
         }
     }
 
-    val lifecycleOwner = LocalLifecycleOwner.current
     
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.loadChapters("level1")
-            }
-        }
-        
-        lifecycleOwner.lifecycle.addObserver(observer)
-        
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
 }
 
 /**
@@ -344,11 +332,14 @@ fun ChapterDownloadBottomSheetContent(
     audioPlayerViewModel: AudioPlayerViewModel,
     onDownloadCompleted: () -> Unit
 ) {
-    val userProfile by profileViewModel.userProfileState.collectAsState()
+    val currentChildProfile by profileViewModel.currentChildProfile.collectAsState()
+    val parentAccount by profileViewModel.parentAccountState.collectAsState()
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
 
-    val avatarRes = userProfile?.avatar?.let { getAvatarImages(it) } ?: R.drawable.avatar9
-    LaunchedEffect(userProfile) {
-        Log.d("BottomSheetContent", "Updated userProfile: $userProfile")
+    val avatarRes = currentChildProfile?.avatar?.let { getAvatarImages(it) } ?: R.drawable.avatar9
+    LaunchedEffect(currentChildProfile) {
+        Log.d("BottomSheetContent", "Updated currentChildProfile: $currentChildProfile")
         Log.d("BottomSheetContent", "Avatar resolved to: $avatarRes")
     }
 
@@ -418,20 +409,20 @@ fun ChapterDownloadBottomSheetContent(
             fontFamily = alifbaFont,
             fontWeight = FontWeight.Bold,
             color = navyBlue,
-            fontSize = 23.sp,
+            fontSize = if (isTablet) 30.sp else 23.sp,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(bottom = 16.dp)
+                .padding(bottom = if (isTablet) 20.dp else 16.dp)
         )
 
         Image(
             painter = painterResource(id = avatarRes),
             contentDescription = "User Avatar",
-            modifier = Modifier.size(150.dp),
+            modifier = Modifier.size(if (isTablet) 200.dp else 150.dp),
             contentScale = ContentScale.Crop
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(if (isTablet) 32.dp else 24.dp))
 
         when (downloadState) {
             DownloadState.Initial -> {
@@ -486,7 +477,13 @@ fun ChapterDownloadBottomSheetContent(
             }
 
             DownloadState.Error -> {
-                Text("Download Failed", color = Color.Red)
+                Text(
+                    text = "Download Failed", 
+                    color = Color.Red,
+                    fontSize = if (isTablet) 20.sp else 16.sp,
+                    fontFamily = alifbaFont,
+                    fontWeight = FontWeight.Bold
+                )
                 CommonButton(
                     buttonText = "Retry",
                     mainColor = lightNavyBlue,

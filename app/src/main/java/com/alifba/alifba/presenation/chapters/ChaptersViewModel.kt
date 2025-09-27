@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -41,8 +42,8 @@ class ChaptersViewModel @Inject constructor(
     val chapterStatuses: StateFlow<Map<String, Boolean>> = dataStoreManager.getChapterStatuses()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    private val _badgeEarnedEvent = MutableStateFlow<Badge?>(null)
-    val badgeEarnedEvent: StateFlow<Badge?> get() = _badgeEarnedEvent
+    private val _badgeEarnedEvent = MutableStateFlow<List<Badge>>(emptyList())
+    val badgeEarnedEvent: StateFlow<List<Badge>> get() = _badgeEarnedEvent
 
     private val _levelSummary = MutableStateFlow<LevelSummary?>(null)
     val levelSummary: StateFlow<LevelSummary?> = _levelSummary.asStateFlow()
@@ -63,9 +64,15 @@ class ChaptersViewModel @Inject constructor(
                 val snapshot = fireStore.collection(levelPath).get().await()
                 Log.d("ChaptersViewModel", "Fetched ${snapshot.documents.size} chapters")
 
-                // Fetch completed chapters from user data
+                // Fetch completed chapters from user data - from profiles array
                 val userDoc = fireStore.collection("users").document(userId).get().await()
-                val completedChapters = userDoc.get("chapters_completed") as? List<String> ?: emptyList()
+                val profiles = userDoc.get("profiles") as? List<Map<String, Any>> ?: emptyList()
+                val activeProfileIndex = (userDoc.getLong("activeProfileIndex") ?: 0).toInt()
+                val completedChapters = if (profiles.isNotEmpty() && activeProfileIndex < profiles.size) {
+                    profiles[activeProfileIndex]["chaptersCompleted"] as? List<String> ?: emptyList()
+                } else {
+                    emptyList()
+                }
 
                 if (snapshot.isEmpty) {
                     Log.e("ChaptersViewModel", "No chapters found in Firestore for $levelId")
@@ -99,7 +106,7 @@ class ChaptersViewModel @Inject constructor(
 
 
     fun clearBadgeEvent() {
-        _badgeEarnedEvent.value = null
+        _badgeEarnedEvent.value = emptyList()
     }
 
     private fun updateStreak() {
@@ -111,12 +118,31 @@ class ChaptersViewModel @Inject constructor(
                 fireStore.runTransaction { transaction ->
                     val snapshot = transaction.get(userRef)
                     val lastActivityDate = snapshot.getString("last_activity_date") ?: ""
-                    val currentStreak = snapshot.getLong("day_streak") ?: 0
                     val currentDate = getCurrentDate()
-                    if (lastActivityDate != currentDate) {
-                        val newStreak = if (isYesterday(lastActivityDate)) currentStreak + 1 else 1
-                        transaction.update(userRef, "last_activity_date", currentDate)
-                        transaction.update(userRef, "day_streak", newStreak)
+                    
+                    // Get profiles array and update day streak for active profile
+                    val profiles = snapshot.get("profiles") as? List<Map<String, Any>> ?: emptyList()
+                    if (profiles.isNotEmpty()) {
+                        val activeProfileIndex = (snapshot.getLong("activeProfileIndex") ?: 0).toInt()
+                        if (activeProfileIndex < profiles.size) {
+                            val updatedProfiles = profiles.toMutableList()
+                            val currentProfile = updatedProfiles[activeProfileIndex].toMutableMap()
+                            val currentStreak = (currentProfile["dayStreak"] as? Long)?.toInt() ?: 0
+                            
+                            Log.d("StreakDebug", "Last activity: '$lastActivityDate', Current date: '$currentDate', Current streak: $currentStreak")
+                            Log.d("StreakDebug", "FORCING dayStreak update for testing...")
+                            
+                            // TEMPORARY: Always update dayStreak to test
+                            val newStreak = currentStreak + 1
+                            currentProfile["dayStreak"] = newStreak
+                            updatedProfiles[activeProfileIndex] = currentProfile
+                            
+                            transaction.update(userRef, "profiles", updatedProfiles)
+                            transaction.update(userRef, "last_activity_date", currentDate)
+                            transaction.update(userRef, "lastUpdated", System.currentTimeMillis())
+                            
+                            Log.d("StreakDebug", "FORCED streak update to: $newStreak")
+                        }
                     }
                 }.await()
                 checkAndAwardBadges(userId)
@@ -132,7 +158,21 @@ class ChaptersViewModel @Inject constructor(
     }
 
     private fun isYesterday(lastDate: String): Boolean {
-        return false
+        if (lastDate.isEmpty()) return false
+        
+        try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val lastActivityDate = dateFormat.parse(lastDate) ?: return false
+            val yesterday = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -1)
+            }.time
+            
+            val yesterdayStr = dateFormat.format(yesterday)
+            return lastDate == yesterdayStr
+        } catch (e: Exception) {
+            Log.e("ChaptersViewModel", "Error parsing date for streak calculation: ${e.localizedMessage}")
+            return false
+        }
     }
 
     private fun updateChapterStates(
@@ -177,71 +217,73 @@ class ChaptersViewModel @Inject constructor(
                 val userId = dataStoreManager.userId.first()
                 if (userId.isNullOrEmpty()) return@launch
 
-                checkAndAwardBadges(userId)
+                android.util.Log.d("ChaptersViewModel", "Fast chapter completion update for: $chapterId")
                 val userRef = fireStore.collection("users").document(userId)
-                val levelPath = "lessons/$levelId/chapters"
-                // Fetch all chapters for level (for level-completion logic)
-                val levelContentsSnapshot = fireStore.collection(levelPath).get().await()
-                val levelContents = levelContentsSnapshot.documents.mapNotNull { doc ->
-                    val type = doc.getString("chapterType") ?: return@mapNotNull null
-                    val id = doc.getLong("id")?.toString() ?: return@mapNotNull null
-                    id to type
-                }
-
+                
+                // STREAMLINED: Single transaction for immediate update
                 fireStore.runTransaction { transaction ->
                     val userSnapshot = transaction.get(userRef)
-
-                    // Update category-specific completions
-                    val lessonsCompleted = userSnapshot.get("lessons_completed") as? MutableList<String> ?: mutableListOf()
-                    if (chapterType == "Lesson" && !lessonsCompleted.contains(chapterId)) {
-                        lessonsCompleted.add(chapterId)
-                        transaction.update(userRef, "lessons_completed", lessonsCompleted)
-                    }
-
-                    val storiesCompleted = userSnapshot.get("stories_completed") as? MutableList<String> ?: mutableListOf()
-                    if (chapterType == "Story" && !storiesCompleted.contains(chapterId)) {
-                        storiesCompleted.add(chapterId)
-                        transaction.update(userRef, "stories_completed", storiesCompleted)
-                    }
-
-                    val activitiesCompleted = userSnapshot.get("activities_completed") as? MutableList<String> ?: mutableListOf()
-                    if (chapterType == "Alphabet" && !activitiesCompleted.contains(chapterId)) {
-                        activitiesCompleted.add(chapterId)
-                        transaction.update(userRef, "activities_completed", activitiesCompleted)
-                    }
-
-                    // Update general completion (chapters_completed)
-                    val allChaptersCompleted = userSnapshot.get("chapters_completed") as? MutableList<String> ?: mutableListOf()
+                    
+                    // Get current profiles array
+                    val profiles = userSnapshot.get("profiles") as? List<Map<String, Any>> ?: emptyList()
+                    if (profiles.isEmpty()) return@runTransaction
+                    
+                    val activeProfileIndex = (userSnapshot.getLong("activeProfileIndex") ?: 0).toInt()
+                    if (activeProfileIndex >= profiles.size) return@runTransaction
+                    
+                    val updatedProfiles = profiles.toMutableList()
+                    val currentProfile = updatedProfiles[activeProfileIndex].toMutableMap()
+                    
+                    // Update completion lists
+                    val allChaptersCompleted = (currentProfile["chaptersCompleted"] as? MutableList<String>) ?: mutableListOf()
                     if (!allChaptersCompleted.contains(chapterId)) {
                         allChaptersCompleted.add(chapterId)
-                        transaction.update(userRef, "chapters_completed", allChaptersCompleted)
-                        val currentXP = userSnapshot.getLong("xp") ?: 0
-                        transaction.update(userRef, "xp", currentXP + earnedXP)
+                        currentProfile["chaptersCompleted"] = allChaptersCompleted
                     }
-
-                    // Level completion logic
-                    val requiredChapters = levelContents.count { it.second == "Lesson" }
-                    val requiredStories = levelContents.count { it.second == "Story" }
-                    val completedChaptersInLevel = levelContents.filter { it.second == "Lesson" }
-                        .count { allChaptersCompleted.contains(it.first) }
-                    val completedStoriesInLevel = levelContents.filter { it.second == "Story" }
-                        .count { storiesCompleted.contains(it.first) }
-                    if (completedChaptersInLevel >= requiredChapters && completedStoriesInLevel >= requiredStories) {
-                        val completedLevels = userSnapshot.get("levels_completed") as? MutableList<String> ?: mutableListOf()
-                        if (!completedLevels.contains(levelId)) {
-                            completedLevels.add(levelId)
-                            transaction.update(userRef, "levels_completed", completedLevels)
-                            val currentXP = userSnapshot.getLong("xp") ?: 0
-                            transaction.update(userRef, "xp", currentXP + earnedXP + 100)
-                            Log.d("LevelCompletion", "Level $levelId completed! Bonus XP: 100")
+                    
+                    // Update XP
+                    val currentXP = (currentProfile["xp"] as? Long)?.toInt() ?: 0
+                    currentProfile["xp"] = currentXP + earnedXP
+                    
+                    // Update category-specific lists
+                    when (chapterType) {
+                        "Lesson" -> {
+                            val lessonsCompleted = (currentProfile["lessonsCompleted"] as? MutableList<String>) ?: mutableListOf()
+                            if (!lessonsCompleted.contains(chapterId)) {
+                                lessonsCompleted.add(chapterId)
+                                currentProfile["lessonsCompleted"] = lessonsCompleted
+                            }
+                        }
+                        "Story" -> {
+                            val storiesCompleted = (currentProfile["storiesCompleted"] as? MutableList<String>) ?: mutableListOf()
+                            if (!storiesCompleted.contains(chapterId)) {
+                                storiesCompleted.add(chapterId)
+                                currentProfile["storiesCompleted"] = storiesCompleted
+                            }
+                        }
+                        "Alphabet" -> {
+                            val activitiesCompleted = (currentProfile["activitiesCompleted"] as? MutableList<String>) ?: mutableListOf()
+                            if (!activitiesCompleted.contains(chapterId)) {
+                                activitiesCompleted.add(chapterId)
+                                currentProfile["activitiesCompleted"] = activitiesCompleted
+                            }
                         }
                     }
+                    
+                    updatedProfiles[activeProfileIndex] = currentProfile
+                    
+                    // Single transaction update
+                    transaction.update(userRef, "profiles", updatedProfiles)
+                    transaction.update(userRef, "lastUpdated", System.currentTimeMillis())
                 }.await()
-
-                updateStreak()
-                loadChapters(levelId)
+                
+                android.util.Log.d("ChaptersViewModel", "Fast chapter completion completed")
+                
+                // Do heavy operations AFTER the main update (background)
+                checkAndAwardBadges(userId)
+                
             } catch (e: Exception) {
-                Log.e("ChaptersViewModel", "Error marking completion: ${e.localizedMessage}")
+                Log.e("ChaptersViewModel", "Error in fast chapter completion: ${e.localizedMessage}")
             }
         }
     }
@@ -250,15 +292,29 @@ class ChaptersViewModel @Inject constructor(
         try {
             val userRef = fireStore.collection("users").document(userId)
             val userDoc = userRef.get().await()
-            val earnedBadges = userDoc.get("earned_badges") as? List<String> ?: emptyList()
+            
+            // Get stats from profiles array
+            val profiles = userDoc.get("profiles") as? List<Map<String, Any>> ?: emptyList()
+            if (profiles.isEmpty()) return
+            
+            val activeProfileIndex = (userDoc.getLong("activeProfileIndex") ?: 0).toInt()
+            if (activeProfileIndex >= profiles.size) return
+            
+            val currentProfile = profiles[activeProfileIndex]
+            val earnedBadges = currentProfile["earnedBadges"] as? List<String> ?: emptyList()
+            
             val badgesSnapshot = fireStore.collection("badges").get().await()
             val badges = badgesSnapshot.documents.mapNotNull { it.toObject(Badge::class.java) }
-            val quizzesAttended = userDoc.getLong("quizzes_attended") ?: 0
-            val storiesCount = (userDoc.get("stories_completed") as? List<*>)?.size ?: 0
-            val chaptersCount = (userDoc.get("chapters_completed") as? List<*>)?.size ?: 0
-            val levelsCount = (userDoc.get("levels_completed") as? List<*>)?.size ?: 0
-            val dayStreak = userDoc.getLong("day_streak") ?: 0
-            val xp = userDoc.getLong("xp") ?: 0
+            
+            val quizzesAttended = (currentProfile["quizzesAttended"] as? Long) ?: 0
+            val storiesCount = (currentProfile["storiesCompleted"] as? List<*>)?.size ?: 0
+            val chaptersCount = (currentProfile["chaptersCompleted"] as? List<*>)?.size ?: 0
+            val levelsCount = (currentProfile["levelsCompleted"] as? List<*>)?.size ?: 0
+            val dayStreak = (currentProfile["dayStreak"] as? Long) ?: 0
+            val xp = (currentProfile["xp"] as? Long) ?: 0
+
+            val newlyEarnedBadges = mutableListOf<Badge>()
+            val badgeIdsToAdd = mutableListOf<String>()
 
             badges.forEach { badge ->
                 if (!earnedBadges.contains(badge.id)) {
@@ -272,11 +328,32 @@ class ChaptersViewModel @Inject constructor(
                         else -> false
                     }
                     if (shouldAward) {
-                        userRef.update("earned_badges", earnedBadges + badge.id).await()
-                        _badgeEarnedEvent.value = badge
+                        newlyEarnedBadges.add(badge)
+                        badgeIdsToAdd.add(badge.id)
                         Log.d("BadgeCheck", "Badge earned: ${badge.title}")
                     }
                 }
+            }
+
+            // Update all newly earned badges at once
+            if (newlyEarnedBadges.isNotEmpty()) {
+                val updatedProfiles = profiles.toMutableList()
+                val updatedProfile = updatedProfiles[activeProfileIndex].toMutableMap()
+                val updatedEarnedBadges = (updatedProfile["earnedBadges"] as? MutableList<String>) ?: mutableListOf()
+                updatedEarnedBadges.addAll(badgeIdsToAdd)
+                updatedProfile["earnedBadges"] = updatedEarnedBadges
+                updatedProfiles[activeProfileIndex] = updatedProfile
+
+                userRef.update(
+                    mapOf(
+                        "profiles" to updatedProfiles,
+                        "lastUpdated" to System.currentTimeMillis()
+                    )
+                ).await()
+
+                // Set all newly earned badges at once
+                _badgeEarnedEvent.value = newlyEarnedBadges
+                Log.d("BadgeCheck", "Total badges earned: ${newlyEarnedBadges.size}")
             }
         } catch (e: Exception) {
             Log.e("BadgeCheck", "Error checking badges: ${e.localizedMessage}")
