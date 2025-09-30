@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -83,6 +84,8 @@ fun FillInTheBlanksExerciseScreen(
     }
 
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
     val showDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }
     val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
@@ -115,7 +118,7 @@ fun FillInTheBlanksExerciseScreen(
 
     Column(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(if (isTablet) 24.dp else 16.dp)
             .fillMaxHeight()
     ) {
         // Display Image
@@ -132,34 +135,36 @@ fun FillInTheBlanksExerciseScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.5f)
-                .padding(8.dp)
+                .padding(if (isTablet) 12.dp else 8.dp)
                 .align(Alignment.CenterHorizontally)
-                .clip(shape = RoundedCornerShape(64.dp)),
+                .clip(shape = RoundedCornerShape(if (isTablet) 80.dp else 64.dp)),
             contentScale = ContentScale.FillWidth
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(if (isTablet) 20.dp else 16.dp))
 
         // Interactive Sentence to Fill in the Blanks
         InteractiveSentence(
             sentenceParts = segment.exercise.sentenceParts,
             blanksState = blanksState.value,
             fontFamily = alifbaFont,
+            isTablet = isTablet,
             onBlankClicked = { index ->
                 blanksState.value = blanksState.value.toMutableMap().apply { this[index] = null }
                 Log.d("FillInTheBlanks", "Blank cleared at index: $index")
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(if (isTablet) 20.dp else 16.dp))
 
         // Option Buttons to Select an Option
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
         ) {
             availableOptions.forEach { option ->
                 OptionButton(
                     buttonText = option.option,
+                    isTablet = isTablet,
                     onClick = {
                         val firstEmptyBlankIndex = segment.exercise.sentenceParts.indices.firstOrNull { idx ->
                             segment.exercise.sentenceParts[idx].trim().all { it == '_' } && blanksState.value[idx] == null

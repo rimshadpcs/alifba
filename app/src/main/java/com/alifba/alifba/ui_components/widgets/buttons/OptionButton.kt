@@ -24,11 +24,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.alifba.alifba.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 @Composable
-fun OptionButton(onClick: () -> Unit, buttonText: String) {
+fun OptionButton(onClick: () -> Unit, buttonText: String, isTablet: Boolean = false) {
+    val configuration = LocalConfiguration.current
+    val actualIsTablet = isTablet || (configuration.screenWidthDp > 600)
+    
     val alifbaFont = FontFamily(
         Font(R.font.vag_round, FontWeight.Normal),
         Font(R.font.vag_round_boldd, FontWeight.Bold)
@@ -37,13 +41,13 @@ fun OptionButton(onClick: () -> Unit, buttonText: String) {
     val isPressed by interactionSource.collectIsPressedAsState()
     val coroutineScope = rememberCoroutineScope()
     // Animate the offset for the press effect to simulate a shadow
-    val padding by animateDpAsState(targetValue = if (isPressed) 6.dp else 8.dp, label = "")
+    val padding by animateDpAsState(targetValue = if (isPressed) (if (actualIsTablet) 8.dp else 6.dp) else (if (actualIsTablet) 12.dp else 8.dp), label = "")
 
     // Button
     Box(
         modifier = Modifier
-            .padding(8.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .padding(if (actualIsTablet) 12.dp else 8.dp)
+            .clip(RoundedCornerShape(if (actualIsTablet) 12.dp else 8.dp))
             .background(Color(0xFF525252)) // Button face color
             .clickable(
                 onClick = {
@@ -55,7 +59,10 @@ fun OptionButton(onClick: () -> Unit, buttonText: String) {
                 interactionSource = interactionSource,
                 indication = null
             )
-            .padding(horizontal = 8.dp, vertical = 8.dp) // Padding inside the button
+            .padding(
+                horizontal = if (actualIsTablet) 12.dp else 8.dp, 
+                vertical = if (actualIsTablet) 12.dp else 8.dp
+            ) // Padding inside the button
             .padding(padding), // Simulated shadow effect by increasing padding
         contentAlignment = Alignment.Center,
     ) {
@@ -64,8 +71,8 @@ fun OptionButton(onClick: () -> Unit, buttonText: String) {
             fontFamily = alifbaFont,
             fontWeight = FontWeight.Bold,
             color = Color.White,
-            fontSize = 17.sp,
-            letterSpacing = 0.6.sp,
+            fontSize = if (actualIsTablet) 22.sp else 17.sp,
+            letterSpacing = if (actualIsTablet) 0.8.sp else 0.6.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

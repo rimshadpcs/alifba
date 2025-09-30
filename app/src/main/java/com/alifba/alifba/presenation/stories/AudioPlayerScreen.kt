@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,9 +37,14 @@ import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
 import com.alifba.alifba.R
 import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
+import coil.request.CachePolicy
 import com.alifba.alifba.data.models.Story
 import com.alifba.alifba.ui_components.theme.*
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import android.util.Log
 
 @Composable
 fun AudioPlayerScreen(
@@ -49,6 +55,9 @@ fun AudioPlayerScreen(
     modifier: Modifier = Modifier,
     viewModel: AudioPlayerViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
+    
     // Collect states from ViewModel
     val isPlaying by viewModel.isPlaying.collectAsState()
     val currentPosition by viewModel.currentPosition.collectAsState()
@@ -129,20 +138,20 @@ fun AudioPlayerScreen(
                 text = story.name,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = if (isTablet) 48.dp else 32.dp),
                 color = Color.White,
-                fontSize = 28.sp,
+                fontSize = if (isTablet) 40.sp else 28.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 8.dp))
             
             // Story Category - Always visible
             Text(
                 text = if (story.isBedtime) "Bedtime Story" else "Story",
                 color = Color.White.copy(alpha = 0.8f),
-                fontSize = 16.sp,
+                fontSize = if (isTablet) 22.sp else 16.sp,
                 textAlign = TextAlign.Center
             )
         }
@@ -158,7 +167,7 @@ fun AudioPlayerScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(if (isTablet) 24.dp else 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -166,7 +175,7 @@ fun AudioPlayerScreen(
                     IconButton(
                         onClick = onMinimize,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(if (isTablet) 56.dp else 40.dp)
                             .background(
                                 color = Color.White.copy(alpha = 0.2f),
                                 shape = CircleShape
@@ -176,7 +185,7 @@ fun AudioPlayerScreen(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = "Minimize",
                             tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
                         )
                     }
                     
@@ -184,7 +193,7 @@ fun AudioPlayerScreen(
                     Text(
                         text = "Now Playing",
                         color = Color.White,
-                        fontSize = 18.sp,
+                        fontSize = if (isTablet) 24.sp else 18.sp,
                         fontWeight = FontWeight.Medium
                     )
                     
@@ -192,7 +201,7 @@ fun AudioPlayerScreen(
                     IconButton(
                         onClick = onCancel,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(if (isTablet) 56.dp else 40.dp)
                             .background(
                                 color = Color.White.copy(alpha = 0.2f),
                                 shape = CircleShape
@@ -202,7 +211,7 @@ fun AudioPlayerScreen(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Stop Playing",
                             tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
                         )
                     }
                 }
@@ -212,28 +221,38 @@ fun AudioPlayerScreen(
                 // Show loading or error state
                 when {
                     isLoading -> {
-                        Text(
-                            text = "Loading audio...",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 32.dp)
-                        )
-                        Spacer(modifier = Modifier.height(32.dp))
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(if (isTablet) 36.dp else 24.dp),
+                                color = Color.White.copy(alpha = 0.8f),
+                                strokeWidth = if (isTablet) 3.dp else 2.dp
+                            )
+                            Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 8.dp))
+                            Text(
+                                text = "Loading audio...",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = if (isTablet) 20.sp else 14.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(if (isTablet) 48.dp else 32.dp))
                     }
                     error != null && !isPlaying && duration == 0L -> {
                         Text(
                             text = "Audio unavailable",
                             color = Color.Red.copy(alpha = 0.8f),
-                            fontSize = 14.sp,
+                            fontSize = if (isTablet) 20.sp else 14.sp,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 32.dp)
+                                .padding(horizontal = if (isTablet) 48.dp else 32.dp)
                         )
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(if (isTablet) 48.dp else 32.dp))
                     }
                 }
                 
@@ -241,7 +260,7 @@ fun AudioPlayerScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 32.dp)
+                        .padding(horizontal = if (isTablet) 48.dp else 32.dp)
                 ) {
                     Slider(
                         value = if (duration > 0) currentPosition.toFloat() else 0f,
@@ -266,12 +285,12 @@ fun AudioPlayerScreen(
                         Text(
                             text = viewModel.formatTime(currentPosition),
                             color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 12.sp
+                            fontSize = if (isTablet) 18.sp else 12.sp
                         )
                         Text(
                             text = viewModel.formatTime(duration),
                             color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 12.sp
+                            fontSize = if (isTablet) 18.sp else 12.sp
                         )
                     }
                 }
@@ -282,7 +301,7 @@ fun AudioPlayerScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 32.dp),
+                        .padding(horizontal = if (isTablet) 48.dp else 32.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -291,7 +310,7 @@ fun AudioPlayerScreen(
                         onClick = { viewModel.skipBackward() },
                         enabled = duration > 0 && !isLoading,
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(if (isTablet) 80.dp else 56.dp)
                             .background(
                                 color = Color.White.copy(alpha = if (duration > 0 && !isLoading) 0.2f else 0.1f),
                                 shape = CircleShape
@@ -301,7 +320,7 @@ fun AudioPlayerScreen(
                             painter = painterResource(id = R.drawable.tensecbackward),
                             contentDescription = "Skip 10 seconds back",
                             tint = Color.White.copy(alpha = if (duration > 0 && !isLoading) 1f else 0.5f),
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(if (isTablet) 36.dp else 24.dp)
                         )
                     }
                     
@@ -310,7 +329,7 @@ fun AudioPlayerScreen(
                         onClick = { viewModel.togglePlayPause() },
                         enabled = duration > 0 && !isLoading,
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(if (isTablet) 100.dp else 72.dp)
                             .background(
                                 color = if (duration > 0 && !isLoading) Color.White else Color.White.copy(alpha = 0.5f),
                                 shape = CircleShape
@@ -318,10 +337,10 @@ fun AudioPlayerScreen(
                     ) {
                         when {
                             isLoading -> {
-                                Text(
-                                    text = "...",
-                                    fontSize = 24.sp,
-                                    color = lightPurple
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(if (isTablet) 48.dp else 32.dp),
+                                    color = lightPurple,
+                                    strokeWidth = if (isTablet) 4.dp else 3.dp
                                 )
                             }
                             isPlaying -> {
@@ -332,15 +351,15 @@ fun AudioPlayerScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .width(6.dp)
-                                            .height(24.dp)
-                                            .background(lightPurple, RoundedCornerShape(2.dp))
+                                            .width(if (isTablet) 8.dp else 6.dp)
+                                            .height(if (isTablet) 36.dp else 24.dp)
+                                            .background(lightPurple, RoundedCornerShape(if (isTablet) 3.dp else 2.dp))
                                     )
                                     Box(
                                         modifier = Modifier
-                                            .width(6.dp)
-                                            .height(24.dp)
-                                            .background(lightPurple, RoundedCornerShape(2.dp))
+                                            .width(if (isTablet) 8.dp else 6.dp)
+                                            .height(if (isTablet) 36.dp else 24.dp)
+                                            .background(lightPurple, RoundedCornerShape(if (isTablet) 3.dp else 2.dp))
                                     )
                                 }
                             }
@@ -349,7 +368,7 @@ fun AudioPlayerScreen(
                                     imageVector = Icons.Default.PlayArrow,
                                     contentDescription = "Play",
                                     tint = lightPurple,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(if (isTablet) 48.dp else 32.dp)
                                 )
                             }
                         }
@@ -360,7 +379,7 @@ fun AudioPlayerScreen(
                         onClick = { viewModel.skipForward() },
                         enabled = duration > 0 && !isLoading,
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(if (isTablet) 80.dp else 56.dp)
                             .background(
                                 color = Color.White.copy(alpha = if (duration > 0 && !isLoading) 0.2f else 0.1f),
                                 shape = CircleShape
@@ -370,12 +389,12 @@ fun AudioPlayerScreen(
                             painter = painterResource(id = R.drawable.tensecforward),
                             contentDescription = "Skip 10 seconds forward",
                             tint = Color.White.copy(alpha = if (duration > 0 && !isLoading) 1f else 0.5f),
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(if (isTablet) 36.dp else 24.dp)
                         )
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(if (isTablet) 72.dp else 48.dp))
             }
         }
     }

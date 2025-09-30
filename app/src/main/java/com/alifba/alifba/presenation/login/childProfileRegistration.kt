@@ -89,8 +89,8 @@ fun ProfileRegistration(
             is ProfileCreationState.Success -> {
                 Toast.makeText(context, "Registration Successful!", Toast.LENGTH_SHORT).show()
 
-                // Navigate only once after registration success
-                navController.navigate("homeScreen") {
+                // Navigate to profile selection after registration success
+                navController.navigate("profileSelection") {
                     popUpTo("createProfile") { inclusive = true }
                 }
             }

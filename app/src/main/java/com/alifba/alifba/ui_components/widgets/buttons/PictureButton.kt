@@ -31,18 +31,27 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import coil.compose.rememberImagePainter
 import com.alifba.alifba.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun PictureButton(onClick: () -> Unit, buttonImage: String, buttonText: String) {
+fun PictureButton(
+    onClick: () -> Unit,
+    buttonImage: String,
+    buttonText: String,
+    isTablet: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    val configuration = LocalConfiguration.current
+    val actualIsTablet = isTablet || (configuration.screenWidthDp > 600)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val coroutineScope = rememberCoroutineScope()
     val offsetY by animateDpAsState(
-        targetValue = if (isPressed) 0.dp else 5.dp,
+        targetValue = if (isPressed) 0.dp else (if (actualIsTablet) 8.dp else 5.dp),
         animationSpec = spring(), label = ""
     )
     val alifbaFont = FontFamily(
@@ -50,10 +59,10 @@ fun PictureButton(onClick: () -> Unit, buttonImage: String, buttonText: String) 
     )
 
     Box(
-        modifier = Modifier
-            .width(150.dp)
-            .height(150.dp)
-            .clip(RoundedCornerShape(8.dp)),
+        modifier = modifier
+            .width(if (actualIsTablet) 200.dp else 150.dp)
+            .height(if (actualIsTablet) 200.dp else 150.dp)
+            .clip(RoundedCornerShape(if (actualIsTablet) 12.dp else 8.dp)),
         contentAlignment = Alignment.TopCenter
     ) {
         Box(
@@ -65,7 +74,7 @@ fun PictureButton(onClick: () -> Unit, buttonImage: String, buttonText: String) 
             modifier = Modifier
                 .matchParentSize()
                 .padding(bottom = offsetY) // Apply the offset for the press effect
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(if (actualIsTablet) 12.dp else 8.dp))
                 .background(Color(0xFFf9f9f9)) // Button face color
                 .clickable(
                     onClick = {
@@ -95,8 +104,8 @@ fun PictureButton(onClick: () -> Unit, buttonImage: String, buttonText: String) 
                     modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight(.7f)
-                        .padding(8.dp)
-                        .clip(shape = RoundedCornerShape(32.dp)),
+                        .padding(if (actualIsTablet) 12.dp else 8.dp)
+                        .clip(shape = RoundedCornerShape(if (actualIsTablet) 40.dp else 32.dp)),
                     contentScale = ContentScale.Inside
                 )
 
@@ -104,7 +113,7 @@ fun PictureButton(onClick: () -> Unit, buttonImage: String, buttonText: String) 
                     text = buttonText,
                     color = Color.Black,
                     fontFamily = alifbaFont,
-                    fontSize = 17.sp
+                    fontSize = if (actualIsTablet) 22.sp else 17.sp
                 )
             }
         }

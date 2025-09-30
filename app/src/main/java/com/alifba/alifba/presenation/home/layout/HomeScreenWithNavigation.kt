@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,7 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.alifba.alifba.presenation.activities.ActivitiesScreen
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.home.layout.profile.ProfileScreen
@@ -27,15 +30,31 @@ import com.alifba.alifba.ui_components.navigation.BottomNavigationBar
 import com.alifba.alifba.ui_components.navigation.BottomNavDestination
 import com.alifba.alifba.ui_components.theme.Beige
 import com.alifba.alifba.ui_components.widgets.MiniPlayer
-import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun HomeScreenWithNavigation(
     viewModel: HomeViewModel,
     navController: NavController,
     isUserLoggedIn: Boolean,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    chaptersViewModel: com.alifba.alifba.presenation.chapters.ChaptersViewModel
 ) {
+    // Start ProfileViewModel real-time listener to get immediate updates
+    LaunchedEffect(profileViewModel) {
+        android.util.Log.d("HomeRefresh", "Starting ProfileViewModel listener for real-time updates")
+        profileViewModel.startProfileListener()
+    }
+    
+    // Stop listener when component is disposed to prevent memory leaks
+    DisposableEffect(profileViewModel) {
+        onDispose {
+            android.util.Log.d("HomeRefresh", "Stopping ProfileViewModel listener")
+            profileViewModel.stopProfileListener()
+        }
+    }
+    
+    
+    
     var currentDestination by remember { mutableStateOf(BottomNavDestination.Home) }
     var showBottomNav by remember { mutableStateOf(true) }
     var shouldOpenAudioPlayer by remember { mutableStateOf(false) }
@@ -56,7 +75,8 @@ fun HomeScreenWithNavigation(
                         viewModel = viewModel,
                         navController = navController,
                         isUserLoggedIn = isUserLoggedIn,
-                        profileViewModel = profileViewModel
+                        profileViewModel = profileViewModel,
+                        chaptersViewModel = chaptersViewModel
                     )
                 }
                 BottomNavDestination.Stories -> {

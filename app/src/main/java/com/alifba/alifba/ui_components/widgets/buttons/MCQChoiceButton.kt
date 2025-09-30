@@ -26,12 +26,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.alifba.alifba.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, shadowColor: Color) {
+fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, shadowColor: Color, isTablet: Boolean = false) {
+    val configuration = LocalConfiguration.current
+    val actualIsTablet = isTablet || (configuration.screenWidthDp > 600)
+    
     val alifbaFont = FontFamily(
         Font(R.font.vag_round, FontWeight.Normal),
         Font(R.font.vag_round_boldd, FontWeight.Bold)
@@ -41,16 +45,16 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, s
     val coroutineScope = rememberCoroutineScope()
     // Animate the offset for the press effect
     val offsetY by animateDpAsState(
-        targetValue = if (isPressed) 0.dp else 5.dp,
+        targetValue = if (isPressed) 0.dp else (if (actualIsTablet) 7.dp else 5.dp),
         animationSpec = spring(), label = ""
     )
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .height(72.dp) // Total height including the shadow
-            .clip(RoundedCornerShape(8.dp)),
+            .padding(if (actualIsTablet) 12.dp else 8.dp)
+            .height(if (actualIsTablet) 100.dp else 72.dp) // Total height including the shadow
+            .clip(RoundedCornerShape(if (actualIsTablet) 12.dp else 8.dp)),
         contentAlignment = Alignment.TopCenter,
 
         ) {
@@ -86,7 +90,7 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, s
                 fontFamily = alifbaFont,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
-                fontSize = 26.sp,
+                fontSize = if (actualIsTablet) 36.sp else 28.sp,
                 letterSpacing = 0.8.sp
             )
         }

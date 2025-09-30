@@ -16,7 +16,8 @@ import com.alifba.alifba.presenation.login.AuthViewModel
 fun DeleteAccountDialog(
     authViewModel: AuthViewModel,
     navController: NavController,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
 ) {
     var password by remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -38,7 +39,7 @@ fun DeleteAccountDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    deleteUserAccount(authViewModel, navController, userPassword = password, context = context)
+                    onConfirm(password)
                     onDismiss()
                 }
             ) {

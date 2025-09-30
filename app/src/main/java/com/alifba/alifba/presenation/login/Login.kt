@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.alifba.alifba.R
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -62,6 +63,10 @@ import com.onesignal.OneSignal
 @Composable
 fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavController) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val isTablet = screenWidth > 600.dp
+    
     var isSignUpVisible by remember { mutableStateOf(false) }
     var isLoginVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
@@ -106,29 +111,29 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
             )
 
             // App logo at the top
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 32.dp),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.alifba_logo_transparent),
-                    contentDescription = "Alifba Logo",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .padding(8.dp)
-                )
-            }
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(top = if (isTablet) 64.dp else 32.dp),
+//                contentAlignment = Alignment.TopCenter
+//            ) {
+//                Image(
+//                    painter = painterResource(id = R.drawable.alifba_logo_transparent),
+//                    contentDescription = "Alifba Logo",
+//                    modifier = Modifier
+//                        .size(if (isTablet) 160.dp else 120.dp)
+//                        .padding(8.dp)
+//                )
+//            }
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(120.dp)) // Space for the logo
+                Spacer(modifier = Modifier.height(if (isTablet) 60.dp else 40.dp)) // Reduced space for better centering
 
                 // Login/SignUp Form
                 AnimatedVisibility(
@@ -138,8 +143,16 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                 ) {
                     Card(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                            .then(
+                                if (isTablet) {
+                                    Modifier
+                                        .widthIn(max = 500.dp)
+                                        .fillMaxWidth(0.8f)
+                                } else {
+                                    Modifier.fillMaxWidth()
+                                }
+                            )
+                            .padding(horizontal = if (isTablet) 32.dp else 16.dp),
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = white.copy(alpha = 0.95f)
@@ -151,12 +164,12 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .padding(if (isTablet) 32.dp else 24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
                                 text = if (isSignUpVisible) "Sign Up" else "Log In",
-                                fontSize = 28.sp,
+                                fontSize = if (isTablet) 34.sp else 28.sp,
                                 color = navyBlue,
                                 fontFamily = FontFamily(
                                     Font(
@@ -164,7 +177,7 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                                         FontWeight.Bold
                                     )
                                 ),
-                                modifier = Modifier.padding(bottom = 24.dp)
+                                modifier = Modifier.padding(bottom = if (isTablet) 32.dp else 24.dp)
                             )
 
                             CustomInputField(
@@ -181,7 +194,7 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                                 keyboardType = KeyboardType.Email
                             )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 8.dp))
 
                             PasswordInputField(
                                 value = password,
@@ -190,7 +203,7 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                             )
 
                             if (isSignUpVisible) {
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 8.dp))
                                 PasswordInputField(
                                     value = repeatPassword,
                                     onValueChange = { repeatPassword = it },
@@ -220,13 +233,23 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                 ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 32.dp),
+                            .then(
+                                if (isTablet) {
+                                    Modifier
+                                        .widthIn(max = 500.dp)
+                                        .fillMaxWidth(0.8f)
+                                } else {
+                                    Modifier
+                                        .widthIn(max = 300.dp)
+                                        .fillMaxWidth(0.85f)
+                                }
+                            )
+                            .padding(bottom = if (isTablet) 24.dp else 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             text = "Assalamu Alaikkum",
-                            fontSize = 32.sp,
+                            fontSize = if (isTablet) 38.sp else 32.sp,
                             color = white,
                             fontFamily = FontFamily(
                                 Font(
@@ -234,7 +257,10 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                                     FontWeight.Bold
                                 )
                             ),
-                            modifier = Modifier.padding(bottom = 16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = if (isTablet) 24.dp else 16.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             style = TextStyle(
                                 shadow = Shadow(
                                     color = Color.Black,
@@ -252,10 +278,14 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                             mainColor = lightNavyBlue,
                             textColor = white,
                             modifier = Modifier
-                                .fillMaxWidth(0.8f)
+                                .fillMaxWidth()
+                                .then(
+                                    if (isTablet) Modifier.height(80.dp) 
+                                    else Modifier
+                                )
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(if (isTablet) 20.dp else 16.dp))
 
                         CommonButton(
                             onClick = { isLoginVisible = true },
@@ -264,7 +294,11 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                             mainColor = white,
                             textColor = navyBlue,
                             modifier = Modifier
-                                .fillMaxWidth(0.8f)
+                                .fillMaxWidth()
+                                .then(
+                                    if (isTablet) Modifier.height(80.dp) 
+                                    else Modifier
+                                )
                         )
                     }
                 }
@@ -277,8 +311,18 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                 ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 24.dp, top = 16.dp),
+                            .then(
+                                if (isTablet) {
+                                    Modifier
+                                        .widthIn(max = 400.dp)
+                                        .fillMaxWidth(0.7f)
+                                } else {
+                                    Modifier
+                                        .widthIn(max = 300.dp)
+                                        .fillMaxWidth(0.85f)
+                                }
+                            )
+                            .padding(bottom = if (isTablet) 16.dp else 12.dp, top = if (isTablet) 24.dp else 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CommonButton(
@@ -319,8 +363,19 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                                             OneSignal.login(email)
                                             OneSignal.User.addTag("user_type", "returning_user")
                                             OneSignal.User.addEmail(email)
-                                            navController.navigate(if (!hasProfiles) "createProfile" else "homeScreen") {
-                                                popUpTo("login") { inclusive = true }
+                                            val destination = if (!hasProfiles) "createProfile" else "profileSelection"
+                                            android.util.Log.d("LoginScreen", "Attempting to navigate to: $destination")
+                                            
+                                            try {
+                                                navController.navigate(destination) {
+                                                    popUpTo("login") { inclusive = true }
+                                                }
+                                            } catch (e: IllegalArgumentException) {
+                                                android.util.Log.e("LoginScreen", "Navigation failed: ${e.message}")
+                                                // Fallback: Navigate to homeScreen directly if profileSelection fails
+                                                navController.navigate("homeScreen") {
+                                                    popUpTo("login") { inclusive = true }
+                                                }
                                             }
                                         },
                                         onError = { error ->
@@ -339,11 +394,10 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                             mainColor = lightNavyBlue,
                             textColor = white,
                             modifier = Modifier
-                                .fillMaxWidth(0.8f)
-
+                                .fillMaxWidth()
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(if (isTablet) 16.dp else 12.dp))
 
                         CommonButton(
                             onClick = {
@@ -355,8 +409,7 @@ fun LoginScreen(viewModel: AuthViewModel = hiltViewModel(), navController: NavCo
                             mainColor = white,
                             textColor = navyBlue,
                             modifier = Modifier
-                                .fillMaxWidth(0.8f)
-
+                                .fillMaxWidth()
                         )
                     }
                 }

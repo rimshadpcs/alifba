@@ -169,44 +169,6 @@ class LessonScreenViewModel  @Inject constructor(
 //        }
 //    }
 
-    fun updateLessonProgress(lessonId: Int, levelId: String, chapterId: String, earnedXP: Int) {
-        viewModelScope.launch {
-            val userId = dataStoreManager.userId.first()
-            if (userId != null) {
-                try {
-                    val userRef = fireStore.collection("users").document(userId)
-                    val userDoc = userRef.get().await()
-
-                    if (userDoc.exists()) {
-                        val currentProgress = userDoc.get("current_chapter_progress") as? Map<String, Any> ?: mapOf()
-
-                        val updatedProgress = currentProgress.toMutableMap()
-                        val chapterProgress = updatedProgress[chapterId] as? Map<String, Any> ?: mapOf()
-                        val lessonsCompleted =
-                            (chapterProgress["lessons_completed"] as? List<String> ?: emptyList()).toMutableList()
-
-                        // Avoid duplicate entries
-                        if (!lessonsCompleted.contains(lessonId.toString())) {
-                            lessonsCompleted.add(lessonId.toString())
-                            val totalXP = (chapterProgress["total_xp"] as? Int ?: 0) + earnedXP
-
-                            // Update progress for this chapter
-                            updatedProgress[chapterId] = mapOf(
-                                "lessons_completed" to lessonsCompleted,
-                                "total_xp" to totalXP
-                            )
-
-                            // Commit the update to Firestore
-                            userRef.update("current_chapter_progress", updatedProgress).await()
-                            Log.d("LessonScreenViewModel", "Lesson $lessonId progress updated with $earnedXP XP.")
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("LessonScreenViewModel", "Error updating lesson progress: ${e.localizedMessage}")
-                }
-            }
-        }
-    }
     fun incrementQuizzesAttended() {
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first()
@@ -215,8 +177,22 @@ class LessonScreenViewModel  @Inject constructor(
                     val userRef = fireStore.collection("users").document(userId)
                     fireStore.runTransaction { transaction ->
                         val snapshot = transaction.get(userRef)
-                        val currentQuizzesAttended = snapshot.getLong("quizzes_attended") ?: 0
-                        transaction.update(userRef, "quizzes_attended", currentQuizzesAttended + 1)
+                        
+                        // Update quizzes attended in profiles array
+                        val profiles = snapshot.get("profiles") as? List<Map<String, Any>> ?: emptyList()
+                        if (profiles.isNotEmpty()) {
+                            val activeProfileIndex = (snapshot.getLong("activeProfileIndex") ?: 0).toInt()
+                            if (activeProfileIndex < profiles.size) {
+                                val updatedProfiles = profiles.toMutableList()
+                                val currentProfile = updatedProfiles[activeProfileIndex].toMutableMap()
+                                val currentQuizzesAttended = (currentProfile["quizzesAttended"] as? Long)?.toInt() ?: 0
+                                currentProfile["quizzesAttended"] = currentQuizzesAttended + 1
+                                updatedProfiles[activeProfileIndex] = currentProfile
+                                
+                                transaction.update(userRef, "profiles", updatedProfiles)
+                                transaction.update(userRef, "lastUpdated", System.currentTimeMillis())
+                            }
+                        }
                     }.await()
                 } catch (e: Exception) {
                     Log.e("LessonScreenViewModel", "Error incrementing quizzes_attended: ${e.localizedMessage}")

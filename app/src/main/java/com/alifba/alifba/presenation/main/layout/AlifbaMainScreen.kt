@@ -29,7 +29,6 @@ import com.alifba.alifba.R
 import com.alifba.alifba.presenation.login.AuthViewModel
 import com.alifba.alifba.presenation.login.LoginScreen
 import com.alifba.alifba.presenation.login.ProfileRegistration
-import com.alifba.alifba.presenation.chapters.ChaptersScreen
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.chapters.layout.LevelInfoScreen
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
@@ -39,6 +38,7 @@ import com.alifba.alifba.presenation.home.layout.profile.ChangeAvatarScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreenWithNavigation
 import com.alifba.alifba.presenation.home.layout.HomeTopBar
+import com.alifba.alifba.presenation.home.layout.ParentGate
 import com.alifba.alifba.presenation.home.layout.profile.ProfileScreenWithNavigation
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.home.layout.profile.AllBadgesScreen
@@ -53,14 +53,15 @@ fun HomeScreenWithScaffold(
     navController: NavController,
     homeViewModel: HomeViewModel,
     authViewModel: AuthViewModel,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    chaptersViewModel: ChaptersViewModel
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         // Background animation
         LottieAnimationScreen()
         
         // Main content without top bar
-        HomeScreenWithNavigation(homeViewModel, navController, isUserLoggedIn = true, profileViewModel)
+        HomeScreenWithNavigation(homeViewModel, navController, isUserLoggedIn = true, profileViewModel, chaptersViewModel)
     }
 }
 
@@ -89,7 +90,8 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                     navController,
                     homeViewModel,
                     authViewModel,
-                    profileViewModel
+                    profileViewModel,
+                    chaptersViewModel
                 )
             }
 
@@ -108,7 +110,7 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                 ProfileRegistration(navController = navController)
             }
             composable("changeAvatar") {
-                ChangeAvatarScreen(navController = navController)
+                ChangeAvatarScreen(navController = navController, profileViewModel = profileViewModel)
             }
             composable(
                 route = "levelInfo/{levelId}/{levelImage}",
@@ -129,6 +131,19 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             }
 
 
+
+            composable("parentGate") {
+                ParentGate(
+                    onVerified = {
+                        navController.navigate("settings") {
+                            popUpTo("parentGate") { inclusive = true }
+                        }
+                    },
+                    onDismiss = {
+                        navController.popBackStack()
+                    }
+                )
+            }
 
             composable("settings") {
                 SettingsScreen(navController)

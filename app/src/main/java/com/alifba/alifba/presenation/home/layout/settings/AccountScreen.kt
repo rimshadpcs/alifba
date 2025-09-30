@@ -50,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -73,8 +74,10 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
-    val userProfile = authViewModel.userProfileState.collectAsState().value
+    val currentChildProfile = authViewModel.currentChildProfile.collectAsState().value
+    val parentAccount = authViewModel.parentAccountState.collectAsState().value
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     val alifbaFont = FontFamily(
         Font(R.font.vag_round, FontWeight.Bold)
     )
@@ -86,6 +89,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
     val textHighlightColor = navyBlue
 
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
 
     // Load Lottie composition
     val lottieComposition by rememberLottieComposition(
@@ -194,7 +198,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 fontFamily = alifbaFont,
                             )
                             Text(
-                                text = userProfile?.parentName ?: "Loading...",
+                                text = parentAccount?.parentName ?: "Loading...",
                                 style = TextStyle(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
@@ -229,7 +233,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 fontFamily = alifbaFont,
                             )
                             Text(
-                                text = userProfile?.email ?: "Loading...",
+                                text = parentAccount?.email ?: "Loading...",
                                 style = TextStyle(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
@@ -264,7 +268,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                                 fontFamily = alifbaFont,
                             )
                             Text(
-                                text = userProfile?.userId ?: "Loading...",
+                                text = parentAccount?.userId ?: "Loading...",
                                 style = TextStyle(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
@@ -313,8 +317,30 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
         DeleteAccountDialog(
             authViewModel = authViewModel,
             navController = navController,
-            onDismiss = { showDeleteConfirmDialog = false }
+            onDismiss = { showDeleteConfirmDialog = false },
+            onConfirm = { password ->
+                isDeleting = true
+                deleteUserAccount(authViewModel, navController, password, context) {
+                    isDeleting = false
+                }
+            }
         )
+    }
+
+    if (isDeleting) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading_lottie))
+            LottieAnimation(
+                composition = composition,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier.size(200.dp)
+            )
+        }
     }
 
 }
@@ -322,18 +348,21 @@ fun deleteUserAccount(
     authViewModel: AuthViewModel,
     navController: NavController,
     userPassword: String,
-    context: Context
+    context: Context,
+    onComplete: () -> Unit
 ) {
     authViewModel.deleteUserAccount(
         onSuccess = {
             navController.navigate("login") {
                 popUpTo("homeScreen") { inclusive = true }
             }
+            onComplete()
         },
         onError = { errorMessage ->
             // Show a toast for the error (e.g., wrong password)
             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             Log.e("AccountScreen", "Error deleting account: $errorMessage")
+            onComplete()
         },
         userPassword = userPassword
     )

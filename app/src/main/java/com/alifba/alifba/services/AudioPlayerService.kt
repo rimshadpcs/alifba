@@ -166,7 +166,7 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Audio Player",
-                NotificationManager.IMPORTANCE_MAX
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Controls for audio playback"
                 setShowBadge(false)

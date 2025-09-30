@@ -26,9 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
+import com.alifba.alifba.data.models.TextMcqItem
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.MCQChoiceButton
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
@@ -60,6 +63,8 @@ fun TextMcqSegment(
     val showDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
 
     LaunchedEffect(Unit) {
         Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
@@ -70,20 +75,24 @@ fun TextMcqSegment(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(if (isTablet) 24.dp else 16.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = if (hasAnswered.value && showNextButton.value && animationFinished.value) 80.dp else 0.dp)
+                .padding(bottom = if (hasAnswered.value && showNextButton.value && animationFinished.value) (if (isTablet) 100.dp else 80.dp) else 0.dp)
         ) {
             CommonExplanationText(
                 text = segment.question,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .padding(bottom = 16.dp)
+                    .padding(
+                        top = if (isTablet) 64.dp else 32.dp,
+                        bottom = if (isTablet) 20.dp else 16.dp
+                    )
             )
+            Spacer(Modifier.height(if (isTablet) 32.dp else 16.dp))
 
             segment.choices.forEachIndexed { index, choice ->
                 val (mainColor, shadowColor) = getButtonColors(index)
@@ -105,11 +114,12 @@ fun TextMcqSegment(
                     },
                     buttonText = choice.choice,
                     mainColor = mainColor,
-                    shadowColor = shadowColor
+                    shadowColor = shadowColor,
+                    isTablet = isTablet
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(if (isTablet) 20.dp else 16.dp))
 
 //            Image(
 //                painter = painterResource(R.drawable.qna),
@@ -153,6 +163,36 @@ fun getButtonColors(index: Int): Pair<Color, Color> {
         2 -> Pair(lightSkyBlue, darkSkyBlue)
         else -> Pair(lightYellow, darkYellow)
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TextMcqSegmentPreview() {
+    val dummySegment = LessonSegment.TextMcqLesson(
+        question = "What is the capital of France?",
+        choices = listOf(
+            TextMcqItem(choice = "Paris", answer = true),
+            TextMcqItem(choice = "London", answer = false),
+            TextMcqItem(choice = "Berlin", answer = false),
+            TextMcqItem(choice = "Madrid", answer = false)
+        )
+    )
+    TextMcqSegment(segment = dummySegment, onNextClicked = {})
+}
+
+@Preview(showBackground = true, device = "spec:width=800dp,height=1280dp,dpi=240")
+@Composable
+fun TextMcqSegmentTabletPreview() {
+    val dummySegment = LessonSegment.TextMcqLesson(
+        question = "What is the capital of France?",
+        choices = listOf(
+            TextMcqItem(choice = "Paris", answer = true),
+            TextMcqItem(choice = "London", answer = false),
+            TextMcqItem(choice = "Berlin", answer = false),
+            TextMcqItem(choice = "Madrid", answer = false)
+        )
+    )
+    TextMcqSegment(segment = dummySegment, onNextClicked = {})
 }
 
 

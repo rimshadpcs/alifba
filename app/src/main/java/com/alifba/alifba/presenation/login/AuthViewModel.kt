@@ -39,8 +39,12 @@ class AuthViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> get() = _authState
 
-    private val _userProfileState = MutableStateFlow<UserProfile?>(null)
-    val userProfileState: StateFlow<UserProfile?> get() = _userProfileState
+    // Multi-profile states
+    private val _parentAccountState = MutableStateFlow<ParentAccount?>(null)
+    val parentAccountState: StateFlow<ParentAccount?> get() = _parentAccountState
+    
+    private val _currentChildProfile = MutableStateFlow<ChildProfile?>(null)
+    val currentChildProfile: StateFlow<ChildProfile?> get() = _currentChildProfile
 
     private val _profileCreationState = MutableStateFlow<ProfileCreationState>(ProfileCreationState.Idle)
     val profileCreationState: StateFlow<ProfileCreationState> get() = _profileCreationState
@@ -114,6 +118,10 @@ class AuthViewModel @Inject constructor(
                         viewModelScope.launch {
                             dataStoreManager.saveUserDetails(email, password, foundUserId)
                             fetchAndSaveFcmToken(foundUserId)
+                            
+                            // Set onboarding as completed for existing users during signin
+                            onboardingDataStoreManager.setOnboardingCompleted(true)
+                            
                             val hasProfiles = checkForChildProfiles()
                             _authState.value = AuthState.Success
                             onResult(hasProfiles)
@@ -149,9 +157,9 @@ class AuthViewModel @Inject constructor(
                 .await()
 
             if (docSnapshot.exists()) {
-                val childProfiles = docSnapshot.get("childProfiles") as? List<*>
-                val hasProfiles = childProfiles?.isNotEmpty() == true
-                Log.d("AuthViewModel", "Has child profiles? $hasProfiles")
+                val profiles = docSnapshot.get("profiles") as? List<*>
+                val hasProfiles = profiles?.isNotEmpty() == true
+                Log.d("AuthViewModel", "Has child profiles? $hasProfiles (${profiles?.size ?: 0} profiles)")
                 hasProfiles
             } else {
                 Log.d("AuthViewModel", "User document does not exist")
@@ -184,31 +192,25 @@ class AuthViewModel @Inject constructor(
         val uid = currentUser.uid
         val email = currentUser.email ?: "N/A"
 
-        // 2) Build user data
-        val childProfile = mapOf(
-            "childName" to childName,
-            "age" to selectedAge,
-            "avatar" to selectedAvatarName
+        // 2) Build new multi-profile structure
+        val childProfile = ChildProfile(
+            childName = childName,
+            age = selectedAge ?: 0,
+            avatar = selectedAvatarName
         )
 
-        val userData = mapOf(
-            "parentName" to parentName,
-            "email" to email,
-            "userId" to uid,
-            "xp" to 0,
-            "chapters_completed" to emptyList<String>(),
-            "stories_completed" to emptyList<String>(),
-            "levels_completed" to emptyList<String>(),
-            "earned_badges" to emptyList<String>(),
-            "quizzes_attended" to 0,
-            "streak" to 0,
-            "childProfiles" to listOf(childProfile)
+        val parentAccount = ParentAccount(
+            parentName = parentName,
+            email = email,
+            userId = uid,
+            profiles = listOf(childProfile),
+            activeProfileIndex = 0
         )
 
         // 3) Write data directly (no transaction needed)
         firestore.collection("users")
             .document(uid)
-            .set(userData)
+            .set(parentAccount)
             .addOnSuccessListener {
                 viewModelScope.launch {
                     // Save details in DataStore
@@ -267,66 +269,65 @@ class AuthViewModel @Inject constructor(
                     return@launch
                 }
 
-                val parentName = docSnap.getString("parentName") ?: "N/A"
-                val email = docSnap.getString("email") ?: "N/A"
-                val userId = docSnap.getString("userId") ?: "N/A"
+                // Load multi-profile structure
+                loadMultiProfileData(docSnap)
 
-                val childProfiles = docSnap.get("childProfiles") as? List<Map<String, Any>> ?: emptyList()
-                val xp = (docSnap.getLong("xp") ?: 0).toInt()
-                val chaptersCompleted = docSnap.get("chapters_completed") as? List<String> ?: emptyList()
-                val storiesCompleted = docSnap.get("stories_completed") as? List<String> ?: emptyList()
-                val levelsCompleted = docSnap.get("levels_completed") as? List<String> ?: emptyList()
-                val activitiesCompleted = docSnap.get("activities_completed") as? List<String> ?: emptyList()
-                val lessonsCompleted = docSnap.get("lessons_completed") as? List<String> ?: emptyList()
-
-                if (childProfiles.isNotEmpty()) {
-                    val childProfile = childProfiles[0]
-                    val childName = childProfile["childName"] as? String ?: "N/A"
-                    val age = (childProfile["age"] as? Long)?.toInt() ?: 0
-                    val avatar = childProfile["avatar"] as? String ?: "N/A"
-
-                    _userProfileState.value = UserProfile(
-                        parentName = parentName,
-                        childName = childName,
-                        age = age,
-                        avatar = avatar,
-                        email = email,
-                        userId = userId,
-                        xp = xp,
-                        chaptersCompleted = chaptersCompleted,
-                        storiesCompleted = storiesCompleted,
-                        levelsCompleted = levelsCompleted,
-                        lessonsCompleted = lessonsCompleted,
-                        activitiesCompleted = activitiesCompleted
-                    )
-                } else {
-                    // No childProfiles means we just have parent data
-                    _userProfileState.value = UserProfile(
-                        parentName = parentName,
-                        childName = "",
-                        age = 0,
-                        avatar = "",
-                        email = email,
-                        userId = userId,
-                        xp = xp,
-                        chaptersCompleted = chaptersCompleted,
-                        storiesCompleted = storiesCompleted,
-                        levelsCompleted = levelsCompleted,
-                        lessonsCompleted = lessonsCompleted,
-                        activitiesCompleted = activitiesCompleted
-                    )
-                }
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Error fetching user profile: ${e.localizedMessage}")
             }
         }
     }
 
+    private fun loadMultiProfileData(docSnap: com.google.firebase.firestore.DocumentSnapshot) {
+        try {
+            val parentAccount = ParentAccount(
+                parentName = docSnap.getString("parentName") ?: "",
+                email = docSnap.getString("email") ?: "",
+                userId = docSnap.getString("userId") ?: "",
+                profiles = (docSnap.get("profiles") as? List<Map<String, Any>> ?: emptyList()).map { profileMap ->
+                    ChildProfile(
+                        profileId = profileMap["profileId"] as? String ?: java.util.UUID.randomUUID().toString(),
+                        childName = profileMap["childName"] as? String ?: "",
+                        age = (profileMap["age"] as? Long)?.toInt() ?: 0,
+                        avatar = profileMap["avatar"] as? String ?: "",
+                        xp = (profileMap["xp"] as? Long)?.toInt() ?: 0,
+                        earnedBadges = profileMap["earnedBadges"] as? List<String> ?: emptyList(),
+                        chaptersCompleted = profileMap["chaptersCompleted"] as? List<String> ?: emptyList(),
+                        storiesCompleted = profileMap["storiesCompleted"] as? List<String> ?: emptyList(),
+                        levelsCompleted = profileMap["levelsCompleted"] as? List<String> ?: emptyList(),
+                        quizzesAttended = (profileMap["quizzesAttended"] as? Long)?.toInt() ?: 0,
+                        dayStreak = (profileMap["dayStreak"] as? Long)?.toInt() ?: 0,
+                        lessonsCompleted = profileMap["lessonsCompleted"] as? List<String> ?: emptyList(),
+                        activitiesCompleted = profileMap["activitiesCompleted"] as? List<String> ?: emptyList(),
+                        createdAt = profileMap["createdAt"] as? Long ?: System.currentTimeMillis()
+                    )
+                },
+                activeProfileIndex = (docSnap.getLong("activeProfileIndex") ?: 0).toInt(),
+                createdAt = docSnap.getLong("createdAt") ?: System.currentTimeMillis(),
+                lastUpdated = docSnap.getLong("lastUpdated") ?: System.currentTimeMillis()
+            )
+
+            _parentAccountState.value = parentAccount
+
+            // Set the current active child profile
+            if (parentAccount.profiles.isNotEmpty() && parentAccount.activeProfileIndex < parentAccount.profiles.size) {
+                _currentChildProfile.value = parentAccount.profiles[parentAccount.activeProfileIndex]
+            }
+
+            Log.d("AuthViewModel", "Loaded parent account with ${parentAccount.profiles.size} profiles")
+
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Error loading multi-profile data: ${e.message}")
+        }
+    }
+
+
     fun logout() {
         viewModelScope.launch {
             auth.signOut()
             dataStoreManager.clearUserDetails()
-            _userProfileState.value = null
+            _parentAccountState.value = null
+            _currentChildProfile.value = null
         }
     }
 
@@ -381,21 +382,21 @@ class AuthViewModel @Inject constructor(
                 val credential = EmailAuthProvider.getCredential(currentUser.email!!, userPassword)
                 currentUser.reauthenticate(credential).addOnCompleteListener { reauthTask ->
                     if (reauthTask.isSuccessful) {
-                        // Delete any subcollections and Firestore document.
+                        // Deletion logic now runs entirely within a viewModelScope
                         viewModelScope.launch {
-                            deleteUserSubcollections(uid)
-                            firestore.collection("users").document(uid).delete().await()
-                        }
+                            try {
+                                // First, delete any subcollections and the main user document from Firestore.
+                                deleteUserSubcollections(uid)
+                                firestore.collection("users").document(uid).delete().await()
 
-                        // Delete the Firebase Auth user.
-                        currentUser.delete().addOnCompleteListener { deleteTask ->
-                            if (deleteTask.isSuccessful) {
-                                viewModelScope.launch {
+                                // After Firestore data is gone, delete the Firebase Auth user.
+                                currentUser.delete().await()
+
+                                // Clear local data and call onSuccess.
                                 dataStoreManager.clearUserDetails()
-                                }
                                 onSuccess()
-                            } else {
-                                onError(deleteTask.exception?.localizedMessage ?: "Deletion failed")
+                            } catch (e: Exception) {
+                                onError(e.localizedMessage ?: "An error occurred during deletion.")
                             }
                         }
                     } else {
@@ -457,16 +458,139 @@ class AuthViewModel @Inject constructor(
                     }
             }
     }
+
+
+    fun addNewChildProfile(childName: String, age: Int, avatar: String) {
+        viewModelScope.launch {
+            try {
+                val currentParent = _parentAccountState.value
+                if (currentParent == null) {
+                    Log.e("Profile", "No parent account found")
+                    return@launch
+                }
+
+                val newChildProfile = ChildProfile(
+                    childName = childName,
+                    age = age,
+                    avatar = avatar
+                )
+
+                val updatedParent = currentParent.copy(
+                    profiles = currentParent.profiles + newChildProfile,
+                    lastUpdated = System.currentTimeMillis()
+                )
+
+                // Update Firestore
+                firestore.collection("users").document(currentParent.userId)
+                    .set(updatedParent).await()
+
+                // Update local state
+                _parentAccountState.value = updatedParent
+                Log.d("Profile", "Added new child profile: ${childName}")
+                
+            } catch (e: Exception) {
+                Log.e("Profile", "Failed to add child profile: ${e.message}")
+            }
+        }
+    }
+
+    fun switchToChildProfile(profileIndex: Int) {
+        viewModelScope.launch {
+            val currentParent = _parentAccountState.value
+            if (currentParent == null || profileIndex >= currentParent.profiles.size) {
+                Log.e("Profile", "Invalid profile index or no parent account")
+                return@launch
+            }
+
+            val updatedParent = currentParent.copy(
+                activeProfileIndex = profileIndex,
+                lastUpdated = System.currentTimeMillis()
+            )
+
+            try {
+                // Update Firestore
+                firestore.collection("users").document(currentParent.userId)
+                    .update("activeProfileIndex", profileIndex, "lastUpdated", System.currentTimeMillis()).await()
+
+                // Update local state
+                _parentAccountState.value = updatedParent
+                _currentChildProfile.value = updatedParent.profiles[profileIndex]
+                Log.d("Profile", "Switched to profile: ${updatedParent.profiles[profileIndex].childName}")
+                
+            } catch (e: Exception) {
+                Log.e("Profile", "Failed to switch profile: ${e.message}")
+            }
+        }
+    }
+
+    fun removeChildProfile(profileIndex: Int) {
+        viewModelScope.launch {
+            try {
+                val currentParent = _parentAccountState.value
+                if (currentParent == null || profileIndex >= currentParent.profiles.size) {
+                    Log.e("Profile", "Invalid profile index or no parent account")
+                    return@launch
+                }
+
+                // Allow removing even if it's the last profile
+
+                val updatedProfiles = currentParent.profiles.toMutableList()
+                val removedProfile = updatedProfiles.removeAt(profileIndex)
+
+                // Handle empty profiles list
+                val newActiveIndex = if (updatedProfiles.isEmpty()) {
+                    0
+                } else {
+                    when {
+                        currentParent.activeProfileIndex == profileIndex -> 0 // Switch to first profile
+                        currentParent.activeProfileIndex > profileIndex -> currentParent.activeProfileIndex - 1
+                        else -> currentParent.activeProfileIndex
+                    }
+                }
+
+                val updatedParent = currentParent.copy(
+                    profiles = updatedProfiles,
+                    activeProfileIndex = newActiveIndex,
+                    lastUpdated = System.currentTimeMillis()
+                )
+
+                // Update Firestore
+                firestore.collection("users").document(currentParent.userId)
+                    .set(updatedParent).await()
+
+                // Update local state
+                _parentAccountState.value = updatedParent
+                _currentChildProfile.value = if (updatedProfiles.isNotEmpty()) {
+                    updatedProfiles[newActiveIndex]
+                } else {
+                    null
+                }
+                Log.d("Profile", "Removed profile: ${removedProfile.childName}")
+                
+            } catch (e: Exception) {
+                Log.e("Profile", "Failed to remove profile: ${e.message}")
+            }
+        }
+    }
 }
 
 
-data class UserProfile(
+// Multi-profile data structure
+data class ParentAccount(
     val parentName: String,
+    val email: String,
+    val userId: String,
+    val profiles: List<ChildProfile> = emptyList(),
+    val activeProfileIndex: Int = 0,
+    val createdAt: Long = System.currentTimeMillis(),
+    val lastUpdated: Long = System.currentTimeMillis()
+)
+
+data class ChildProfile(
+    val profileId: String = java.util.UUID.randomUUID().toString(),
     val childName: String,
     val age: Int,
     val avatar: String,
-    val email: String,
-    val userId: String,
     val xp: Int = 0,
     val earnedBadges: List<String> = emptyList(),
     val chaptersCompleted: List<String> = emptyList(),
@@ -476,6 +600,7 @@ data class UserProfile(
     val dayStreak: Int = 0,
     val lessonsCompleted: List<String> = emptyList(),
     val activitiesCompleted: List<String> = emptyList(),
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 // For profile creation or error states

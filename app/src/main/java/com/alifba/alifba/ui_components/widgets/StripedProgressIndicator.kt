@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 
 
 @Composable
@@ -28,18 +29,21 @@ fun StripedProgressIndicator(
     backgroundColor: Color,
     clipShape: Shape = RoundedCornerShape(16.dp)
 ) {
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
+    
     Box(
         modifier = modifier
-            .clip(clipShape)
+            .clip(if (isTablet) RoundedCornerShape(20.dp) else clipShape)
             .fillMaxWidth()
             .background(backgroundColor)
-            .height(18.dp)
+            .height(if (isTablet) 27.dp else 18.dp)
     ) {
         // Progress-filled striped area
         Box(
             modifier = Modifier
-                .clip(clipShape)
-                .background(createStripeBrush(stripeColor, stripeColorSecondary, 5.dp))
+                .clip(if (isTablet) RoundedCornerShape(20.dp) else clipShape)
+                .background(createStripeBrush(stripeColor, stripeColorSecondary, if (isTablet) 7.dp else 5.dp))
                 .fillMaxHeight()
                 .fillMaxWidth(progress)
         )

@@ -20,6 +20,9 @@ class LessonReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         // When the alarm fires, create and display the notification.
         createLessonReminderNotification(context)
+        
+        // Reschedule for the next day to ensure continuous daily reminders
+        rescheduleForNextDay(context)
     }
 
     /**
@@ -69,12 +72,31 @@ class LessonReminderReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
             .build()
 
-        // Try displaying the notification.
+        // Try displaying the notification with a unique ID to prevent duplicates.
         try {
-            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
-            Log.d(TAG, "Notification sent successfully")
+            // Use a unique notification ID based on the current day to prevent duplicates
+            val uniqueNotificationId = NOTIFICATION_ID + (System.currentTimeMillis() / (24 * 60 * 60 * 1000)).toInt()
+            NotificationManagerCompat.from(context).notify(uniqueNotificationId, notification)
+            Log.d(TAG, "Notification sent successfully with ID: $uniqueNotificationId")
         } catch (e: SecurityException) {
             Log.e(TAG, "Notification error: ${e.message}")
+        }
+    }
+
+    /**
+     * Reschedules the reminder for the next day using stored preferences
+     */
+    private fun rescheduleForNextDay(context: Context) {
+        try {
+            // Get the stored reminder time from preferences
+            val reminderTime = com.alifba.alifba.utils.ReminderPreferences.getReminderTime(context)
+            
+            // Schedule for the next day
+            setDailyReminder(context, reminderTime.first, reminderTime.second)
+            
+            Log.d(TAG, "Rescheduled reminder for next day at ${reminderTime.first}:${reminderTime.second}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error rescheduling reminder: ${e.message}")
         }
     }
 
@@ -89,30 +111,55 @@ class LessonReminderReceiver : BroadcastReceiver() {
          * If the time is in the past for today, the alarm is scheduled for the next day.
          */
         fun setDailyReminder(context: Context, hour: Int, minute: Int) {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val intent = Intent(context, LessonReminderReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                REQUEST_CODE,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
+            try {
+                Log.d(TAG, "Setting daily reminder for $hour:$minute")
+                
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                val intent = Intent(context, LessonReminderReceiver::class.java)
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    REQUEST_CODE,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                
+                // Cancel any existing alarm first to prevent duplicates
+                alarmManager.cancel(pendingIntent)
+                Log.d(TAG, "Cancelled existing alarms")
 
-            // Configure the calendar time for the alarm.
-            val calendar = Calendar.getInstance().apply {
-                timeInMillis = System.currentTimeMillis()
-                set(Calendar.HOUR_OF_DAY, hour)
-                set(Calendar.MINUTE, minute)
-                set(Calendar.SECOND, 0)
-                if (timeInMillis <= System.currentTimeMillis()) {
-                    add(Calendar.DAY_OF_YEAR, 1)
+                // Configure the calendar time for the alarm.
+                val calendar = Calendar.getInstance().apply {
+                    timeInMillis = System.currentTimeMillis()
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
+                    if (timeInMillis <= System.currentTimeMillis()) {
+                        add(Calendar.DAY_OF_YEAR, 1)
+                    }
                 }
-            }
+                
+                Log.d(TAG, "Scheduling alarm for ${calendar.time}")
 
-            // On Android 12+ check if the app can schedule exact alarms.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    // Schedule an exact alarm.
+                // On Android 12+ check if the app can schedule exact alarms.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (alarmManager.canScheduleExactAlarms()) {
+                        // Schedule an exact alarm.
+                        alarmManager.setExactAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            calendar.timeInMillis,
+                            pendingIntent
+                        )
+                        Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
+                    } else {
+                        // Fallback: schedule an inexact alarm instead of forcing system settings.
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            calendar.timeInMillis,
+                            pendingIntent
+                        )
+                        Log.w(TAG, "Exact alarm permission not granted; scheduled inexact alarm for ${calendar.time}")
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         calendar.timeInMillis,
@@ -120,29 +167,16 @@ class LessonReminderReceiver : BroadcastReceiver() {
                     )
                     Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
                 } else {
-                    // Fallback: schedule an inexact alarm instead of forcing system settings.
-                    alarmManager.setAndAllowWhileIdle(
+                    // For older versions, setExact is allowed without special permissions.
+                    alarmManager.setExact(
                         AlarmManager.RTC_WAKEUP,
                         calendar.timeInMillis,
                         pendingIntent
                     )
-                    Log.w(TAG, "Exact alarm permission not granted; scheduled inexact alarm for ${calendar.time}")
+                    Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
                 }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-                Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
-            } else {
-                // For older versions, setExact is allowed without special permissions.
-                alarmManager.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-                Log.d(TAG, "Exact alarm scheduled for ${calendar.time}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set daily reminder: ${e.message}", e)
             }
         }
 

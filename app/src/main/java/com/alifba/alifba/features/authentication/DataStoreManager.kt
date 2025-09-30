@@ -97,7 +97,14 @@ class DataStoreManager @Inject constructor(
     }
     suspend fun clearUserDetails() {
         dataStore.edit { preferences ->
-            preferences.clear() // Clear all keys
+            // Clear user-specific data but preserve onboarding status
+            preferences.remove(PreferencesKeys.USER_ID)
+            preferences.remove(PreferencesKeys.EMAIL)
+            preferences.remove(PreferencesKeys.PASSWORD)
+            preferences.remove(ChapterPrefKeys.COMPLETED_CHAPTER)
+            preferences.remove(ChapterPrefKeys.UNLOCKED_CHAPTER)
+            preferences.remove(TimeZonePreferences.TIME_ZONE_KEY)
+            // Note: We don't clear onboarding status as it's managed by OnboardingDataStoreManager
         }
     }
 }

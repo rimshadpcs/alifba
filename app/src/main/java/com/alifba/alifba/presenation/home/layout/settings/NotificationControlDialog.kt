@@ -11,13 +11,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.delay
 import com.alifba.alifba.R
 import com.alifba.alifba.service.LessonReminderReceiver
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -46,6 +51,16 @@ fun NotificationDialog(
         mutableStateOf(ReminderPreferences.getReminderTime(context))
     }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showSuccessMessage by remember { mutableStateOf(false) }
+    var successMessage by remember { mutableStateOf("") }
+    
+    // Auto-hide success message after 3 seconds
+    LaunchedEffect(showSuccessMessage) {
+        if (showSuccessMessage) {
+            delay(3000)
+            showSuccessMessage = false
+        }
+    }
 
     // Show TimePicker when user taps “Change Reminder Time”
     if (showTimePicker) {
@@ -56,6 +71,10 @@ fun NotificationDialog(
                 ReminderPreferences.setReminderTime(context, hourOfDay, minute)
                 reminderTime = Pair(hourOfDay, minute)
                 showTimePicker = false
+                
+                // Show success message
+                successMessage = "✅ Reminder updated to ${formatTime(hourOfDay, minute)}"
+                showSuccessMessage = true
             },
             reminderTime.first,
             reminderTime.second,
@@ -84,6 +103,25 @@ fun NotificationDialog(
             },
             text = {
                 Column {
+                    // Success message
+                    if (showSuccessMessage) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFE8F5E8)
+                            )
+                        ) {
+                            Text(
+                                text = successMessage,
+                                modifier = Modifier.padding(12.dp),
+                                color = Color(0xFF2E7D2E),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -101,7 +139,9 @@ fun NotificationDialog(
                             )
                         )
                     }
+                    
                     Spacer(modifier = Modifier.height(16.dp))
+                    
                     Button(
                         onClick = { showTimePicker = true },
                         modifier = Modifier.fillMaxWidth(),
@@ -129,7 +169,8 @@ fun NotificationDialog(
                             }
                         }
 
-                        // Schedule daily reminder
+                        // Cancel existing reminder and schedule new daily reminder
+                        LessonReminderReceiver.cancelReminder(context)
                         LessonReminderReceiver.setDailyReminder(
                             context,
                             reminderTime.first,
@@ -142,7 +183,11 @@ fun NotificationDialog(
                             true
                         )
 
-                        // Dismiss dialog
+                        // Show success message and dismiss dialog
+                        successMessage = "✅ Daily reminders enabled at ${formatTime(reminderTime.first, reminderTime.second)}"
+                        showSuccessMessage = true
+                        
+                        // Dismiss the dialog after enabling notifications
                         onDismiss()
                     }
                 ) {
@@ -162,3 +207,4 @@ fun NotificationDialog(
         )
     }
 }
+
