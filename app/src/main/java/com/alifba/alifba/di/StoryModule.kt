@@ -1,5 +1,6 @@
 package com.alifba.alifba.di
 
+import com.alifba.alifba.data.cache.StoryCacheDao
 import com.alifba.alifba.data.firebase.FirestoreStoryService
 import com.alifba.alifba.data.repository.StoryRepositoryImpl
 import com.alifba.alifba.presenation.stories.domain.repository.StoryRepository
@@ -22,7 +23,10 @@ object StoryModule {
 
     @Provides
     @Singleton
-    fun provideStoryRepository(service: FirestoreStoryService): StoryRepository {
-        return StoryRepositoryImpl(service)
+    fun provideStoryRepository(
+        service: FirestoreStoryService,
+        cacheDao: StoryCacheDao
+    ): StoryRepository {
+        return StoryRepositoryImpl(service, cacheDao)
     }
 }

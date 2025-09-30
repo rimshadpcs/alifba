@@ -18,11 +18,23 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
+
+class CustomPasswordVisualTransformation(private val mask: Char = '*') : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        return TransformedText(
+            AnnotatedString(mask.toString().repeat(text.text.length)),
+            OffsetMapping.Identity
+        )
+    }
+}
 
 @Composable
 fun PasswordInputField(
@@ -55,7 +67,7 @@ fun PasswordInputField(
                 textAlign = TextAlign.Center
             ),
             singleLine = true,
-            visualTransformation = if (passwordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisibility) VisualTransformation.None else CustomPasswordVisualTransformation(),
             trailingIcon = {
                 val image = if (passwordVisibility) {
                     R.drawable.eye_open

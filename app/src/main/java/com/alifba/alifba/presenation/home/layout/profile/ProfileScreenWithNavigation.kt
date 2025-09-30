@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import com.alifba.alifba.presenation.activities.ActivitiesScreen
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
+import com.alifba.alifba.presenation.home.layout.ParentGate
 import com.alifba.alifba.presenation.stories.AudioPlayerViewModel
 import com.alifba.alifba.presenation.stories.StoriesWithAudioPlayerScreen
 import com.alifba.alifba.ui_components.navigation.BottomNavigationBar
@@ -67,7 +68,10 @@ fun ProfileScreenWithNavigation(
                     )
                 }
                 BottomNavDestination.Activities -> {
-                    ActivitiesScreen(profileViewModel = profileViewModel)
+                    ActivitiesScreen(
+                        onShowBottomNav = { show -> showBottomNav = show },
+                        profileViewModel = profileViewModel
+                    )
                 }
                 BottomNavDestination.Account -> {
                     ProfileScreen(

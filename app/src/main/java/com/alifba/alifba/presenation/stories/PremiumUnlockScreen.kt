@@ -115,6 +115,11 @@ fun PremiumUnlockScreen(
                 modifier = Modifier.padding(bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+
+                FeatureItem(
+                    text = "Create multiple child profiles",
+                    alifbaFont = alifbaFont
+                )
                 FeatureItem(
                     text = "Access to ALL lessons and chapters",
                     alifbaFont = alifbaFont

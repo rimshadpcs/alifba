@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -123,11 +124,13 @@ fun SpeechAnimation() {
     val composition by rememberLottieComposition(
         LottieCompositionSpec.RawRes(R.raw.speechanimation)
     )
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
     
     LottieAnimation(
         composition = composition,
         iterations = LottieConstants.IterateForever,
-        modifier = Modifier.size(120.dp)
+        modifier = Modifier.size(if (isTablet) 160.dp else 120.dp)
     )
 }
 

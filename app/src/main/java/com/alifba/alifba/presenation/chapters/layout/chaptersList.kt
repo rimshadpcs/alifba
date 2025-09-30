@@ -101,7 +101,7 @@ fun LazyChapterColumn(
             modifier = modifier
                 .then(constrainedModifier)
                 .wrapContentHeight(align = Alignment.Bottom),
-            verticalArrangement = Arrangement.spacedBy(32.dp),
+            verticalArrangement = Arrangement.spacedBy(if (configuration.screenWidthDp > 600) 48.dp else 32.dp),
             reverseLayout = true
         ) {
             itemsIndexed(lessons) { index, lesson ->

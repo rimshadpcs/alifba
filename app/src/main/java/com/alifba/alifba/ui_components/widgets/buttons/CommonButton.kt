@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.alifba.alifba.R
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -104,6 +105,9 @@ fun CommonButton(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
+    
     // Initialize sound manager when the button is first created
     LaunchedEffect(Unit) {
         SoundEffectManager.initialize(context)
@@ -126,9 +130,9 @@ fun CommonButton(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .height(60.dp)
-            .clip(RoundedCornerShape(32.dp)),
+            .padding(if (isTablet) 10.dp else 8.dp)
+            .height(if (isTablet) 72.dp else 60.dp)
+            .clip(RoundedCornerShape(if (isTablet) 36.dp else 32.dp)),
         contentAlignment = Alignment.TopCenter
     ) {
         Box(
@@ -141,7 +145,7 @@ fun CommonButton(
             modifier = Modifier
                 .matchParentSize()
                 .padding(bottom = offsetY)
-                .clip(RoundedCornerShape(32.dp))
+                .clip(RoundedCornerShape(if (isTablet) 36.dp else 32.dp))
                 .background(mainColor)
                 .clickable(
                     onClick = {
@@ -161,7 +165,7 @@ fun CommonButton(
                 fontFamily = alifbaFont,
                 fontWeight = FontWeight.Bold,
                 color = textColor,
-                fontSize = 18.sp
+                fontSize = if (isTablet) 22.sp else 18.sp
             )
         }
     }

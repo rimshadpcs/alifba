@@ -64,7 +64,7 @@ import kotlin.math.absoluteValue
 @Composable
 fun ChangeAvatarScreen(
     navController: NavController,
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    profileViewModel: ProfileViewModel
 ) {
     LaunchedEffect(Unit) {
         Firebase.analytics.logEvent(
@@ -83,8 +83,8 @@ fun ChangeAvatarScreen(
 
 
     // Retrieve the user's current avatar
-    val userProfile by profileViewModel.userProfileState.collectAsState()
-    val currentAvatar = userProfile?.avatar ?: "Deenasaur" // Use default if null
+    val currentChildProfile by profileViewModel.currentChildProfile.collectAsState()
+    val currentAvatar = currentChildProfile?.avatar ?: "Deenasaur" // Use default if null
 
     // State variable to hold the selected avatar name
     val selectedAvatarName = remember { mutableStateOf(currentAvatar) }
@@ -137,7 +137,9 @@ fun ChangeAvatarScreen(
         CommonButton(
             modifier = Modifier.align(Alignment.BottomCenter),
             onClick = {
+                android.util.Log.d("ChangeAvatar", "Updating avatar to: ${selectedAvatarName.value}")
                 profileViewModel.updateAvatar(selectedAvatarName.value)
+                android.util.Log.d("ChangeAvatar", "Avatar update called, navigating back")
                 navController.popBackStack()
             },
             buttonText = "Select Avatar",

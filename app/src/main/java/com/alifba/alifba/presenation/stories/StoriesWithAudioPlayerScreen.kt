@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alifba.alifba.data.models.Story
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 
 @Composable
 fun StoriesWithAudioPlayerScreen(
@@ -17,6 +18,8 @@ fun StoriesWithAudioPlayerScreen(
 ) {
     var selectedStory by remember { mutableStateOf(initialSelectedStory) }
     var showPremiumUnlock by remember { mutableStateOf(false) }
+    var showAllStories by remember { mutableStateOf(false) }
+    var showAllSahabaStories by remember { mutableStateOf(false) }
     val audioViewModel: AudioPlayerViewModel = hiltViewModel()
     
     // Handle audio player opening trigger
@@ -28,8 +31,8 @@ fun StoriesWithAudioPlayerScreen(
     }
     
     // Update bottom nav visibility based on which screen is showing
-    LaunchedEffect(selectedStory, showPremiumUnlock) {
-        onShowBottomNav(selectedStory == null && !showPremiumUnlock) // Hide nav when in audio player or premium screen
+    LaunchedEffect(selectedStory, showPremiumUnlock, showAllStories, showAllSahabaStories) {
+        onShowBottomNav(selectedStory == null && !showPremiumUnlock && !showAllStories && !showAllSahabaStories) // Hide nav when in audio player, premium screen, or all stories screens
     }
     
     when {
@@ -41,6 +44,38 @@ fun StoriesWithAudioPlayerScreen(
                     // TODO: Handle subscription logic
                     showPremiumUnlock = false
                 }
+            )
+        }
+        showAllStories -> {
+            // Show All Stories Screen
+            AllStoriesScreen(
+                onStoryClick = { story ->
+                    if (story.status == "premium") {
+                        // Show premium unlock for premium stories
+                        showPremiumUnlock = true
+                    } else {
+                        // Play free stories directly
+                        audioViewModel.stopAndClearAudio()
+                        selectedStory = story
+                    }
+                },
+                onBackClick = { showAllStories = false }
+            )
+        }
+        showAllSahabaStories -> {
+            // Show All Sahaba Stories Screen
+            AllSahabaStoriesScreen(
+                onStoryClick = { story ->
+                    if (story.status == "premium") {
+                        // Show premium unlock for premium stories
+                        showPremiumUnlock = true
+                    } else {
+                        // Play free stories directly
+                        audioViewModel.stopAndClearAudio()
+                        selectedStory = story
+                    }
+                },
+                onBackClick = { showAllSahabaStories = false }
             )
         }
         selectedStory != null -> {
@@ -71,6 +106,31 @@ fun StoriesWithAudioPlayerScreen(
                         audioViewModel.stopAndClearAudio()
                         selectedStory = story
                     }
+                },
+                onMoreClick = { showAllStories = true },
+                onProphetMuhammadStoryClick = { story ->
+                    if (story.status == "premium") {
+                        // Show premium unlock for premium stories
+                        showPremiumUnlock = true
+                    } else {
+                        // Play free stories directly
+                        audioViewModel.stopAndClearAudio()
+                        selectedStory = story
+                    }
+                },
+                onSahabaStoryClick = { story ->
+                    if (story.status == "premium") {
+                        // Show premium unlock for premium stories
+                        showPremiumUnlock = true
+                    } else {
+                        // Play free stories directly
+                        audioViewModel.stopAndClearAudio()
+                        selectedStory = story
+                    }
+                },
+                onSahabaMoreClick = { 
+                    SoundEffectManager.playClickSound()
+                    showAllSahabaStories = true
                 }
             )
         }

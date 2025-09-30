@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.home.layout.profile.getAvatarHeadShots
@@ -44,9 +45,11 @@ fun BottomNavigationBar(
     onDestinationClick: (BottomNavDestination) -> Unit,
     profileViewModel: ProfileViewModel
 ) {
-    val userProfile by profileViewModel.userProfileState.collectAsState()
-    val avatarRes = userProfile?.avatar?.let { getAvatarHeadShots(it) } ?: R.drawable.avatar9
+    val currentChildProfile by profileViewModel.currentChildProfile.collectAsState()
+    val avatarRes = currentChildProfile?.avatar?.let { getAvatarHeadShots(it) } ?: R.drawable.avatar9
     val alifbaFont = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
 
     Box(
         modifier = Modifier
@@ -55,7 +58,10 @@ fun BottomNavigationBar(
                 color = black,
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
             )
-            .padding(horizontal = 32.dp, vertical = 16.dp)
+            .padding(
+                horizontal = if (isTablet) 48.dp else 32.dp, 
+                vertical = if (isTablet) 16.dp else 12.dp
+            )
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -67,6 +73,7 @@ fun BottomNavigationBar(
                 icon = if (currentDestination == BottomNavDestination.Home) R.drawable.nav_home_filled else R.drawable.nav_home_gray,
                 label = stringResource(id = R.string.home),
                 isSelected = currentDestination == BottomNavDestination.Home,
+                isTablet = isTablet,
                 onClick = { 
                     SoundEffectManager.playClickSound()
                     onDestinationClick(BottomNavDestination.Home) 
@@ -78,6 +85,7 @@ fun BottomNavigationBar(
                 icon = if (currentDestination == BottomNavDestination.Stories) R.drawable.nav_stories_filled else R.drawable.nav_stories_gray,
                 label = stringResource(id = R.string.stories),
                 isSelected = currentDestination == BottomNavDestination.Stories,
+                isTablet = isTablet,
                 onClick = { 
                     SoundEffectManager.playClickSound()
                     onDestinationClick(BottomNavDestination.Stories) 
@@ -89,6 +97,7 @@ fun BottomNavigationBar(
                 icon = if (currentDestination == BottomNavDestination.Activities) R.drawable.nav_activities_filled else R.drawable.nav_activities_gray,
                 label = stringResource(id = R.string.play),
                 isSelected = currentDestination == BottomNavDestination.Activities,
+                isTablet = isTablet,
                 onClick = { 
                     SoundEffectManager.playClickSound()
                     onDestinationClick(BottomNavDestination.Activities) 
@@ -102,7 +111,7 @@ fun BottomNavigationBar(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(if (isTablet) 50.dp else 40.dp)
                         .clickable { 
                             SoundEffectManager.playClickSound()
                             onDestinationClick(BottomNavDestination.Account) 
@@ -112,11 +121,11 @@ fun BottomNavigationBar(
                         painter = painterResource(id = avatarRes),
                         contentDescription = "Profile",
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(if (isTablet) 50.dp else 40.dp)
                             .clip(CircleShape)
                             .let { modifier ->
                                 if (currentDestination == BottomNavDestination.Account) {
-                                    modifier.border(2.dp, white, CircleShape)
+                                    modifier.border(if (isTablet) 3.dp else 2.dp, white, CircleShape)
                                 } else {
                                     modifier
                                 }
@@ -128,9 +137,9 @@ fun BottomNavigationBar(
                     Text(
                         text = stringResource(id = R.string.profile),
                         color = navTextGray,
-                        fontSize = 14.sp,
+                        fontSize = if (isTablet) 16.sp else 14.sp,
                         fontFamily = alifbaFont,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = if (isTablet) 6.dp else 4.dp)
                     )
                 }
             }
@@ -143,6 +152,7 @@ private fun NavItem(
     icon: Int,
     label: String,
     isSelected: Boolean,
+    isTablet: Boolean,
     onClick: () -> Unit
 ) {
     val alifbaFont = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
@@ -156,22 +166,28 @@ private fun NavItem(
         }
     ) {
         Box(
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(if (isTablet) 50.dp else 40.dp),
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(id = icon),
                 contentDescription = label,
-                modifier = Modifier.size(if (isSelected) 30.dp else 28.dp) // Slightly smaller icon when not selected
+                modifier = Modifier.size(
+                    if (isTablet) {
+                        if (isSelected) 40.dp else 36.dp
+                    } else {
+                        if (isSelected) 30.dp else 28.dp
+                    }
+                )
             )
         }
         if (!isSelected) {
             Text(
                 text = label,
                 color = navTextGray,
-                fontSize = 14.sp,
+                fontSize = if (isTablet) 16.sp else 14.sp,
                 fontFamily = alifbaFont,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = if (isTablet) 6.dp else 4.dp)
             )
         }
     }

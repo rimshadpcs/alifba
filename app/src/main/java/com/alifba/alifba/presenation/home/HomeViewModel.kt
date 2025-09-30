@@ -56,37 +56,54 @@ open class HomeViewModel @Inject constructor(
     
     // Auto-load level 1 chapters on initialization
     init {
-        loadLevel1Chapters()
+        listenForChapterUpdates()
     }
     
     private fun loadLevel1Chapters() {
-        loadChapters("level1")
+        listenForChapterUpdates("level1")
     }
     
-    fun loadChapters(levelId: String = "level1") {
+    fun listenForChapterUpdates(levelId: String = "level1") {
         val levelPath = "lessons/$levelId/chapters"
-        
-        Log.d("HomeViewModel", "Fetching chapters for level: $levelId from $levelPath")
+        viewModelScope.launch {
+            val userId = dataStoreManager.userId.first()
+            if (userId.isNullOrEmpty()) {
+                Log.e("HomeViewModel", "User ID is null or empty")
+                return@launch
+            }
+
+            val userDocRef = fireStore.collection("users").document(userId)
+            userDocRef.addSnapshotListener { userSnapshot, e ->
+                if (e != null) {
+                    Log.w("HomeViewModel", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+
+                if (userSnapshot != null && userSnapshot.exists()) {
+                    Log.d("HomeViewModel", "Snapshot listener triggered")
+                    val profiles = userSnapshot.get("profiles") as? List<Map<String, Any>> ?: emptyList()
+                    val activeProfileIndex = (userSnapshot.getLong("activeProfileIndex") ?: 0).toInt()
+                    val completedChapters = if (profiles.isNotEmpty() && activeProfileIndex < profiles.size) {
+                        profiles[activeProfileIndex]["chaptersCompleted"] as? List<String> ?: emptyList()
+                    } else {
+                        emptyList()
+                    }
+                    Log.d("HomeViewModel", "Updated completedChapters: $completedChapters")
+                    loadChapters(levelId, completedChapters)
+                } else {
+                    Log.d("HomeViewModel", "Current data: null")
+                }
+            }
+        }
+    }
+
+    private fun loadChapters(levelId: String, completedChapters: List<String>) {
+        val levelPath = "lessons/$levelId/chapters"
         viewModelScope.launch {
             try {
-                val userId = dataStoreManager.userId.first()
-                if (userId.isNullOrEmpty()) {
-                    Log.e("HomeViewModel", "User ID is null or empty")
-                    return@launch
-                }
-                
-                // Fetch chapters from Firestore
                 val snapshot = fireStore.collection(levelPath).get().await()
-                Log.d("HomeViewModel", "Fetched ${snapshot.documents.size} chapters")
-                
-                // Fetch completed chapters from user data
-                val userDoc = fireStore.collection("users").document(userId).get().await()
-                val completedChapters = userDoc.get("chapters_completed") as? List<String> ?: emptyList()
-                
-                if (snapshot.isEmpty) {
-                    Log.e("HomeViewModel", "No chapters found in Firestore for $levelId")
-                }
-                
+                Log.d("HomeViewModel", "Fetched ${snapshot.documents.size} chapters for level $levelId")
+
                 val chaptersRaw = snapshot.documents.map { doc ->
                     val numericId = doc.getLong("id")?.toInt() ?: 0
                     Chapter(
@@ -104,9 +121,10 @@ open class HomeViewModel @Inject constructor(
                         chapterType = doc.getString("chapterType") ?: ""
                     )
                 }.sortedBy { it.id }
-                
+
                 val updatedChapters = updateChapterStates(completedChapters, chaptersRaw)
                 _chapters.value = updatedChapters
+                Log.d("HomeViewModel", "_chapters LiveData updated")
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error fetching chapters: ${e.localizedMessage}")
             }

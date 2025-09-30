@@ -36,5 +36,7 @@ val darkRed = Color(0xFFE13839)
 val black = Color(0xFF000000)
 val sage = Color(0xff00bf63)
 val darkerNavy = Color(0xff171a5c)
+val lightteal = Color(0xff38a39f)
+val darkBlue = Color(0xff010b3b)
 
 

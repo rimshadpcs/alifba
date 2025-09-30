@@ -211,8 +211,8 @@ fun HomeTopBar(
     authViewModel: AuthViewModel
 ) {
     var showParentGate by remember { mutableStateOf(false) }
-    val userProfile by authViewModel.userProfileState.collectAsState()
-    val avatarName = userProfile?.avatar ?: "deenasaur"
+    val currentChildProfile by authViewModel.currentChildProfile.collectAsState()
+    val avatarName = currentChildProfile?.avatar ?: "deenasaur"
     val avatarDrawable = getAvatarHeadShots(avatarName)
     val coroutineScope = rememberCoroutineScope()
 

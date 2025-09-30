@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import com.alifba.alifba.ui_components.theme.lightPurple
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.chapters.models.Chapter
 //import com.alifba.alifba.ui_components.theme.darkerNavy // Assuming darkerNavy is not used here
@@ -43,10 +44,12 @@ fun ChapterPathItems(
     index: Int,
     onClick: () -> Unit,
 ) {
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
 
-    // 1) Setup icons, sizes, offset
-    val imageSize = 200.dp
-    val cornerIconSize = 38.dp
+    // 1) Setup icons, sizes, offset - Make even larger for tablets
+    val imageSize = if (isTablet) 300.dp else 200.dp  // 50% larger for tablets
+    val cornerIconSize = if (isTablet) 58.dp else 38.dp  // 53% larger for tablets
     // val borderColor = lightPurple // borderColor is declared but not used
 
     val mainIcon = when (lesson.chapterType) {
@@ -61,8 +64,9 @@ fun ChapterPathItems(
         else -> R.drawable.start
     }
 
-    // Zigzag offset logic
-    val horizontalOffset = if (index % 2 == 0) (-20).dp else 20.dp
+    // Zigzag offset logic - Proportional to screen size
+    val baseOffset = if (isTablet) 30.dp else 20.dp  // 50% larger offset for tablets
+    val horizontalOffset = if (index % 2 == 0) -baseOffset else baseOffset
 
     // Press animation
     val interactionSource = remember { MutableInteractionSource() }
@@ -116,10 +120,10 @@ fun ChapterPathItems(
                 contentAlignment = Alignment.Center
             )
             {
-                // Main icon (centered)
+                // Main icon (centered) - Responsive sizing
                 val currentImageSize = when (lesson.chapterType) {
-                    "Story", "Lesson" -> imageSize + 20.dp // Make storyisland and lessonisland larger
-                    else -> imageSize - 16.dp
+                    "Story", "Lesson" -> imageSize + if (isTablet) 30.dp else 20.dp // Make storyisland and lessonisland larger
+                    else -> imageSize - if (isTablet) 24.dp else 16.dp
                 }
                 Image(
                     painter = painterResource(id = mainIcon),
@@ -141,10 +145,13 @@ fun ChapterPathItems(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = (-30).dp, y = 4.dp) // Position relative to the parent Box
+                        .offset(
+                            x = if (isTablet) (-45).dp else (-30).dp, 
+                            y = if (isTablet) 6.dp else 4.dp
+                        ) // Position relative to the parent Box - proportional for tablets
                         .size(cornerIconSize)
                         .clip(CircleShape)
-                        .border(2.dp, Color.White, CircleShape)
+                        .border(if (isTablet) 3.dp else 2.dp, Color.White, CircleShape)
                         .background(Color.White), // Simplified background
                     contentAlignment = Alignment.Center,
                 ) {

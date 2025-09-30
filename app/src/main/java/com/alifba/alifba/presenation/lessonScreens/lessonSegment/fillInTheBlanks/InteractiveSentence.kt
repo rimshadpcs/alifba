@@ -29,15 +29,16 @@ fun InteractiveSentence(
     sentenceParts: List<String>,
     blanksState: Map<Int, OptionsForFillInTheBlanks?>,
     fontFamily: FontFamily,
+    isTablet: Boolean,
     onBlankClicked: (Int) -> Unit
 ) {
     FlowRow(
         modifier = Modifier
             .fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(if (isTablet) 12.dp else 8.dp)
     ) {
         sentenceParts.forEachIndexed { index, part ->
-            Box(modifier = Modifier.padding(bottom = 2.dp)) {
+            Box(modifier = Modifier.padding(bottom = if (isTablet) 4.dp else 2.dp)) {
                 if (part.trim().all { it == '_' }) {
                     val selectedOption = blanksState[index]
                     Text(
@@ -56,16 +57,16 @@ fun InteractiveSentence(
                         ),
                         modifier = Modifier
                             .clickable { onBlankClicked(index) }
-                            .padding(4.dp),
+                            .padding(if (isTablet) 6.dp else 4.dp),
                         fontFamily = fontFamily,
-                        fontSize = 25.sp,
+                        fontSize = if (isTablet) 32.sp else 25.sp,
                         color = if (selectedOption == null) Color.Black else Color(0xFF8DD54f)
                     )
                 } else {
                     Text(
                         text = part,
                         fontFamily = fontFamily,
-                        fontSize = 25.sp
+                        fontSize = if (isTablet) 32.sp else 25.sp
                     )
                 }
                 //Spacer(modifier = Modifier.height(1.dp).fillMaxWidth().background(Color.Gray)) // Underline for each element

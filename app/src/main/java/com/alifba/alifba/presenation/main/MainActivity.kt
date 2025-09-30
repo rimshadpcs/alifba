@@ -43,6 +43,8 @@ import com.alifba.alifba.presenation.main.layout.AlifbaMainScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.onboarding.OnboardingScreen
+import com.alifba.alifba.presenation.profile.ProfileSelectionScreen
+import com.alifba.alifba.presenation.profile.AddProfileScreen
 import com.alifba.alifba.service.logNotificationEvent
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
@@ -54,6 +56,7 @@ import kotlinx.coroutines.delay
 
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -84,26 +87,46 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val firebaseUser = FirebaseAuth.getInstance().currentUser
             var startDestination by remember { mutableStateOf("login") } // Default to login
+            
+            // Debug log to track startDestination changes
+            android.util.Log.d("MainActivity", "Current startDestination: $startDestination")
             var isSplashScreenVisible by remember { mutableStateOf(true) }
             val context = LocalContext.current
             LaunchedEffect(firebaseUser) {
-                if (firebaseUser == null) {
+                try {
+                    if (firebaseUser == null) {
+                        startDestination = "login"
+                    } else {
+                        // Wait for userId to be available in DataStore
+                        val userId = authViewModel.dataStoreManager.userId
+                            .map { userIdValue -> userIdValue?.takeIf { id -> id.isNotBlank() } }
+                            .first { userIdValue -> userIdValue != null }
+
+                        if (userId != null) {
+                            val hasCompletedOnboarding = onboardingDataStore.hasCompletedOnboarding.first()
+                            val hasProfiles = authViewModel.checkForChildProfiles()
+
+                            startDestination = when {
+                                !hasCompletedOnboarding -> {
+                                    android.util.Log.d("MainActivity", "Setting startDestination to onboarding")
+                                    "onboarding"
+                                }
+                                !hasProfiles -> {
+                                    android.util.Log.d("MainActivity", "Setting startDestination to createProfile")
+                                    "createProfile"
+                                }
+                                else -> {
+                                    android.util.Log.d("MainActivity", "Setting startDestination to profileSelection")
+                                    "profileSelection"
+                                }
+                            }
+                        } else {
+                            startDestination = "login"
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("MainActivity", "Error determining start destination: ${e.message}")
                     startDestination = "login"
-                } else {
-                    var userId: String? = null
-                    while (userId.isNullOrEmpty()) {
-                        userId = authViewModel.dataStoreManager.userId.first()
-                        delay(100)
-                    }
-
-                    val hasCompletedOnboarding = onboardingDataStore.hasCompletedOnboarding.first()
-                    val hasProfiles = authViewModel.checkForChildProfiles()
-
-                    startDestination = when {
-                        !hasCompletedOnboarding -> "onboarding"  // ✅ Ensure onboarding is reachable
-                        !hasProfiles -> "createProfile"
-                        else -> "homeScreen"
-                    }
                 }
 
                 delay(1000) // Ensure splash animation completes
@@ -142,6 +165,14 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("createProfile") {
                             ProfileRegistration(navController)
+                        }
+
+                        composable("profileSelection") {
+                            ProfileSelectionScreen(navController, authViewModel)
+                        }
+
+                        composable("addProfile") {
+                            AddProfileScreen(navController, authViewModel)
                         }
 
                         composable("homeScreen") {
