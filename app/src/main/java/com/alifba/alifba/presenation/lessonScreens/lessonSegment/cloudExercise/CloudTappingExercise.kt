@@ -173,7 +173,7 @@ fun CloudTappingExercise(
 
     ) {
         Image(
-            painter = painterResource(id = R.drawable.cloudtaplesson_bg),
+            painter = painterResource(id = R.drawable.privacy_policy),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

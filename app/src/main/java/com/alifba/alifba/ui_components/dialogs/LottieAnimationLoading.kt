@@ -1,6 +1,5 @@
 package com.alifba.alifba.ui_components.dialogs
 
-import androidx.annotation.RawRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,24 +15,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.rememberLottieComposition
+import com.alifba.alifba.ui_components.widgets.DotLottieView
 import kotlinx.coroutines.delay
 
 
 @Composable
 fun LottieAnimationLoading(
     showDialog: MutableState<Boolean>,
-    @RawRes lottieFileRes: Int,
     isTransparentBackground: Boolean = true,
-    onAnimationEnd: (() -> Unit)? = null
-
+    onAnimationEnd: (() -> Unit)? = null,
+    autoDismissMillis: Long? = 1500L,
+    isCancelable: Boolean = true,
+    lottieName: String = "moon_waiting"
 ) {
     if (showDialog.value) {
         Dialog(
-            onDismissRequest = { showDialog.value = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
+            onDismissRequest = {
+                if (isCancelable) {
+                    showDialog.value = false
+                }
+            },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = isCancelable,
+                dismissOnClickOutside = isCancelable
+            )
         ) {
             Box(
                 modifier = Modifier
@@ -42,24 +48,21 @@ fun LottieAnimationLoading(
                     .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                LottieAnimationCompos(lottieFileRes, Modifier.size(150.dp))
+                DotLottieView(name = lottieName, modifier = Modifier.size(150.dp))
             }
         }
 
-        // Delay to automatically dismiss the dialog after 2 seconds
-        LaunchedEffect(key1 = showDialog.value) {
-            if (showDialog.value) {
-                delay(1500) // Animation duration
-                showDialog.value = false
-                onAnimationEnd?.invoke()
+        // Delay to automatically dismiss the dialog if requested
+        if (autoDismissMillis != null) {
+            LaunchedEffect(key1 = showDialog.value, key2 = autoDismissMillis) {
+                if (showDialog.value) {
+                    delay(autoDismissMillis)
+                    if (showDialog.value) {
+                        showDialog.value = false
+                        onAnimationEnd?.invoke()
+                    }
+                }
             }
         }
     }
 }
-
-@Composable
-fun LottieAnimationCompos(@RawRes lottieFileRes: Int, modifier: Modifier = Modifier) {
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(lottieFileRes))
-    LottieAnimation(composition, modifier = modifier)
-}
-

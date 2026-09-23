@@ -13,7 +13,11 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import kotlinx.coroutines.delay
 
 @Composable
-fun LottieAnimationDialog(showDialog: MutableState<Boolean>, @RawRes lottieFileRes: Int) {
+fun LottieAnimationDialog(
+    showDialog: MutableState<Boolean>,
+    @RawRes lottieFileRes: Int,
+    durationMs: Long = 2000
+) {
     if (showDialog.value) {
         Dialog(onDismissRequest = { showDialog.value = false }) {
             LottieAnimationComposition(lottieFileRes)
@@ -21,7 +25,7 @@ fun LottieAnimationDialog(showDialog: MutableState<Boolean>, @RawRes lottieFileR
 
         val currentShowDialog by rememberUpdatedState(showDialog.value)
         LaunchedEffect(key1 = currentShowDialog) {
-            delay(2000)
+            delay(durationMs)
             showDialog.value = false
         }
     }

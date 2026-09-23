@@ -57,8 +57,13 @@ fun AlifbaTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            // OLD: window.statusBarColor = colorScheme.primary.toArgb() — this ran globally on
+            // EVERY screen and was the actual source of the persistent white/opaque status bar
+            // strip, regardless of MainActivity's WindowCompat.setDecorFitsSystemWindows(false)
+            // edge-to-edge call. Made fully transparent instead so each screen's own background
+            // (e.g. Home's grass) draws all the way to the true top of the window.
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 

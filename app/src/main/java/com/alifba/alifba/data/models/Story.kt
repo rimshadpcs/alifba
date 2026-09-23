@@ -11,6 +11,7 @@ data class Story(
     val isLocked: Boolean = false,
     val isBedtime: Boolean = false,
     val duration: Long = 0L, // Duration in milliseconds
+    val durationSeconds: Long = 0L, // Duration in seconds (Firestore field), used for the card badge
     val category: String = "",
     val status: String = "" // "free" or "premium"
 )

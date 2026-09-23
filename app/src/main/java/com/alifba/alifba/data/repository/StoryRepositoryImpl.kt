@@ -25,9 +25,12 @@ class StoryRepositoryImpl @Inject constructor(
     companion object {
         private const val CACHE_TTL = 10 * 60 * 1000L // 10 minutes
         private const val BACKGROUND_REFRESH_THRESHOLD = 5 * 60 * 1000L // 5 minutes
+        private const val MIN_ACCEPTABLE_CACHED_COUNT = 5 // trigger refresh if fewer
         private const val CATEGORY_STORIES = "stories"
         private const val CATEGORY_PROPHET_MUHAMMAD = "prophet_muhammad"
         private const val CATEGORY_SAHABA = "sahaba"
+        private const val CATEGORY_WOMEN_AND_MOTHERS = "women_and_mothers"
+        private const val CATEGORY_MIRACLES = "miracles"
         private const val TAG = "StoryRepositoryImpl"
     }
     
@@ -37,6 +40,8 @@ class StoryRepositoryImpl @Inject constructor(
     private val _storiesFlow = MutableStateFlow<List<Story>>(emptyList())
     private val _prophetMuhammadStoriesFlow = MutableStateFlow<List<Story>>(emptyList())
     private val _sahabaStoriesFlow = MutableStateFlow<List<Story>>(emptyList())
+    private val _womenAndMothersStoriesFlow = MutableStateFlow<List<Story>>(emptyList())
+    private val _miraclesStoriesFlow = MutableStateFlow<List<Story>>(emptyList())
     
     init {
         Log.d(TAG, "StoryRepositoryImpl initialized with caching support")
@@ -49,6 +54,8 @@ class StoryRepositoryImpl @Inject constructor(
                 _storiesFlow.value = getCachedStories(CATEGORY_STORIES)
                 _prophetMuhammadStoriesFlow.value = getCachedStories(CATEGORY_PROPHET_MUHAMMAD)
                 _sahabaStoriesFlow.value = getCachedStories(CATEGORY_SAHABA)
+                _womenAndMothersStoriesFlow.value = getCachedStories(CATEGORY_WOMEN_AND_MOTHERS)
+                _miraclesStoriesFlow.value = getCachedStories(CATEGORY_MIRACLES)
             } catch (e: Exception) {
                 Log.e(TAG, "Error initializing cached data flows", e)
             }
@@ -81,6 +88,24 @@ class StoryRepositoryImpl @Inject constructor(
             _sahabaStoriesFlow.value = stories
         }
     }
+
+    override suspend fun getWomenAndMothersStories(): List<Story> {
+        Log.d(TAG, "getWomenAndMothersStories() called")
+        return getCachedOrFresh(CATEGORY_WOMEN_AND_MOTHERS) {
+            firestoreStoryService.getWomenAndMothersStories()
+        }.also { stories ->
+            _womenAndMothersStoriesFlow.value = stories
+        }
+    }
+
+    override suspend fun getMiraclesStories(): List<Story> {
+        Log.d(TAG, "getMiraclesStories() called")
+        return getCachedOrFresh(CATEGORY_MIRACLES) {
+            firestoreStoryService.getMiraclesStories()
+        }.also { stories ->
+            _miraclesStoriesFlow.value = stories
+        }
+    }
     
     override suspend fun forceRefreshStories(): List<Story> {
         Log.d(TAG, "forceRefreshStories() called")
@@ -99,10 +124,24 @@ class StoryRepositoryImpl @Inject constructor(
         cacheDao.clearCategory(CATEGORY_SAHABA)
         return getSahabaStories()
     }
+
+    override suspend fun forceRefreshWomenAndMothersStories(): List<Story> {
+        Log.d(TAG, "forceRefreshWomenAndMothersStories() called")
+        cacheDao.clearCategory(CATEGORY_WOMEN_AND_MOTHERS)
+        return getWomenAndMothersStories()
+    }
+
+    override suspend fun forceRefreshMiraclesStories(): List<Story> {
+        Log.d(TAG, "forceRefreshMiraclesStories() called")
+        cacheDao.clearCategory(CATEGORY_MIRACLES)
+        return getMiraclesStories()
+    }
     
     override fun getStoriesFlow(): Flow<List<Story>> = _storiesFlow.asStateFlow()
     override fun getProphetMuhammadStoriesFlow(): Flow<List<Story>> = _prophetMuhammadStoriesFlow.asStateFlow()
     override fun getSahabaStoriesFlow(): Flow<List<Story>> = _sahabaStoriesFlow.asStateFlow()
+    override fun getWomenAndMothersStoriesFlow(): Flow<List<Story>> = _womenAndMothersStoriesFlow.asStateFlow()
+    override fun getMiraclesStoriesFlow(): Flow<List<Story>> = _miraclesStoriesFlow.asStateFlow()
     
     override suspend fun clearAllCache() {
         Log.d(TAG, "clearAllCache() called")
@@ -122,21 +161,20 @@ class StoryRepositoryImpl @Inject constructor(
         val cached = cacheDao.getStoriesByCategory(category)
         
         // Check if we have valid cached data
-        val validCached = cached.filter { 
-            now - it.cachedAt < it.ttl 
-        }
-        
+        val validCached = cached.filter { now - it.cachedAt < it.ttl }
+
         return if (validCached.isNotEmpty()) {
             Log.d(TAG, "Using cached data for category: $category (${validCached.size} stories)")
-            
-            // Schedule background refresh if data is getting stale
+
+            // Schedule background refresh if data is getting stale OR cached count looks incomplete
             val oldestCacheTime = validCached.minOfOrNull { it.cachedAt } ?: 0
-            if (now - oldestCacheTime > BACKGROUND_REFRESH_THRESHOLD) {
-                Log.d(TAG, "Scheduling background refresh for category: $category")
+            val shouldRefresh = (now - oldestCacheTime > BACKGROUND_REFRESH_THRESHOLD) || (validCached.size < MIN_ACCEPTABLE_CACHED_COUNT)
+            if (shouldRefresh) {
+                Log.d(TAG, "Scheduling background refresh for category: $category (shouldRefresh=$shouldRefresh)")
                 backgroundRefreshIfNeeded(category, fetchFresh)
             }
-            
-            // Return cached data
+
+            // Return cached data for immediate UI
             validCached.map { StorySerializer.deserializeStory(it.storyJson) }
         } else {
             Log.d(TAG, "Cache miss or expired for category: $category, fetching fresh data")
@@ -176,6 +214,8 @@ class StoryRepositoryImpl @Inject constructor(
                     CATEGORY_STORIES -> _storiesFlow.value = fresh
                     CATEGORY_PROPHET_MUHAMMAD -> _prophetMuhammadStoriesFlow.value = fresh
                     CATEGORY_SAHABA -> _sahabaStoriesFlow.value = fresh
+                    CATEGORY_WOMEN_AND_MOTHERS -> _womenAndMothersStoriesFlow.value = fresh
+                    CATEGORY_MIRACLES -> _miraclesStoriesFlow.value = fresh
                 }
                 
                 Log.d(TAG, "Background refresh completed for category: $category (${fresh.size} stories)")

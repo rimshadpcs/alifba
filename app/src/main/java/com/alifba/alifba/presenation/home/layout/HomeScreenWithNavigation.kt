@@ -16,15 +16,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.alifba.alifba.presenation.activities.ActivitiesScreen
+// import com.alifba.alifba.presenation.activities.ActivitiesScreen // Temporarily hidden
+import com.alifba.alifba.presenation.SubscriptionViewModel
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.home.layout.profile.ProfileScreen
 import com.alifba.alifba.presenation.stories.AudioPlayerViewModel
+import com.alifba.alifba.ui_components.dialogs.ParentGate
 import com.alifba.alifba.presenation.stories.StoriesWithAudioPlayerScreen
 import com.alifba.alifba.ui_components.navigation.BottomNavigationBar
 import com.alifba.alifba.ui_components.navigation.BottomNavDestination
@@ -59,6 +62,10 @@ fun HomeScreenWithNavigation(
     var showBottomNav by remember { mutableStateOf(true) }
     var shouldOpenAudioPlayer by remember { mutableStateOf(false) }
     val audioPlayerViewModel: AudioPlayerViewModel = hiltViewModel()
+    val subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
+    val isPremium by subscriptionViewModel.isPremium.collectAsState()
+    val expiryTimestamp by subscriptionViewModel.discountExpiryTimestamp.collectAsState()
+    var showParentGate by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -71,34 +78,53 @@ fun HomeScreenWithNavigation(
         ) {
             when (currentDestination) {
                 BottomNavDestination.Home -> {
-                    HomeScreen(
+                    HomeScreenGate(
                         viewModel = viewModel,
                         navController = navController,
                         isUserLoggedIn = isUserLoggedIn,
                         profileViewModel = profileViewModel,
-                        chaptersViewModel = chaptersViewModel
+                        chaptersViewModel = chaptersViewModel,
+                        onPaywallVisibilityChanged = { isVisible ->
+                            showBottomNav = !isVisible
+                        }
                     )
                 }
                 BottomNavDestination.Stories -> {
                     val currentStory by audioPlayerViewModel.currentStory.collectAsState()
                     StoriesWithAudioPlayerScreen(
+                        navController = navController,
                         onShowBottomNav = { show -> showBottomNav = show },
                         initialSelectedStory = if (shouldOpenAudioPlayer) currentStory else null,
                         shouldOpenAudioPlayer = shouldOpenAudioPlayer,
                         onAudioPlayerOpened = { shouldOpenAudioPlayer = false }
                     )
                 }
+                // Activities (Play) — temporarily hidden until feature is ready
+                /*
                 BottomNavDestination.Activities -> {
                     ActivitiesScreen(
                         onShowBottomNav = { show -> showBottomNav = show },
                         profileViewModel = profileViewModel
                     )
                 }
+                */
                 BottomNavDestination.Account -> {
                     ProfileScreen(
                         navController = navController,
                         profileViewModel = profileViewModel
                     )
+                }
+
+                // Activities (Play) — feature not ready yet; the nav item above is commented
+                // out so this isn't reachable by tapping, but a TODO() here is a crash waiting
+                // for any other path (state restoration, re-enabling the nav item) that lands
+                // on this case. Falls back to Stories rather than rendering nothing; the state
+                // write is deferred to LaunchedEffect since writing directly during composition
+                // is unsafe.
+                BottomNavDestination.Activities -> {
+                    LaunchedEffect(Unit) {
+                        currentDestination = BottomNavDestination.Stories
+                    }
                 }
             }
         }
@@ -137,6 +163,38 @@ fun HomeScreenWithNavigation(
                     profileViewModel = profileViewModel
                 )
             }
+        }
+
+        // Floating Discount Banner - only on Home tab and when bottom nav is visible (no paywall)
+        // TEMP-DEV: DEV_DISABLE_PAYWALL_AND_GATE gate added — see HomeScreen.kt for the flag.
+        if (
+            !DEV_DISABLE_PAYWALL_AND_GATE &&
+            !isPremium &&
+            expiryTimestamp > System.currentTimeMillis() &&
+            currentDestination == BottomNavDestination.Home &&
+            showBottomNav
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.TopCenter)
+                    .padding(top = 8.dp)
+            ) {
+                DiscountBanner(
+                    expiryTimestamp = expiryTimestamp,
+                    onClick = { showParentGate = true }
+                )
+            }
+        }
+
+        // Parent Gate for the banner
+        if (showParentGate) {
+            ParentGate(
+                onVerified = {
+                    showParentGate = false
+                    navController.navigate("discountPaywall")
+                },
+                onDismiss = { showParentGate = false }
+            )
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,10 +16,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.alifba.alifba.presenation.activities.ActivitiesScreen
+// import com.alifba.alifba.presenation.activities.ActivitiesScreen // Temporarily hidden
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
-import com.alifba.alifba.presenation.home.layout.ParentGate
+import com.alifba.alifba.ui_components.dialogs.ParentGate
 import com.alifba.alifba.presenation.stories.AudioPlayerViewModel
 import com.alifba.alifba.presenation.stories.StoriesWithAudioPlayerScreen
 import com.alifba.alifba.ui_components.navigation.BottomNavigationBar
@@ -30,13 +31,24 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun ProfileScreenWithNavigation(
     navController: NavController,
-    profileViewModel: ProfileViewModel,
-    homeViewModel: HomeViewModel
+    profileViewModel: ProfileViewModel
 ) {
+    // Ensure profile updates are real-time while on this screen
+    LaunchedEffect(profileViewModel) {
+        android.util.Log.d("ProfileNav", "Starting ProfileViewModel listener in ProfileScreenWithNavigation")
+        profileViewModel.startProfileListener()
+    }
+    DisposableEffect(profileViewModel) {
+        onDispose {
+            android.util.Log.d("ProfileNav", "Stopping ProfileViewModel listener in ProfileScreenWithNavigation")
+            profileViewModel.stopProfileListener()
+        }
+    }
     var currentDestination by remember { mutableStateOf(BottomNavDestination.Account) }
     var showBottomNav by remember { mutableStateOf(true) }
     var shouldOpenAudioPlayer by remember { mutableStateOf(false) }
     val audioPlayerViewModel: AudioPlayerViewModel = hiltViewModel()
+    val currentStory by audioPlayerViewModel.currentStory.collectAsState()
 
     Box(
         modifier = Modifier
@@ -59,26 +71,31 @@ fun ProfileScreenWithNavigation(
                     }
                 }
                 BottomNavDestination.Stories -> {
-                    val currentStory by audioPlayerViewModel.currentStory.collectAsState()
                     StoriesWithAudioPlayerScreen(
+                        navController = navController,
                         onShowBottomNav = { show -> showBottomNav = show },
                         initialSelectedStory = if (shouldOpenAudioPlayer) currentStory else null,
                         shouldOpenAudioPlayer = shouldOpenAudioPlayer,
                         onAudioPlayerOpened = { shouldOpenAudioPlayer = false }
                     )
                 }
+                // Activities (Play) — temporarily hidden until feature is ready
+                /*
                 BottomNavDestination.Activities -> {
                     ActivitiesScreen(
                         onShowBottomNav = { show -> showBottomNav = show },
                         profileViewModel = profileViewModel
                     )
                 }
+                */
                 BottomNavDestination.Account -> {
                     ProfileScreen(
                         navController = navController,
                         profileViewModel = profileViewModel
                     )
                 }
+
+                BottomNavDestination.Activities -> TODO()
             }
         }
         

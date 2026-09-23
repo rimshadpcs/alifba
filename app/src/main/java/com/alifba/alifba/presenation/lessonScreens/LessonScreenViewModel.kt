@@ -163,6 +163,34 @@ class LessonScreenViewModel  @Inject constructor(
         super.onCleared()
     }
 
+    private suspend fun getDeviceActiveProfileId(userId: String): String? {
+        val deviceId = dataStoreManager.getOrCreateDeviceId()
+        val deviceSnapshot = fireStore.collection("users")
+            .document(userId)
+            .collection("devices")
+            .document(deviceId)
+            .get()
+            .await()
+        return deviceSnapshot.getString("activeProfileId")
+    }
+
+    private fun resolveActiveProfileIndex(
+        profiles: List<Map<String, Any>>,
+        deviceActiveProfileId: String?,
+        legacyIndex: Int,
+        isPremium: Boolean
+    ): Int {
+        if (profiles.isEmpty()) return 0
+        val legacySafeIndex = legacyIndex.coerceIn(0, profiles.lastIndex)
+        val deviceIndex = if (!deviceActiveProfileId.isNullOrBlank()) {
+            profiles.indexOfFirst { it["profileId"] == deviceActiveProfileId }
+        } else {
+            -1
+        }
+        val resolvedIndex = if (deviceIndex >= 0) deviceIndex else legacySafeIndex
+        return if (!isPremium && resolvedIndex > 0) 0 else resolvedIndex
+    }
+
 //    fun markLessonCompleted(lessonId: Int, nextLessonId: Int?) {
 //        viewModelScope.launch {
 //            dataStoreManager.markCompletedChapters(lessonId, nextLessonId)
@@ -174,6 +202,8 @@ class LessonScreenViewModel  @Inject constructor(
             val userId = dataStoreManager.userId.first()
             if (!userId.isNullOrEmpty()) {
                 try {
+                    val deviceActiveProfileId = getDeviceActiveProfileId(userId)
+                    val isPremium = dataStoreManager.isPremium.value
                     val userRef = fireStore.collection("users").document(userId)
                     fireStore.runTransaction { transaction ->
                         val snapshot = transaction.get(userRef)
@@ -181,7 +211,13 @@ class LessonScreenViewModel  @Inject constructor(
                         // Update quizzes attended in profiles array
                         val profiles = snapshot.get("profiles") as? List<Map<String, Any>> ?: emptyList()
                         if (profiles.isNotEmpty()) {
-                            val activeProfileIndex = (snapshot.getLong("activeProfileIndex") ?: 0).toInt()
+                            val legacyIndex = (snapshot.getLong("activeProfileIndex") ?: 0).toInt()
+                            val activeProfileIndex = resolveActiveProfileIndex(
+                                profiles = profiles,
+                                deviceActiveProfileId = deviceActiveProfileId,
+                                legacyIndex = legacyIndex,
+                                isPremium = isPremium
+                            )
                             if (activeProfileIndex < profiles.size) {
                                 val updatedProfiles = profiles.toMutableList()
                                 val currentProfile = updatedProfiles[activeProfileIndex].toMutableMap()

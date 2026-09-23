@@ -50,10 +50,6 @@ import com.alifba.alifba.R
 import com.alifba.alifba.presenation.main.logScreenView
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
-import com.google.firebase.analytics.logEvent
 import kotlin.math.atan2
 
 @Composable
@@ -64,12 +60,6 @@ fun LetterTracingExercise(
 ) {
     LaunchedEffect(Unit) {
         logScreenView("lesson_screen")
-    }
-    LaunchedEffect(Unit) {
-        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, "LetterTracingExercise")
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, "LetterTracingExercise")
-        }
     }
 
     val hasNoDots = remember { letterShape.dots.isEmpty() }
@@ -102,7 +92,7 @@ fun LetterTracingExercise(
     val searchWindow = 50
 
     // Painter for arrow
-    val arrowPainter = painterResource(id = R.drawable.down_arrow)
+    val arrowPainter = painterResource(id = R.drawable.privacy_policy)
 
     fun resetTrace() {
         currentIndex = 0

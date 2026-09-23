@@ -9,8 +9,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -33,9 +30,9 @@ import androidx.navigation.NavController
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.login.AuthViewModel
 import com.alifba.alifba.presenation.login.ChildProfile
-import com.alifba.alifba.presenation.home.layout.HomeTopBar
-import com.alifba.alifba.presenation.stories.PremiumUnlockScreen
+import com.alifba.alifba.presenation.stories.RevenueCatPaywall
 import com.alifba.alifba.ui_components.theme.*
+import com.alifba.alifba.presenation.SubscriptionViewModel
 
 @Composable
 fun ProfileSelectionScreen(
@@ -43,18 +40,23 @@ fun ProfileSelectionScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val parentAccountState by authViewModel.parentAccountState.collectAsState()
-    val context = LocalContext.current
+    val subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
+    val isPremium by subscriptionViewModel.isPremium.collectAsState()
+    val hasSeenDownsellModal by subscriptionViewModel.hasSeenDownsellModal.collectAsState()
+    val skipCount by subscriptionViewModel.standardPaywallSkipCount.collectAsState()
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp > 600
     
-    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
-    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd))
+    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
 
     var showParentGate by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var profileToDelete by remember { mutableStateOf<Int?>(null) }
     var showPremiumUpgrade by remember { mutableStateOf(false) }
+    // Same race-free purchase signal used elsewhere — isPremium.value isn't reliable at
+    // onClose time since setPremium() writes to DataStore asynchronously.
+    var justPurchasedFromAddProfile by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         authViewModel.fetchUserProfile()
@@ -62,7 +64,7 @@ fun ProfileSelectionScreen(
 
     // Show ParentGate if triggered
     if (showParentGate) {
-        com.alifba.alifba.presenation.home.layout.ParentGate(
+        com.alifba.alifba.ui_components.dialogs.ParentGate(
             onVerified = {
                 isEditMode = true
                 showParentGate = false
@@ -114,7 +116,7 @@ fun ProfileSelectionScreen(
             Text(
                 text = if (isEditMode) "Edit Profiles" else "Choose Your Profile",
                 fontFamily = alifbaFontBold,
-                fontSize = if (isTablet) 42.sp else 32.sp,
+                fontSize = if (isTablet) 48.sp else 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = darkBlue,
                 textAlign = TextAlign.Center
@@ -148,9 +150,16 @@ fun ProfileSelectionScreen(
                             isTablet = isTablet,
                             onClick = {
                                 if (!isEditMode) {
-                                    authViewModel.switchToChildProfile(index)
-                                    navController.navigate("homeScreen") {
-                                        popUpTo("profileSelection") { inclusive = true }
+                                    // Gate extra profiles for non-premium users
+                                    if (isPremium || index == 0) {
+                                        authViewModel.switchToChildProfile(index)
+                                        
+                                        navController.navigate("homeScreen") {
+                                            popUpTo("profileSelection") { inclusive = true }
+                                        }
+                                    } else {
+                                        // Show premium unlock when tapping extra profiles
+                                        showPremiumUpgrade = true
                                     }
                                 }
                             },
@@ -167,12 +176,11 @@ fun ProfileSelectionScreen(
                             AddProfileCard(
                                 isTablet = isTablet,
                                 onClick = {
-                                    // Allow first profile creation for free, show upgrade for 2nd+ profiles
-                                    if (parentAccount.profiles.isEmpty()) {
-                                        // No profiles exist - allow free creation of first profile
+                                    // Free users: allow only 1 profile. Premium: allow up to 3.
+                                    val canAdd = if (isPremium) parentAccount.profiles.size < 3 else parentAccount.profiles.isEmpty()
+                                    if (canAdd) {
                                         navController.navigate("addProfile")
                                     } else {
-                                        // Show upgrade screen for users trying to add 2nd or 3rd profile
                                         showPremiumUpgrade = true
                                     }
                                 }
@@ -207,7 +215,7 @@ fun ProfileSelectionScreen(
 
     // Show ParentGate if triggered - MUST be after the main content so it appears on top
     if (showParentGate) {
-        com.alifba.alifba.presenation.home.layout.ParentGate(
+        com.alifba.alifba.ui_components.dialogs.ParentGate(
             onVerified = {
                 isEditMode = true
                 showParentGate = false
@@ -220,16 +228,29 @@ fun ProfileSelectionScreen(
 
     // Show Premium Upgrade Screen
     if (showPremiumUpgrade) {
-        PremiumUnlockScreen(
-            onCloseClick = {
+        RevenueCatPaywall(
+            onPurchased = { justPurchasedFromAddProfile = true },
+            onClose = {
                 showPremiumUpgrade = false
+                if (!justPurchasedFromAddProfile) {
+                    val isEveryThirdSkip = skipCount > 0 && (skipCount + 1) % 3 == 0
+                    val isFirstSkipEver = !hasSeenDownsellModal
+
+                    val shouldShowDiscount = isFirstSkipEver || isEveryThirdSkip
+
+                    if (shouldShowDiscount) {
+                        if (isFirstSkipEver) {
+                            subscriptionViewModel.setHasSeenDownsellModal(true)
+                        }
+                        subscriptionViewModel.incrementStandardSkipCount()
+                        navController.navigate("discountPaywall")
+                    } else {
+                        subscriptionViewModel.incrementStandardSkipCount()
+                    }
+                }
+                justPurchasedFromAddProfile = false
             },
-            onSubscribeClick = { plan ->
-                // Handle subscription logic here
-                // For now, just close the screen
-                showPremiumUpgrade = false
-                // TODO: Integrate with actual subscription system
-            }
+            source = "add_profile"
         )
     }
 }
@@ -255,7 +276,7 @@ fun ProfileCard(
         // Headshot Avatar with X button
         Box(
             modifier = Modifier
-                .size(if (isTablet) 200.dp else 156.dp)  // Larger size for tablets
+                .size(if (isTablet) 240.dp else 156.dp)  // Larger size for tablets
                 .padding(if (isTablet) 12.dp else 8.dp)  // More padding for tablets
         ) {
             Box(
@@ -279,7 +300,7 @@ fun ProfileCard(
             if (isEditMode && canRemove) {
                 Box(
                     modifier = Modifier
-                        .size(if (isTablet) 40.dp else 32.dp)
+                        .size(if (isTablet) 52.dp else 32.dp)
                         .align(Alignment.TopEnd)
                         .clip(CircleShape)
                         .background(lightRed)
@@ -289,7 +310,7 @@ fun ProfileCard(
                     Text(
                         text = "×",
                         color = white,
-                        fontSize = if (isTablet) 24.sp else 20.sp,
+                        fontSize = if (isTablet) 28.sp else 20.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -301,9 +322,8 @@ fun ProfileCard(
         // Name
         Text(
             text = profile.childName,
-            fontFamily = alifbaFont,
-            fontSize = if (isTablet) 26.sp else 20.sp,
-            fontWeight = FontWeight.Bold,
+            fontFamily = alifbaFontBold,
+            fontSize = if (isTablet) 30.sp else 20.sp,
             color = darkBlue,
             textAlign = TextAlign.Center,
             maxLines = 1,
@@ -314,7 +334,7 @@ fun ProfileCard(
 
 @Composable
 fun AddProfileCard(isTablet: Boolean, onClick: () -> Unit) {
-    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
+    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -323,7 +343,8 @@ fun AddProfileCard(isTablet: Boolean, onClick: () -> Unit) {
         // Add Profile Square
         Box(
             modifier = Modifier
-                .size(if (isTablet) 176.dp else 140.dp)
+                .size(if (isTablet) 240.dp else 156.dp)
+                .padding(if (isTablet) 12.dp else 8.dp)
                 .clip(RoundedCornerShape(if (isTablet) 20.dp else 16.dp))
                 .background(Color.White),
             contentAlignment = Alignment.Center
@@ -339,9 +360,8 @@ fun AddProfileCard(isTablet: Boolean, onClick: () -> Unit) {
 
         Text(
             text = "Add Profile",
-            fontFamily = alifbaFont,
-            fontSize = if (isTablet) 26.sp else 20.sp,
-            fontWeight = FontWeight.Bold,
+            fontFamily = alifbaFontBold,
+            fontSize = if (isTablet) 30.sp else 20.sp,
             color = darkBlue,
             textAlign = TextAlign.Center
         )
@@ -354,7 +374,7 @@ fun EditProfileCard(
     isTablet: Boolean,
     onClick: () -> Unit
 ) {
-    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
+    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -366,7 +386,8 @@ fun EditProfileCard(
         // Edit Profile Square
         Box(
             modifier = Modifier
-                .size(if (isTablet) 176.dp else 140.dp)
+                .size(if (isTablet) 240.dp else 156.dp)
+                .padding(if (isTablet) 12.dp else 8.dp)
                 .clip(RoundedCornerShape(if (isTablet) 20.dp else 16.dp))
                 .background(white),
             contentAlignment = Alignment.Center
@@ -375,14 +396,14 @@ fun EditProfileCard(
                 Text(
                     text = "✓",
                     color = darkBlue,
-                    fontSize = if (isTablet) 64.sp else 48.sp,
+                    fontSize = if (isTablet) 72.sp else 48.sp,
                     fontWeight = FontWeight.Bold
                 )
             } else {
                 Image(
                     painter = painterResource(id = R.drawable.pencil),
                     contentDescription = "Edit Profiles",
-                    modifier = Modifier.size(if (isTablet) 80.dp else 60.dp)
+                    modifier = Modifier.size(if (isTablet) 96.dp else 60.dp)
                 )
             }
         }
@@ -391,9 +412,8 @@ fun EditProfileCard(
 
         Text(
             text = if (isEditMode) "Done" else "Edit",
-            fontFamily = alifbaFont,
-            fontSize = if (isTablet) 26.sp else 20.sp,
-            fontWeight = FontWeight.Bold,
+            fontFamily = alifbaFontBold,
+            fontSize = if (isTablet) 30.sp else 20.sp,
             color = darkBlue,
             textAlign = TextAlign.Center
         )

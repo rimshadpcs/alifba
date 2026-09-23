@@ -10,12 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -37,36 +37,43 @@ fun InteractiveSentence(
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(if (isTablet) 12.dp else 8.dp)
     ) {
+        val baseFontSize = if (isTablet) 36.sp else 28.sp
+        val baseTextStyle = LocalTextStyle.current.merge(
+            TextStyle(
+                lineHeight = 1.5.em,
+                platformStyle = PlatformTextStyle(
+                    includeFontPadding = false
+                ),
+                lineHeightStyle = LineHeightStyle(
+                    alignment = LineHeightStyle.Alignment.Center,
+                    trim = LineHeightStyle.Trim.None
+                )
+            )
+        )
+
         sentenceParts.forEachIndexed { index, part ->
             Box(modifier = Modifier.padding(bottom = if (isTablet) 4.dp else 2.dp)) {
                 if (part.trim().all { it == '_' }) {
                     val selectedOption = blanksState[index]
                     Text(
-                        text = selectedOption?.option ?: "____",
-                        style = LocalTextStyle.current.merge(
-                            TextStyle(
-                                lineHeight = 1.5.em,
-                                platformStyle = PlatformTextStyle(
-                                    includeFontPadding = false
-                                ),
-                                lineHeightStyle = LineHeightStyle(
-                                    alignment = LineHeightStyle.Alignment.Center,
-                                    trim = LineHeightStyle.Trim.None
-                                )
-                            )
-                        ),
+                        text = selectedOption?.option ?: part,
+                        style = baseTextStyle,
                         modifier = Modifier
                             .clickable { onBlankClicked(index) }
                             .padding(if (isTablet) 6.dp else 4.dp),
                         fontFamily = fontFamily,
-                        fontSize = if (isTablet) 32.sp else 25.sp,
-                        color = if (selectedOption == null) Color.Black else Color(0xFF8DD54f)
+                        fontWeight = FontWeight.Bold,
+                        fontSize = baseFontSize,
+                        color = if (selectedOption == null) Color.Gray else Color(0xFF8DD54f)
                     )
                 } else {
                     Text(
                         text = part,
                         fontFamily = fontFamily,
-                        fontSize = if (isTablet) 32.sp else 25.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = baseFontSize,
+                        color = Color.Gray,
+                        style = baseTextStyle
                     )
                 }
                 //Spacer(modifier = Modifier.height(1.dp).fillMaxWidth().background(Color.Gray)) // Underline for each element

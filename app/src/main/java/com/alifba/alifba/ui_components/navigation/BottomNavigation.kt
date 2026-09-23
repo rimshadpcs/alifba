@@ -33,10 +33,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.home.layout.profile.getAvatarHeadShots
-import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.theme.black
-import com.alifba.alifba.ui_components.theme.mediumNavyBlue
-import com.alifba.alifba.ui_components.theme.navTextGray
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 
 @Composable
@@ -55,11 +51,16 @@ fun BottomNavigationBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = black,
+                color = navBarBackground,
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+            )
+            .border(
+                width = 2.dp,
+                color = navBarDivider,
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
             )
             .padding(
-                horizontal = if (isTablet) 48.dp else 32.dp, 
+                horizontal = if (isTablet) 48.dp else 32.dp,
                 vertical = if (isTablet) 16.dp else 12.dp
             )
     ) {
@@ -68,41 +69,44 @@ fun BottomNavigationBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Home
+            // Home — single icon asset now (home.png), selection shown via pill outline only,
+            // not a gray/filled icon swap.
             NavItem(
-                icon = if (currentDestination == BottomNavDestination.Home) R.drawable.nav_home_filled else R.drawable.nav_home_gray,
+                icon = R.drawable.home,
                 label = stringResource(id = R.string.home),
                 isSelected = currentDestination == BottomNavDestination.Home,
                 isTablet = isTablet,
-                onClick = { 
+                onClick = {
                     SoundEffectManager.playClickSound()
-                    onDestinationClick(BottomNavDestination.Home) 
+                    onDestinationClick(BottomNavDestination.Home)
                 }
             )
 
-            // Stories
+            // Stories — single icon asset (stories.png), same pill-outline selection treatment.
             NavItem(
-                icon = if (currentDestination == BottomNavDestination.Stories) R.drawable.nav_stories_filled else R.drawable.nav_stories_gray,
+                icon = R.drawable.stories,
                 label = stringResource(id = R.string.stories),
                 isSelected = currentDestination == BottomNavDestination.Stories,
                 isTablet = isTablet,
-                onClick = { 
+                onClick = {
                     SoundEffectManager.playClickSound()
-                    onDestinationClick(BottomNavDestination.Stories) 
+                    onDestinationClick(BottomNavDestination.Stories)
                 }
             )
 
-            // Activities
+            // Activities (Play) — temporarily hidden until feature is ready
+            /*
             NavItem(
                 icon = if (currentDestination == BottomNavDestination.Activities) R.drawable.nav_activities_filled else R.drawable.nav_activities_gray,
                 label = stringResource(id = R.string.play),
                 isSelected = currentDestination == BottomNavDestination.Activities,
                 isTablet = isTablet,
-                onClick = { 
+                onClick = {
                     SoundEffectManager.playClickSound()
-                    onDestinationClick(BottomNavDestination.Activities) 
+                    onDestinationClick(BottomNavDestination.Activities)
                 }
             )
+            */
 
             // Account (Profile Picture)
             Column (
@@ -111,34 +115,41 @@ fun BottomNavigationBar(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(if (isTablet) 50.dp else 40.dp)
-                        .clickable { 
-                            SoundEffectManager.playClickSound()
-                            onDestinationClick(BottomNavDestination.Account) 
+                        .size(if (isTablet) 58.dp else 46.dp)
+                        .let { boxModifier ->
+                            // Same filled-pill treatment as Home/Stories — no ring on the
+                            // avatar itself.
+                            if (currentDestination == BottomNavDestination.Account) {
+                                boxModifier
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(navPillBackground)
+                            } else {
+                                boxModifier
+                            }
                         }
+                        .clickable {
+                            SoundEffectManager.playClickSound()
+                            onDestinationClick(BottomNavDestination.Account)
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(id = avatarRes),
                         contentDescription = "Profile",
                         modifier = Modifier
-                            .size(if (isTablet) 50.dp else 40.dp)
-                            .clip(CircleShape)
-                            .let { modifier ->
-                                if (currentDestination == BottomNavDestination.Account) {
-                                    modifier.border(if (isTablet) 3.dp else 2.dp, white, CircleShape)
-                                } else {
-                                    modifier
-                                }
-                            },
+                            .size(if (isTablet) 40.dp else 30.dp)
+                            .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
                 }
-                if (currentDestination != BottomNavDestination.Account) {
+                run {
+                    val isAccountSelected = currentDestination == BottomNavDestination.Account
                     Text(
                         text = stringResource(id = R.string.profile),
-                        color = navTextGray,
+                        color = if (isAccountSelected) navTextActive else navTextInactive,
                         fontSize = if (isTablet) 16.sp else 14.sp,
                         fontFamily = alifbaFont,
+                        fontWeight = if (isAccountSelected) FontWeight.Bold else FontWeight.Normal,
                         modifier = Modifier.padding(top = if (isTablet) 6.dp else 4.dp)
                     )
                 }
@@ -160,38 +171,52 @@ private fun NavItem(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier.clickable { 
+        modifier = Modifier.clickable {
             SoundEffectManager.playClickSound()
-            onClick() 
+            onClick()
         }
     ) {
         Box(
-            modifier = Modifier.size(if (isTablet) 50.dp else 40.dp),
+            modifier = Modifier
+                .size(if (isTablet) 58.dp else 46.dp)
+                .let { boxModifier ->
+                    // Selected state is now a soft filled pastel pill (no border) behind the
+                    // icon — unselected items get no container at all. Icons themselves
+                    // (home.png/stories.png) are full-color illustrations, not tintable
+                    // monochrome glyphs, so only the pill fill + label color change with state.
+                    if (isSelected) {
+                        boxModifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(navPillBackground)
+                    } else {
+                        boxModifier
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(id = icon),
                 contentDescription = label,
-                modifier = Modifier.size(
-                    if (isTablet) {
-                        if (isSelected) 40.dp else 36.dp
-                    } else {
-                        if (isSelected) 30.dp else 28.dp
-                    }
-                )
+                modifier = Modifier.size(if (isTablet) 40.dp else 30.dp)
             )
         }
-        if (!isSelected) {
-            Text(
-                text = label,
-                color = navTextGray,
-                fontSize = if (isTablet) 16.sp else 14.sp,
-                fontFamily = alifbaFont,
-                modifier = Modifier.padding(top = if (isTablet) 6.dp else 4.dp)
-            )
-        }
+        Text(
+            text = label,
+            color = if (isSelected) navTextActive else navTextInactive,
+            fontSize = if (isTablet) 16.sp else 14.sp,
+            fontFamily = alifbaFont,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.padding(top = if (isTablet) 6.dp else 4.dp)
+        )
     }
 }
+
+// Bottom nav colors.
+private val navBarBackground = Color(0xFFFFFFFF)
+private val navBarDivider = Color(0xFF2B2B2B)
+private val navPillBackground = Color(0xFFE1F0FF)
+private val navTextActive = Color(0xFF2D3142)
+private val navTextInactive = Color(0xFF9E9E9E)
 
 enum class BottomNavDestination {
     Home,

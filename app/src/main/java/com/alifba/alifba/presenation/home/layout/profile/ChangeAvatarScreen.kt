@@ -2,6 +2,7 @@ package com.alifba.alifba.presenation.home.layout.profile
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 //noinspection UsingMaterialAndMaterial3Libraries
@@ -52,10 +54,6 @@ import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
-import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
@@ -66,17 +64,6 @@ fun ChangeAvatarScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel
 ) {
-    LaunchedEffect(Unit) {
-        Firebase.analytics.logEvent(
-            FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, "ChangeAvatarScreen")
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, "ChangeAvatarScreen")
-        }
-    }
-
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round)
-    )
     val alifbaFontBold = FontFamily(
         Font(R.font.vag_round_boldd)
     )
@@ -102,21 +89,38 @@ fun ChangeAvatarScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Title Text
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        val configuration = LocalConfiguration.current
+        val isTablet = configuration.screenWidthDp >= 600
+        val iconSize = if (isTablet) 32.dp else 24.dp
+        val backIconSize = if (isTablet) 64.dp else 48.dp // 2x larger
+
+        // Top Bar with Back Button and Title
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .padding(top = 16.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Back Button (matching AllStories style, no circular background)
+            Image(
+                painter = painterResource(id = R.drawable.back),
+                contentDescription = "Back",
+                modifier = Modifier
+                    .size(backIconSize)
+                    .clickable {
+                        SoundEffectManager.playClickSound()
+                        navController.popBackStack()
+                    }
+            )
+
+            // Title
             Text(
                 text = "Choose Avatar",
                 style = MaterialTheme.typography.titleLarge,
                 fontFamily = alifbaFontBold,
                 color = white,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.weight(1f)
             )
         }
 
@@ -125,7 +129,7 @@ fun ChangeAvatarScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 64.dp)
+                .padding(bottom = if (isTablet) 96.dp else 64.dp)
         ) {
             AvatarCarousels(
                 selectedAvatarName = selectedAvatarName,
@@ -169,7 +173,7 @@ fun AvatarCarousels(
         Avatar(R.drawable.sidqhog, "Sidqhog")
     )
 
-    val alifbaFont = FontFamily(Font(R.font.vag_round))
+
     val avatarsSize = avatars.size
 
     // Find the index of the current avatar (defaulting to 0 if not found)
@@ -200,24 +204,29 @@ fun AvatarCarousels(
     // Calculate the padding so that the centered item is exactly in the middle
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
-    val avatarDisplaySize = 200.dp // your fixed avatar image size
+    val isTablet = configuration.screenWidthDp >= 600
+    // Scale avatar size on tablets slightly smaller to avoid clipping
+    val proposedSize = screenWidth * 0.35f
+    val avatarDisplaySize = if (isTablet) proposedSize.coerceAtMost(380.dp) else 200.dp
     val horizontalPadding = (screenWidth - avatarDisplaySize) / 2
 
+    val containerHeight = if (isTablet) avatarDisplaySize + 180.dp else 300.dp
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp),
+            .height(containerHeight),
         contentAlignment = Alignment.Center
     ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(avatarDisplaySize),
+                // Increase pager height to keep the name fully visible
+                .height(avatarDisplaySize + if (isTablet) 48.dp else 36.dp),
             // The padding centers the current item on the screen
             contentPadding = PaddingValues(horizontal = horizontalPadding),
             // Increase the gap between items
-            pageSpacing = 32.dp,
+            pageSpacing = if (isTablet) 48.dp else 32.dp,
         ) { page ->
             val actualPage = page % avatarsSize
             val scale = lerp(
@@ -246,10 +255,10 @@ fun AvatarCarousels(
                     text = avatars[actualPage].name,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .offset(y = (-30).dp),
+                        .offset(y = if (isTablet) (-28).dp else (-24).dp),
                     fontFamily = alifbaFontBold,
                     color = black,
-                    fontSize = 24.sp,
+                    fontSize = if (isTablet) 28.sp else 22.sp,
                 )
             }
         }
@@ -273,12 +282,12 @@ fun AvatarCarousels(
                 },
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
                 elevation = ButtonDefaults.elevation(0.dp),
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(if (isTablet) 96.dp else 64.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.leftarrow),
                     contentDescription = "Scroll Left",
-                    modifier = Modifier.size(64.dp)
+                    modifier = Modifier.size(if (isTablet) 96.dp else 64.dp)
                 )
             }
 
@@ -292,12 +301,12 @@ fun AvatarCarousels(
                 },
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
                 elevation = ButtonDefaults.elevation(0.dp),
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(if (isTablet) 96.dp else 64.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.rightarrow),
                     contentDescription = "Scroll Right",
-                    modifier = Modifier.size(64.dp)
+                    modifier = Modifier.size(if (isTablet) 96.dp else 64.dp)
                 )
             }
         }

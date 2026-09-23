@@ -26,6 +26,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
+import com.alifba.alifba.ui_components.theme.lightNavyBlue
+import com.alifba.alifba.ui_components.theme.navyBlue
+import com.alifba.alifba.ui_components.theme.white
 
 class CustomPasswordVisualTransformation(private val mask: Char = '*') : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
@@ -44,7 +47,8 @@ fun PasswordInputField(
     leadingIcon: @Composable (() -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
-    onImeAction: () -> Unit = {}
+    onImeAction: () -> Unit = {},
+    textColor: Color = navyBlue
 ) {
     var passwordVisibility by remember { mutableStateOf(false) }
     val alifbaFont = FontFamily(
@@ -58,13 +62,15 @@ fun PasswordInputField(
                 Text(
                     labelText,
                     fontFamily = alifbaFont,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = navyBlue.copy(alpha = 0.8f)
                 )
             },
             textStyle = TextStyle(
                 fontFamily = alifbaFont,
                 fontSize = 16.sp,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = textColor
             ),
             singleLine = true,
             visualTransformation = if (passwordVisibility) VisualTransformation.None else CustomPasswordVisualTransformation(),
@@ -82,14 +88,21 @@ fun PasswordInputField(
                     Icon(painter = painterResource(id = image), contentDescription = null)
                 }
             },
+            leadingIcon = leadingIcon,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color.Gray,
-                //containerColor = Color.Transparent // Matching background
+                focusedBorderColor = lightNavyBlue,
+                unfocusedBorderColor = lightNavyBlue.copy(alpha = 0.6f),
+                focusedContainerColor = white,
+                unfocusedContainerColor = white.copy(alpha = 0.9f),
+                focusedLabelColor = navyBlue,
+                unfocusedLabelColor = navyBlue.copy(alpha = 0.8f),
+                focusedTextColor = textColor,
+                unfocusedTextColor = textColor,
+                cursorColor = textColor
             )
         )
     }

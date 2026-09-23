@@ -133,7 +133,7 @@ fun PulsingLevelIndicator(modifier: Modifier = Modifier,
 @Composable
 fun LessonMenuItemsPreview() {
     LessonMenuItems(
-        image = R.drawable.leveltwo,
+        image = R.drawable.privacy_policy,
         name = "Example Lesson",
         onClick = {}
     )

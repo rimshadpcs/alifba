@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
 import coil.compose.rememberImagePainter
@@ -43,6 +44,7 @@ fun PictureButton(
     buttonImage: String,
     buttonText: String,
     isTablet: Boolean = false,
+    tabletSize: Dp = 200.dp,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -55,13 +57,14 @@ fun PictureButton(
         animationSpec = spring(), label = ""
     )
     val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.SemiBold)
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
     )
 
     Box(
         modifier = modifier
-            .width(if (actualIsTablet) 200.dp else 150.dp)
-            .height(if (actualIsTablet) 200.dp else 150.dp)
+            .width(if (actualIsTablet) tabletSize else 150.dp)
+            .height(if (actualIsTablet) tabletSize else 150.dp)
             .clip(RoundedCornerShape(if (actualIsTablet) 12.dp else 8.dp)),
         contentAlignment = Alignment.TopCenter
     ) {
@@ -113,6 +116,7 @@ fun PictureButton(
                     text = buttonText,
                     color = Color.Black,
                     fontFamily = alifbaFont,
+                    fontWeight = FontWeight.Bold,
                     fontSize = if (actualIsTablet) 22.sp else 17.sp
                 )
             }

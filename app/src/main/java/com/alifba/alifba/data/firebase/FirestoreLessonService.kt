@@ -15,15 +15,16 @@ class FireStoreLessonService(
 ) {
     suspend fun getLessons(levelId: String): List<Lesson> {
         return try {
-            val collectionPath = "lessons/$levelId/chapters"
-            Log.d("FirestoreLessonService", "Fetching lessons from: $collectionPath") // ✅ Debug log
+            // Levels are deprecated; fetch all chapter documents from top-level collection
+            val collectionPath = "chapters"
+            Log.d("FirestoreLessonService", "Fetching lessons from top-level: $collectionPath")
 
             val snapshot = firestore.collection(collectionPath).get().await()
 
-            Log.d("FirestoreLessonService", "Lessons fetched: ${snapshot.documents.size}") // ✅ Debug log
+            Log.d("FirestoreLessonService", "Lessons fetched: ${snapshot.documents.size}")
 
             if (snapshot.isEmpty) {
-                Log.e("FirestoreLessonService", "No lessons found for $levelId")
+                Log.e("FirestoreLessonService", "No lessons found in $collectionPath")
                 return emptyList()
             }
 

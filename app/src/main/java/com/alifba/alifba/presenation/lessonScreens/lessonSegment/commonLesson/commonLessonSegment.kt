@@ -33,10 +33,6 @@ import com.alifba.alifba.presenation.main.logScreenView
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
-import com.google.firebase.analytics.logEvent
 
 @Composable
 fun CommonLessonSegment(
@@ -48,13 +44,10 @@ fun CommonLessonSegment(
     LaunchedEffect(Unit) {
         logScreenView("lesson_screen")
     }
-    LaunchedEffect(Unit) {
-        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, "ByteSizeLessonSegment")
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, "ByteSizeLessonSegment")
-        }
-    }
 // 🔥 Define startTime at the top level of LessonContent
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp > 600
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -76,8 +69,9 @@ fun CommonLessonSegment(
                 .fillMaxWidth()
                 // Instead of forcing half the screen:
                 // .fillMaxHeight(0.5f)
-                .clip(shape = RoundedCornerShape(64.dp))
-                .padding(8.dp),
+                .padding(if (isTablet) 12.dp else 8.dp)
+                .align(Alignment.CenterHorizontally)
+                .clip(shape = RoundedCornerShape(if (isTablet) 80.dp else 64.dp)),
             contentScale = ContentScale.FillWidth
         )
 
@@ -133,4 +127,3 @@ fun SpeechAnimation() {
         modifier = Modifier.size(if (isTablet) 160.dp else 120.dp)
     )
 }
-

@@ -29,10 +29,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
@@ -45,7 +47,9 @@ import kotlinx.coroutines.launch
 
 object SoundEffectManager {
     private var soundPool: SoundPool? = null
-    private var soundId: Int = 0
+    private var clickSoundId: Int = 0
+    private var correctSoundId: Int = 0
+    private var wrongSoundId: Int = 0
     private var isInitialized = false
     private var volume: Float = 1.0f
     private lateinit var prefs: SharedPreferences
@@ -72,7 +76,9 @@ object SoundEffectManager {
             .setAudioAttributes(attributes)
             .build()
 
-        soundId = soundPool?.load(context, R.raw.buttonclick, 1) ?: 0
+        clickSoundId = soundPool?.load(context, R.raw.buttonclick, 1) ?: 0
+        correctSoundId = soundPool?.load(context, R.raw.rightanswer, 1) ?: 0
+        wrongSoundId = soundPool?.load(context, R.raw.wronganswer, 1) ?: 0
         isInitialized = true
     }
 
@@ -84,7 +90,19 @@ object SoundEffectManager {
 
     fun playClickSound() {
         if (_isSoundEnabled) {
-            soundPool?.play(soundId, volume, volume, 1, 0, 1f)
+            soundPool?.play(clickSoundId, volume, volume, 1, 0, 1f)
+        }
+    }
+
+    fun playCorrectSound() {
+        if (_isSoundEnabled) {
+            soundPool?.play(correctSoundId, volume, volume, 1, 0, 1f)
+        }
+    }
+
+    fun playWrongSound() {
+        if (_isSoundEnabled) {
+            soundPool?.play(wrongSoundId, volume, volume, 1, 0, 1f)
         }
     }
 
@@ -102,15 +120,21 @@ fun CommonButton(
     shadowColor: Color,
     mainColor: Color,
     textColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    phoneHeight: Dp = 60.dp,
+    tabletHeight: Dp = 72.dp,
+    enabled: Boolean = true
 ) {
     val context = LocalContext.current
+    val isPreview = LocalInspectionMode.current
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp > 600
     
     // Initialize sound manager when the button is first created
-    LaunchedEffect(Unit) {
-        SoundEffectManager.initialize(context)
+    if (!isPreview) {
+        LaunchedEffect(Unit) {
+            SoundEffectManager.initialize(context)
+        }
     }
 
     val alifbaFont = FontFamily(
@@ -131,7 +155,7 @@ fun CommonButton(
         modifier = modifier
             .fillMaxWidth()
             .padding(if (isTablet) 10.dp else 8.dp)
-            .height(if (isTablet) 72.dp else 60.dp)
+            .height(if (isTablet) tabletHeight else phoneHeight)
             .clip(RoundedCornerShape(if (isTablet) 36.dp else 32.dp)),
         contentAlignment = Alignment.TopCenter
     ) {
@@ -148,6 +172,7 @@ fun CommonButton(
                 .clip(RoundedCornerShape(if (isTablet) 36.dp else 32.dp))
                 .background(mainColor)
                 .clickable(
+                    enabled = enabled,
                     onClick = {
                         coroutineScope.launch {
                             SoundEffectManager.playClickSound()

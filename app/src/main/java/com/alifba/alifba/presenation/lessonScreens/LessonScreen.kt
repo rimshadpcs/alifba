@@ -33,7 +33,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,8 +52,7 @@ import com.alifba.alifba.R
 import com.alifba.alifba.data.models.Lesson
 import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
-import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
-import com.alifba.alifba.ui_components.dialogs.BadgeEarnedSnackBar
+import com.alifba.alifba.ui_components.widgets.DotLottieView
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.commonLesson.CommonLessonSegment
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.dragAndDropLesson.DragDropLessonScreen
 import com.alifba.alifba.presenation.lessonScreens.lessonSegment.LetterTracing
@@ -88,8 +86,8 @@ fun LessonScreen(
 ) {
     val context = LocalContext.current
     val isLessonsLoaded = remember { mutableStateOf(false) }
-
-    val startTime = remember { mutableStateOf(System.currentTimeMillis()) }
+    val lessonStartTimeMs = remember { mutableStateOf(System.currentTimeMillis()) }
+    val hasCompletedLesson = remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (!isLessonsLoaded.value) {
             Log.d("LessonScreen", "Loading lessons for level: $levelId")
@@ -97,21 +95,13 @@ fun LessonScreen(
             viewModel.loadLessons(levelId)
             chaptersViewModel.loadChapters(levelId)
             isLessonsLoaded.value = true
+            lessonStartTimeMs.value = System.currentTimeMillis()
 
             // 🔥 Log Lesson Start (Remove timeSpent here)
             logLessonEvent(
-                eventName = "lesson_start",
+                eventName = "lesson_started",
                 lessonId = lessonId,
                 levelId = levelId
-            )
-        }
-    }
-    DisposableEffect(Unit) {
-        onDispose {
-            logLessonEvent(
-                eventName = "lesson_abandon",
-                lessonId = lessonId,
-                levelId = levelId,
             )
         }
     }
@@ -154,7 +144,9 @@ fun LessonScreen(
         navController = navController,
         viewModel = viewModel,
         chaptersViewModel = chaptersViewModel,
-        navigateToChapterScreen = navigateToChapterScreen
+        navigateToChapterScreen = navigateToChapterScreen,
+        lessonStartTimeMs = lessonStartTimeMs.value,
+        hasCompletedLesson = hasCompletedLesson
     )
 }
 
@@ -166,20 +158,43 @@ fun LessonContent(
     navController: NavController,
     viewModel: LessonScreenViewModel,
     chaptersViewModel: ChaptersViewModel,
-    navigateToChapterScreen: () -> Unit
+    navigateToChapterScreen: () -> Unit,
+    lessonStartTimeMs: Long,
+    hasCompletedLesson: MutableState<Boolean>
 ) {
     val showCancelDialog = remember { mutableStateOf(false) }
     val showCompletionDialog = remember { mutableStateOf(false) }
+    val showCelebrationDialog = remember { mutableStateOf(false) }
     val currentSegmentIndex = remember { mutableStateOf(0) }
     val accumulatedXp = remember { mutableStateOf(0) }
     val isAudioCompleted by viewModel.isAudioCompleted.observeAsState(false)
     val isAudioPlaying by viewModel.isAudioPlaying.observeAsState(false)
-    val earnedBadges by chaptersViewModel.badgeEarnedEvent.collectAsState()
     val startTime = remember { mutableStateOf(System.currentTimeMillis()) }
     val totalSegments = lesson.segments.size
     val progress = if (totalSegments > 0) {
         currentSegmentIndex.value / totalSegments.toFloat()
     } else 0f
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (!hasCompletedLesson.value) {
+                val timeSpent = (System.currentTimeMillis() - lessonStartTimeMs).coerceAtLeast(0L)
+                val lastSegmentType = lesson.segments
+                    .getOrNull(currentSegmentIndex.value)
+                    ?.javaClass
+                    ?.simpleName
+                logLessonEvent(
+                    eventName = "lesson_abandoned",
+                    lessonId = lessonId,
+                    levelId = levelId,
+                    timeSpent = timeSpent,
+                    totalSegments = totalSegments,
+                    lastSegmentType = lastSegmentType,
+                    lastSegmentIndex = currentSegmentIndex.value
+                )
+            }
+        }
+    }
     
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp > 600
@@ -267,6 +282,20 @@ fun LessonContent(
             key(currentSegmentIndex.value) {
                 // Render the correct segment
                 val currentSegment = lesson.segments[currentSegmentIndex.value]
+
+                LaunchedEffect(currentSegmentIndex.value) {
+                    // Track when a learner enters a specific segment
+                    logLessonEvent(
+                        eventName = "segment_enter",
+                        lessonId = lessonId,
+                        levelId = levelId,
+                        chapterId = lesson.id.toString(),
+                        segmentType = currentSegment.javaClass.simpleName,
+                        segmentIndex = currentSegmentIndex.value,
+                        totalSegments = totalSegments
+                    )
+                }
+
                 when (currentSegment) {
 
                     is LessonSegment.LetterTracing -> {
@@ -287,7 +316,9 @@ fun LessonContent(
                                     chapterId = lesson.id.toString(),
                                     segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
                                     xpEarned = accumulatedXp.value,
-                                    timeSpent = timeSpent
+                                    timeSpent = timeSpent,
+                                    segmentIndex = currentSegmentIndex.value,
+                                    totalSegments = totalSegments
                                 )
                                 startTime.value = System.currentTimeMillis()
 
@@ -300,7 +331,8 @@ fun LessonContent(
                                     lessonId,
                                     levelId,
                                     lesson.id.toString(),
-                                    startTime.value
+                                    lessonStartTimeMs,
+                                    hasCompletedLesson
                                 )
                             }
                         )
@@ -324,7 +356,9 @@ fun LessonContent(
                                     chapterId = lesson.id.toString(),
                                     segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
                                     xpEarned = accumulatedXp.value,
-                                    timeSpent = timeSpent
+                                    timeSpent = timeSpent,
+                                    segmentIndex = currentSegmentIndex.value,
+                                    totalSegments = totalSegments
                                 )
                                 startTime.value = System.currentTimeMillis()
 
@@ -337,7 +371,8 @@ fun LessonContent(
                                     lessonId,
                                     levelId,
                                     lesson.id.toString(),
-                                    startTime.value
+                                    lessonStartTimeMs,
+                                    hasCompletedLesson
                                 )
                             }
                         )
@@ -358,7 +393,8 @@ fun LessonContent(
                                     lessonId,
                                     levelId,
                                     lesson.id.toString(),
-                                    startTime.value
+                                    lessonStartTimeMs,
+                                    hasCompletedLesson
                                 )
                             }
                         )
@@ -385,7 +421,9 @@ fun LessonContent(
                                     chapterId = lesson.id.toString(),
                                     segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
                                     xpEarned = accumulatedXp.value,
-                                    timeSpent = timeSpent
+                                    timeSpent = timeSpent,
+                                    segmentIndex = currentSegmentIndex.value,
+                                    totalSegments = totalSegments
                                 )
                                 startTime.value = System.currentTimeMillis()
                                 handleNextSegment(
@@ -397,7 +435,8 @@ fun LessonContent(
                                     lessonId,
                                     levelId,
                                     lesson.id.toString(),
-                                    startTime.value
+                                    lessonStartTimeMs,
+                                    hasCompletedLesson
                                 )
                             }
                         )
@@ -425,7 +464,9 @@ fun LessonContent(
                                     chapterId = lesson.id.toString(),
                                     segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
                                     xpEarned = accumulatedXp.value,
-                                    timeSpent = timeSpent
+                                    timeSpent = timeSpent,
+                                    segmentIndex = currentSegmentIndex.value,
+                                    totalSegments = totalSegments
                                 )
                                 startTime.value = System.currentTimeMillis()
                                 handleNextSegment(
@@ -437,7 +478,8 @@ fun LessonContent(
                                     lessonId,
                                     levelId,
                                     lesson.id.toString(),
-                                    startTime.value
+                                    lessonStartTimeMs,
+                                    hasCompletedLesson
                                 )
                             }
                         )
@@ -449,9 +491,11 @@ fun LessonContent(
                             viewModel.startAudio(currentSegment.speech)
                             onDispose { viewModel.stopAudio() }
                         }
+                        val isLastSegment = currentSegmentIndex.value >= totalSegments - 1
                         PictureMcqSegment(
                             segment = currentSegment,
-                            showNextButton = isAudioCompleted, // if you want audio gating
+                            showNextButton = isAudioCompleted, // not used currently, kept for compatibility
+                            isLastSegment = isLastSegment,
                             onNextClicked = {
                                 val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
                                 viewModel.incrementQuizzesAttended()
@@ -462,7 +506,9 @@ fun LessonContent(
                                     chapterId = lesson.id.toString(),
                                     segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
                                     xpEarned = accumulatedXp.value,
-                                    timeSpent = timeSpent
+                                    timeSpent = timeSpent,
+                                    segmentIndex = currentSegmentIndex.value,
+                                    totalSegments = totalSegments
                                 )
                                 startTime.value = System.currentTimeMillis()
                                 handleNextSegment(
@@ -474,7 +520,8 @@ fun LessonContent(
                                     lessonId,
                                     levelId,
                                     lesson.id.toString(),
-                                    startTime.value
+                                    lessonStartTimeMs,
+                                    hasCompletedLesson
                                 )
                             }
                         )
@@ -486,8 +533,10 @@ fun LessonContent(
                             viewModel.startAudio(currentSegment.speech)
                             onDispose { viewModel.stopAudio() }
                         }
+                        val isLastSegment = currentSegmentIndex.value >= totalSegments - 1
                         TextMcqSegment(
                             segment = currentSegment,
+                            isLastSegment = isLastSegment,
                             onNextClicked = {
                                 val timeSpent = System.currentTimeMillis() - startTime.value // 🔥 Calculate time spent
                                 viewModel.incrementQuizzesAttended()
@@ -498,7 +547,9 @@ fun LessonContent(
                                     chapterId = lesson.id.toString(),
                                     segmentType = currentSegment.javaClass.simpleName, // Get segment type dynamically
                                     xpEarned = accumulatedXp.value,
-                                    timeSpent = timeSpent
+                                    timeSpent = timeSpent,
+                                    segmentIndex = currentSegmentIndex.value,
+                                    totalSegments = totalSegments
                                 )
                                 startTime.value = System.currentTimeMillis()
                                 handleNextSegment(
@@ -510,7 +561,8 @@ fun LessonContent(
                                     lessonId,
                                     levelId,
                                     lesson.id.toString(),
-                                    startTime.value
+                                    lessonStartTimeMs,
+                                    hasCompletedLesson
                                 )
                             }
                         )
@@ -536,7 +588,8 @@ fun LessonContent(
                                     lessonId,
                                     levelId,
                                     lesson.id.toString(),
-                                    startTime.value
+                                    lessonStartTimeMs,
+                                    hasCompletedLesson
                                 )
                             }
                         )
@@ -564,34 +617,34 @@ fun LessonContent(
                 )
             }
 
-            // Completion dialog
-            if (showCompletionDialog.value) {
-                LottieAnimationDialog(
-                    showDialog = showCompletionDialog,
-                    lottieFileRes = R.raw.celebration,
-                )
+            if (showCelebrationDialog.value) {
+                Dialog(onDismissRequest = { showCelebrationDialog.value = false }) {
+                    DotLottieView(name = "moon_victory", repeatCount = 0)
+                }
 
-                DisposableEffect(showCompletionDialog.value) {
-                    // Local "yay" audio if wanted
+                DisposableEffect(showCelebrationDialog.value) {
                     viewModel.startLocalAudio(R.raw.yay)
                     onDispose {}
                 }
+            }
 
-                // Delay for the Lottie animation, then do completion logic
+            // Completion flow
+            if (showCompletionDialog.value) {
                 LaunchedEffect(showCompletionDialog.value) {
                     if (showCompletionDialog.value) {
-                        delay(2000)
-                        showCompletionDialog.value = false
-
                         // Progress is now handled by ChaptersViewModel only
 
-                        // Mark the chapter as complete in Firestore
-                        chaptersViewModel.checkAndMarkChapterCompletion(
+                        // Mark the chapter as complete in Firestore (async to avoid blocking UI)
+                        chaptersViewModel.checkAndMarkChapterCompletionAsync(
                             chapterId = lesson.id.toString(),
                             levelId = levelId,
                             earnedXP = accumulatedXp.value,
                             chapterType = lesson.chapterType
                         )
+
+                        showCelebrationDialog.value = true
+                        delay(2000)
+                        showCelebrationDialog.value = false
 
                         // Then navigate back
                         navigateToChapterScreen()
@@ -599,14 +652,14 @@ fun LessonContent(
                             popUpTo("homeScreen") { inclusive = true }
                         }
                         android.util.Log.d("LessonScreen", "Completed lesson, navigated to homeScreen")
+                        showCompletionDialog.value = false
                     }
                 }
             }
         }
     }
     
-    // Badge notification will be shown in HomeScreen instead of here
-    // to avoid duplicate dialogs and interference with chapter state updates
+    // Badge notifications are handled in the completion flow and badge screen.
 }
 
 
@@ -619,7 +672,8 @@ private fun handleNextSegment(
     lessonId: Int,
     levelId: String,
     chapterId: String,
-    timeSpent: Long
+    lessonStartTimeMs: Long,
+    hasCompletedLesson: MutableState<Boolean>
 
 ) {
     if (currentSegmentIndex.value < totalSegments - 1) {
@@ -637,14 +691,16 @@ private fun handleNextSegment(
         }
     } else {
         // 🔥 Log Lesson Completion
+        val totalTimeSpent = (System.currentTimeMillis() - lessonStartTimeMs).coerceAtLeast(0L)
         logLessonEvent(
-            eventName = "lesson_complete",
+            eventName = "lesson_completed",
             lessonId = lessonId,
             levelId = levelId,
             chapterId = chapterId,
             totalXp = accumulatedXp.value,
-            timeSpent = timeSpent
+            timeSpent = totalTimeSpent
         )
+        hasCompletedLesson.value = true
         showDialog.value = true
     }
 }
@@ -742,4 +798,3 @@ fun CustomCancelDialog(
         }
     }
 }
-

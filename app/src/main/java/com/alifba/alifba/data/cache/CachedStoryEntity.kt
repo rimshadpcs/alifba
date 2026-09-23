@@ -1,11 +1,10 @@
 package com.alifba.alifba.data.cache
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "cached_stories")
+@Entity(tableName = "cached_stories", primaryKeys = ["documentId", "category"])
 data class CachedStoryEntity(
-    @PrimaryKey val documentId: String,
+    val documentId: String,
     val category: String, // "stories", "prophet_muhammad", "sahaba"
     val storyJson: String, // Serialized Story object
     val cachedAt: Long,

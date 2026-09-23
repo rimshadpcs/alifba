@@ -133,7 +133,7 @@ fun ActivitiesScreen(
                         }
 
                         Image(
-                            painter = painterResource(id = R.drawable.sunny),
+                            painter = painterResource(id = R.drawable.privacy_policy),
                             contentDescription = "Cloudy",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -185,7 +185,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Makkah",
                                     description = "Color a delicious popsicle",
-                                    iconRes = R.drawable.makkah,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFFE74C3C),
                                     onClick = { /* TODO: Navigate to flower coloring */ },
                                     alifbaFont = alifbaFont,
@@ -197,7 +197,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Madina",
                                     description = "Color a beautiful flower",
-                                    iconRes = R.drawable.madina,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFFE74C3C),
                                     onClick = { /* TODO: Navigate to flower coloring */ },
                                     alifbaFont = alifbaFont,
@@ -209,7 +209,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Al Aqsa",
                                     description = "Color a racing car",
-                                    iconRes = R.drawable.alaqsa,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFFE74C3C),
                                     onClick = { /* TODO: Navigate to car coloring */ },
                                     alifbaFont = alifbaFont,
@@ -279,7 +279,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Alif",
                                     description = "Learn the letter Alif",
-                                    iconRes = R.drawable.alificon,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFF3498DB),
                                     onClick = { /* TODO: Navigate to Alif learning */ },
                                     alifbaFont = alifbaFont,
@@ -291,7 +291,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Baa",
                                     description = "Learn the letter Baa",
-                                    iconRes = R.drawable.baaicon,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFF3498DB),
                                     onClick = { /* TODO: Navigate to Baa learning */ },
                                     alifbaFont = alifbaFont,
@@ -303,7 +303,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Taa",
                                     description = "Learn the letter Taa",
-                                    iconRes = R.drawable.thaaicon,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFF3498DB),
                                     onClick = { /* TODO: Navigate to Taa learning */ },
                                     alifbaFont = alifbaFont,
@@ -315,7 +315,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Taa",
                                     description = "Learn the letter Thsaa",
-                                    iconRes = R.drawable.thsaaicon,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFF3498DB),
                                     onClick = { /* TODO: Navigate to Taa learning */ },
                                     alifbaFont = alifbaFont,
@@ -384,7 +384,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Memory Match",
                                     description = "Match Arabic letters",
-                                    iconRes = R.drawable.matchinggame,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFF9B59B6),
                                     onClick = { /* TODO: Navigate to memory game */ },
                                     alifbaFont = alifbaFont,
@@ -396,7 +396,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Hide & Seek",
                                     description = "Quiz on Arabic letters",
-                                    iconRes = R.drawable.hideandseek,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFF9B59B6),
                                     onClick = { /* TODO: Navigate to letter quiz */ },
                                     alifbaFont = alifbaFont,
@@ -408,7 +408,7 @@ fun ActivitiesScreen(
                                 ActivityCard(
                                     title = "Memory",
                                     description = "Build Arabic words",
-                                    iconRes = R.drawable.memorygame,
+                                    iconRes = R.drawable.privacy_policy,
                                     iconColor = Color(0xFF9B59B6),
                                     onClick = { /* TODO: Navigate to word builder */ },
                                     alifbaFont = alifbaFont,
@@ -453,7 +453,7 @@ fun ActivitiesScreen(
                 ) {
                     // Palm tree - bottom left
                     Image(
-                        painter = painterResource(id = R.drawable.palmtree),
+                        painter = painterResource(id = R.drawable.privacy_policy),
                         contentDescription = "Palm Tree",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
@@ -463,7 +463,7 @@ fun ActivitiesScreen(
 
                     // Camel - bottom right
                     Image(
-                        painter = painterResource(id = R.drawable.camel),
+                        painter = painterResource(id = R.drawable.privacy_policy),
                         contentDescription = "Camel",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier

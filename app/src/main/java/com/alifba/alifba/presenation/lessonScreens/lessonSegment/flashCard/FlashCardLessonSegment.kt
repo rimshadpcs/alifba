@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +24,8 @@ fun FlashCardLessonSegment(segment: LessonSegment.FlashCardExercise, onNextClick
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Bottom // Ensure content is at the bottom
     ) {
         // FlashCard with limited height
@@ -32,7 +35,6 @@ fun FlashCardLessonSegment(segment: LessonSegment.FlashCardExercise, onNextClick
             imageResId = segment.image.toInt(),
             modifier = Modifier
                 .padding(bottom = 16.dp) // Bottom padding for spacing
-                .weight(1f) // Allow FlashCard to take available space but not overflow
         )
 
         // Button Section

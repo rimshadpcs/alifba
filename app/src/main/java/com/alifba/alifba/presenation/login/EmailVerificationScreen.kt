@@ -61,7 +61,7 @@ fun EmailVerificationScreen(
                 onVerified = {
                     isCheckingVerification = false
                     isLoading = false
-                    navController.navigate("onboarding") {
+                    navController.navigate("createProfile") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
@@ -188,21 +188,21 @@ fun EmailVerificationScreen(
                     textColor = white
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                CommonButton(
-                    onClick = {
-                        // Log the user out and return to login screen
-                        viewModel.logout()
-                        navController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
-                    buttonText = "Back to Login",
-                    shadowColor = darkRed,
-                    mainColor = lightRed,
-                    textColor = white
-                )
+//                Spacer(modifier = Modifier.height(16.dp))
+//
+//                CommonButton(
+//                    onClick = {
+//                        // Log the user out and return to login screen
+//                        viewModel.logout()
+//                        navController.navigate("login") {
+//                            popUpTo(0) { inclusive = true }
+//                        }
+//                    },
+//                    buttonText = "Back to Login",
+//                    shadowColor = darkRed,
+//                    mainColor = lightRed,
+//                    textColor = white
+//                )
             }
         }
     }
@@ -210,7 +210,6 @@ fun EmailVerificationScreen(
     if (isLoading) {
         LottieAnimationLoading(
             showDialog = remember { mutableStateOf(true) },
-            lottieFileRes = R.raw.loading_lottie,
             isTransparentBackground = true
         )
     }
