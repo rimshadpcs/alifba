@@ -1,4 +1,20 @@
+@file:Suppress("MISSING_DEPENDENCY_CLASS_IN_EXPRESSION_TYPE")
+
 import org.gradle.api.JavaVersion
+import java.util.Properties
+
+// Local dev reads keystore.properties (gitignored); CI (Codemagic) sets these as environment
+// variables instead, since it injects the keystore file itself rather than checking one in.
+// Missing entirely just means an unsigned release build — fine for a local debug-only checkout.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+fun signingProp(propKey: String, envKey: String): String? =
+    keystoreProperties.getProperty(propKey) ?: System.getenv(envKey)
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,19 +22,29 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
     id("org.jetbrains.kotlin.plugin.serialization")
+
+    id("io.sentry.android.gradle") version "6.22.0"
 }
 
 android {
     namespace = "com.alifba.alifba"
-    compileSdk = 34
+    compileSdk = 36
+
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.kotlin") {
+                useVersion("1.9.25")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.alifba.alifba"
         minSdk = 25
         //noinspection EditedTargetSdkVersion
-        targetSdk = 34
-        versionCode = 5
-        versionName = "1.5"
+        targetSdk = 36
+        versionCode = 15
+        versionName = "2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -31,6 +57,18 @@ android {
         //getByName("main").java.srcDirs("build/generated/source/kapt/main")
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = signingProp("storeFile", "CM_KEYSTORE_PATH")
+            if (storeFilePath != null) {
+                storeFile = file(storeFilePath)
+                storePassword = signingProp("storePassword", "CM_KEYSTORE_PASSWORD")
+                keyAlias = signingProp("keyAlias", "CM_KEY_ALIAS")
+                keyPassword = signingProp("keyPassword", "CM_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -38,6 +76,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     kapt {
@@ -54,6 +93,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.15"
@@ -97,6 +137,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.runtime:runtime-livedata")
@@ -113,7 +154,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.0")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation ("com.google.firebase:firebase-messaging-ktx:24.1.0")
-    implementation("com.google.firebase:firebase-analytics-ktx:21.4.0")
+    implementation("com.posthog:posthog-android:3.+")
 
     // Lottie for animations
     implementation("com.airbnb.android:lottie-compose:4.0.0")
@@ -121,6 +162,7 @@ dependencies {
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.2.2")
     implementation("io.coil-kt:coil-svg:2.2.2")
+    implementation("io.coil-kt:coil-gif:2.2.2")
     
     // Shimmer effect
     implementation("com.valentinilk.shimmer:compose-shimmer:1.2.0")
@@ -164,6 +206,18 @@ dependencies {
     implementation ("androidx.compose.compiler:compiler:1.5.3")
     implementation ("androidx.room:room-runtime:2.6.1")
     implementation ("androidx.room:room-ktx:2.6.1")
+
+    // RevenueCat - core SDK
+    implementation("com.revenuecat.purchases:purchases:9.15.1")
+
+    // In-app review (Play Store)
+    implementation("com.google.android.play:review:2.0.1")
+
+    // Networking - Retrofit + Moshi
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
@@ -182,3 +236,12 @@ dependencies {
     kapt ("androidx.room:room-compiler:2.6.1")
 }
 
+
+sentry {
+    org.set("alifba-ltd")
+    projectName.set("alifba-android")
+
+    // this will upload your source code to Sentry to show it as part of the stack traces
+    // disable if you don't want to expose your sources
+    includeSourceContext.set(true)
+}

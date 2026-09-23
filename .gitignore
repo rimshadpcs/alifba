@@ -14,3 +14,11 @@
 .cxx
 local.properties
 *.hprof
+
+# Sentry Config File
+sentry.properties
+
+# Release signing — holds the keystore path and passwords, never commit
+keystore.properties
+*.jks
+*.keystore
