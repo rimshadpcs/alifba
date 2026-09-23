@@ -155,7 +155,6 @@ fun AddProfileScreen(
             if (isLoading) {
                 LottieAnimationLoading(
                     showDialog = remember { mutableStateOf(true) },
-                    lottieFileRes = R.raw.loading_lottie,
                     isTransparentBackground = true,
                     onAnimationEnd = {}
                 )

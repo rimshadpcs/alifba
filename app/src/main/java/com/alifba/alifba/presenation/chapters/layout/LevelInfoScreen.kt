@@ -33,10 +33,6 @@ import com.alifba.alifba.R
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
-import com.google.firebase.analytics.logEvent
 
 @Composable
 fun LevelInfoScreen(
@@ -45,14 +41,6 @@ fun LevelInfoScreen(
     levelImage:Int,
     navController: NavController
 ) {
-    LaunchedEffect(Unit) {
-        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, "LevelInfoScreen")
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, "LevelInfoScreen")
-        }
-    }
-
-
     LaunchedEffect(levelId) {
         chaptersViewModel.getLevelSummary(levelId)
     }
@@ -118,7 +106,7 @@ fun LevelInfoScreen(
                 .padding(48.dp)
         ) {
             LevelInfoRow(
-                icon = R.drawable.chapters,
+                icon = R.drawable.privacy_policy,
                 label = "Lessons",
                 count = (levelSummary?.totalChapters ?: 0).toString(),
                 alifbaFont = alifbaFont
@@ -126,7 +114,7 @@ fun LevelInfoScreen(
 
             Spacer(modifier = Modifier.padding(8.dp))
             LevelInfoRow(
-                icon = R.drawable.story,
+                icon = R.drawable.privacy_policy,
                 label = "Stories",
                 count = (levelSummary?.totalStories ?: 0).toString(),
                 alifbaFont = alifbaFont
@@ -146,7 +134,7 @@ fun LevelInfoScreen(
 
             // Activities Row
             LevelInfoRow(
-                icon = R.drawable.alphab,
+                icon = R.drawable.privacy_policy,
                 label = "Activities",
                 count = (levelSummary?.totalActivities ?: 0).toString(),
                 alifbaFont = alifbaFont

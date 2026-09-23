@@ -7,6 +7,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Button
 //noinspection UsingMaterialAndMaterial3Libraries
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.alifba.alifba.R
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.focus.onFocusEvent
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +34,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Card
 //noinspection UsingMaterialAndMaterial3Libraries
@@ -59,6 +64,9 @@ import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
 import kotlinx.coroutines.delay
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.alifba.alifba.features.authentication.dataStore
+import kotlinx.coroutines.flow.firstOrNull
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -73,16 +81,29 @@ fun ProfileRegistration(
     )
     val authViewModel: AuthViewModel = hiltViewModel()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var childName by remember { mutableStateOf("") }
     var parentName by remember { mutableStateOf("") }
     var selectedAge by remember { mutableStateOf<Int?>(null) }
     var selectedAvatar by remember { mutableStateOf(0) }
     var selectedAvatarName by remember { mutableStateOf("") }
     var navigateTo by remember { mutableStateOf<String?>(null) }
+    val parentNameRequester = remember { BringIntoViewRequester() }
+    val childNameRequester = remember { BringIntoViewRequester() }
 
     val profileCreationState by authViewModel.profileCreationState.collectAsState()
 
-
+    // Pre-fill from the name captured on the first onboarding screen, if this user came
+    // through onboarding. Read directly off the same DataStore OnboardingDataStoreManager
+    // wraps (see onboarding_child_name there) rather than injecting the manager itself here,
+    // since this composable already has the Context it needs via LocalContext.
+    LaunchedEffect(Unit) {
+        val savedName = context.dataStore.data.firstOrNull()
+            ?.get(stringPreferencesKey("onboarding_child_name"))
+        if (!savedName.isNullOrBlank() && childName.isBlank()) {
+            childName = savedName
+        }
+    }
 
     LaunchedEffect(profileCreationState) {
         when (profileCreationState) {
@@ -105,6 +126,8 @@ fun ProfileRegistration(
         modifier = Modifier
             .fillMaxSize()
             .background(white)
+            .imePadding()
+            .verticalScroll(rememberScrollState())
     ) {
         Box(
             modifier = Modifier
@@ -145,8 +168,30 @@ fun ProfileRegistration(
         )
         // Remaining Content
         Column(modifier = Modifier.padding(16.dp)) {
-            CustomInputField(value = parentName, onValueChange = { parentName = it }, labelText = "Parent Name")
-            CustomInputField(value = childName, onValueChange = { childName = it }, labelText = "Child Name")
+            CustomInputField(
+                value = parentName,
+                onValueChange = { parentName = it },
+                labelText = "Parent Name",
+                modifier = Modifier
+                    .bringIntoViewRequester(parentNameRequester)
+                    .onFocusEvent { focusState ->
+                        if (focusState.isFocused) {
+                            coroutineScope.launch { parentNameRequester.bringIntoView() }
+                        }
+                    }
+            )
+            CustomInputField(
+                value = childName,
+                onValueChange = { childName = it },
+                labelText = "Child Name",
+                modifier = Modifier
+                    .bringIntoViewRequester(childNameRequester)
+                    .onFocusEvent { focusState ->
+                        if (focusState.isFocused) {
+                            coroutineScope.launch { childNameRequester.bringIntoView() }
+                        }
+                    }
+            )
 
             AgeSelectionCards { age ->
                 selectedAge = age
@@ -169,7 +214,6 @@ fun ProfileRegistration(
             if (isLoading) {
                 LottieAnimationLoading(
                     showDialog = remember { mutableStateOf(true) },
-                    lottieFileRes = R.raw.loading_lottie,
                     isTransparentBackground = true,
                     onAnimationEnd = {
                         navigateTo?.let { route ->

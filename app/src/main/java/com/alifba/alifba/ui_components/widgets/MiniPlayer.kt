@@ -40,6 +40,7 @@ fun MiniPlayer(
     
     // Only show mini player if there's a current story and audio is loaded, and not in audio player screen
     if (currentStory != null && duration > 0 && !isInAudioPlayer) {
+        val thumbnailUrl = currentStory?.thumbnail?.takeIf { it.isNotBlank() } ?: currentStory?.background
         Card(
             modifier = modifier
                 .fillMaxWidth()
@@ -59,7 +60,7 @@ fun MiniPlayer(
             ) {
                 // Left: Story thumbnail
                 AsyncImage(
-                    model = currentStory?.background,
+                    model = thumbnailUrl,
                     contentDescription = "Story thumbnail",
                     modifier = Modifier
                         .size(48.dp)
@@ -75,7 +76,7 @@ fun MiniPlayer(
                 ) {
                     Text(
                         text = currentStory?.name ?: "Unknown Story",
-                        color = darkPurple,
+                        color = Color.Black,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -83,7 +84,7 @@ fun MiniPlayer(
                     )
                     Text(
                         text = "Alifba Stories",
-                        color = darkPurple.copy(alpha = 0.7f),
+                        color = Color.Black.copy(alpha = 0.7f),
                         fontSize = 12.sp,
                         maxLines = 1
                     )

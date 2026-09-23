@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -41,23 +43,26 @@ import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.data.models.PictureMcqItem
 import com.alifba.alifba.presenation.main.logScreenView
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.PictureButton
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
-import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText as CommonExplanationText
 
 @Composable
-fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: () -> Unit, showNextButton: Boolean,) {
+fun PictureMcqSegment(
+    segment: LessonSegment.PictureMcqLesson,
+    onNextClicked: () -> Unit,
+    showNextButton: Boolean,
+    isLastSegment: Boolean = false
+) {
     val showNextButtonState = remember { mutableStateOf(false) }
     val showDialog = remember { mutableStateOf(false) }
+    val showWrongDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -68,15 +73,13 @@ fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: ()
         logScreenView("lesson_screen")
     }
     LaunchedEffect(Unit) {
-        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, "PictureMcqSegment")
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, "PictureMcqSegment")
-        }
+        SoundEffectManager.initialize(context)
     }
     Column(
         modifier = Modifier
             .padding(if (isTablet) 24.dp else 16.dp)
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
     ) {
         // Display the question text
         CommonExplanationText(
@@ -92,9 +95,14 @@ fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: ()
             isTablet = isTablet,
             onItemClick = { item ->
                 if (item.answer) {
-                    showNextButtonState.value = true
+                    SoundEffectManager.playCorrectSound()
                     showDialog.value = true
+                    if (isLastSegment) {
+                        showNextButtonState.value = true
+                    }
                 } else {
+                    SoundEffectManager.playWrongSound()
+                    showWrongDialog.value = true
                     val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
@@ -108,17 +116,29 @@ fun PictureMcqSegment(segment: LessonSegment.PictureMcqLesson, onNextClicked: ()
 
         // Show dialog animation on correct answer
         if (showDialog.value) {
-            LottieAnimationDialog(showDialog = showDialog, lottieFileRes = R.raw.tick)
+            LottieAnimationDialog(showDialog = showDialog, lottieFileRes = R.raw.tick, durationMs = 2000)
             LaunchedEffect(showDialog.value) {
                 delay(2000)
                 showDialog.value = false
-                animationFinished.value = true
+                if (isLastSegment) {
+                    animationFinished.value = true
+                } else {
+                    onNextClicked()
+                }
+            }
+        }
+
+        if (showWrongDialog.value) {
+            LottieAnimationDialog(showDialog = showWrongDialog, lottieFileRes = R.raw.error, durationMs = 1000)
+            LaunchedEffect(showWrongDialog.value) {
+                delay(1000)
+                showWrongDialog.value = false
             }
         }
     }
 
     // Show "Next" button after animation finishes
-    if (showNextButtonState.value && animationFinished.value) {
+    if (isLastSegment && showNextButtonState.value && animationFinished.value) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter

@@ -34,43 +34,44 @@ import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.data.models.TextMcqItem
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.MCQChoiceButton
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
 import com.alifba.alifba.ui_components.theme.darkCandyGreen
 import com.alifba.alifba.ui_components.theme.darkPink
+import com.alifba.alifba.ui_components.theme.darkPurple
+import com.alifba.alifba.ui_components.theme.darkRed
 import com.alifba.alifba.ui_components.theme.darkSkyBlue
 import com.alifba.alifba.ui_components.theme.darkYellow
 import com.alifba.alifba.ui_components.theme.lightCandyGreen
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightPink
+import com.alifba.alifba.ui_components.theme.lightPurple
+import com.alifba.alifba.ui_components.theme.lightRed
 import com.alifba.alifba.ui_components.theme.lightSkyBlue
 import com.alifba.alifba.ui_components.theme.lightYellow
+import com.alifba.alifba.ui_components.theme.mediumpurple
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
-import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 
 @Composable
 fun TextMcqSegment(
     segment: LessonSegment.TextMcqLesson,
     onNextClicked: () -> Unit,
+    isLastSegment: Boolean = false,
 ) {
     val hasAnswered = remember { mutableStateOf(false) }  // New state to track if user has answered
     val showNextButton = remember { mutableStateOf(false) }
     val showDialog = remember { mutableStateOf(false) }
+    val showWrongDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp > 600
 
     LaunchedEffect(Unit) {
-        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, "PictureMcqSegment")
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, "PictureMcqSegment")
-        }
+        SoundEffectManager.initialize(context)
     }
     Box(
         modifier = Modifier
@@ -100,9 +101,12 @@ fun TextMcqSegment(
                     onClick = {
                         if (choice.answer) {
                             hasAnswered.value = true
+                            SoundEffectManager.playCorrectSound()
                             showDialog.value = true
                         } else {
                             // Just vibrate for wrong answer
+                            SoundEffectManager.playWrongSound()
+                            showWrongDialog.value = true
                             val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
@@ -132,7 +136,7 @@ fun TextMcqSegment(
         }
 
         // Only show next button if user has answered correctly
-        if (hasAnswered.value && showNextButton.value && animationFinished.value) {
+        if (isLastSegment && hasAnswered.value && showNextButton.value && animationFinished.value) {
             CommonButton(
                 onClick = onNextClicked,
                 buttonText = "Next",
@@ -147,21 +151,33 @@ fun TextMcqSegment(
     }
 
     if (showDialog.value) {
-        LottieAnimationDialog(showDialog = showDialog, lottieFileRes = R.raw.tick)
+        LottieAnimationDialog(showDialog = showDialog, lottieFileRes = R.raw.tick, durationMs = 2000)
         LaunchedEffect(showDialog.value) {
             delay(2000)
             showDialog.value = false
-            showNextButton.value = true
-            animationFinished.value = true
+            if (isLastSegment) {
+                showNextButton.value = true
+                animationFinished.value = true
+            } else {
+                onNextClicked()
+            }
+        }
+    }
+
+    if (showWrongDialog.value) {
+        LottieAnimationDialog(showDialog = showWrongDialog, lottieFileRes = R.raw.error, durationMs = 1000)
+        LaunchedEffect(showWrongDialog.value) {
+            delay(1000)
+            showWrongDialog.value = false
         }
     }
 }
 fun getButtonColors(index: Int): Pair<Color, Color> {
     return when (index) {
-        0 -> Pair(lightPink, darkPink)
+        0 -> Pair(lightRed, darkRed)
         1 -> Pair(lightCandyGreen, darkCandyGreen)
-        2 -> Pair(lightSkyBlue, darkSkyBlue)
-        else -> Pair(lightYellow, darkYellow)
+        2 -> Pair(lightPurple, mediumpurple)
+        else -> Pair(lightPink, darkPink)
     }
 }
 
@@ -194,6 +210,3 @@ fun TextMcqSegmentTabletPreview() {
     )
     TextMcqSegment(segment = dummySegment, onNextClicked = {})
 }
-
-
-

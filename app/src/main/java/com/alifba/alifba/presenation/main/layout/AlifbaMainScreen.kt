@@ -11,6 +11,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -27,25 +28,38 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.alifba.alifba.R
 import com.alifba.alifba.presenation.login.AuthViewModel
+import com.alifba.alifba.presenation.login.LoginEntryMode
 import com.alifba.alifba.presenation.login.LoginScreen
 import com.alifba.alifba.presenation.login.ProfileRegistration
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
 import com.alifba.alifba.presenation.chapters.layout.LevelInfoScreen
 import com.alifba.alifba.presenation.lessonScreens.LessonScreenViewModel
 import com.alifba.alifba.presenation.lessonScreens.LessonScreen
+import com.alifba.alifba.presenation.lessonScreens.BadgeEarnedScreen
 import com.alifba.alifba.presenation.home.HomeViewModel
 import com.alifba.alifba.presenation.home.layout.profile.ChangeAvatarScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreen
 import com.alifba.alifba.presenation.home.layout.HomeScreenWithNavigation
 import com.alifba.alifba.presenation.home.layout.HomeTopBar
-import com.alifba.alifba.presenation.home.layout.ParentGate
+import com.alifba.alifba.ui_components.dialogs.ParentGate
 import com.alifba.alifba.presenation.home.layout.profile.ProfileScreenWithNavigation
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.home.layout.profile.AllBadgesScreen
 import com.alifba.alifba.presenation.home.layout.settings.AccountScreen
+import com.alifba.alifba.presenation.home.layout.settings.SubscriptionDetailsScreen
 import com.alifba.alifba.presenation.home.layout.settings.SettingsScreen
 import com.alifba.alifba.presenation.onboarding.OnboardingScreen
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
+import com.alifba.alifba.presenation.profile.ProfileSelectionScreen
+
+
+import com.alifba.alifba.presenation.home.layout.DiscountBanner
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.alifba.alifba.presenation.stories.DiscountPaywall
 
 
 @Composable
@@ -57,11 +71,16 @@ fun HomeScreenWithScaffold(
     chaptersViewModel: ChaptersViewModel
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background animation
-        LottieAnimationScreen()
-        
-        // Main content without top bar
+        // OLD: // Background animation
+        // OLD: LottieAnimationScreen()
+        // Temporarily disabled so the new grass/lamp-post lesson-path background
+        // (chaptersList.kt -> ChapterPathBackground) is visible for testing, per request.
+
+        // Main content
         HomeScreenWithNavigation(homeViewModel, navController, isUserLoggedIn = true, profileViewModel, chaptersViewModel)
+
+        // Floating Parent Gate (if needed by parent logic)
+        // ... (currently showParentGate was removed as it was only for the banner)
     }
 }
 
@@ -83,6 +102,24 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                     navController = navController
                 )
             }
+            composable(
+                route = "authOptions/{mode}",
+                arguments = listOf(
+                    navArgument("mode") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val mode = backStackEntry.arguments?.getString("mode")
+                val entryMode = if (mode == "signup") {
+                    LoginEntryMode.SignUp
+                } else {
+                    LoginEntryMode.SignIn
+                }
+                LoginScreen(
+                    viewModel = authViewModel,
+                    navController = navController,
+                    entryMode = entryMode
+                )
+            }
 
             composable("homeScreen") {
 
@@ -96,18 +133,31 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             }
 
             composable("profile") {
-                ProfileScreenWithNavigation(navController, profileViewModel, homeViewModel)
+                ProfileScreenWithNavigation(navController, profileViewModel)
             }
             composable("onboarding") {
-                OnboardingScreen(onComplete = {
-                    // When onboarding completes, navigate to profile registration
-                    navController.navigate("profileRegistration") {
-                        popUpTo("onboarding") { inclusive = true }
+                OnboardingScreen(
+                    onComplete = {
+                        // When onboarding completes, navigate to profile registration
+                        navController.navigate("profileRegistration") {
+                            popUpTo("onboarding") { inclusive = true }
+                        }
+                    },
+                    onExit = {
+                        navController.navigate("login") {
+                            popUpTo("onboarding") { inclusive = true }
+                        }
                     }
-                })
+                )
             }
             composable("profileRegistration") {
                 ProfileRegistration(navController = navController)
+            }
+            composable("createProfile") {
+                ProfileRegistration(navController = navController)
+            }
+            composable("profileSelection") {
+                ProfileSelectionScreen(navController = navController, authViewModel = authViewModel)
             }
             composable("changeAvatar") {
                 ChangeAvatarScreen(navController = navController, profileViewModel = profileViewModel)
@@ -120,7 +170,7 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                 )
             ) { backStackEntry ->
                 val levelId = backStackEntry.arguments?.getString("levelId") ?: ""
-                val levelImage = backStackEntry.arguments?.getInt("levelImage") ?: R.drawable.levelone
+                val levelImage = backStackEntry.arguments?.getInt("levelImage") ?: R.drawable.privacy_policy
 
                 LevelInfoScreen(
                     chaptersViewModel = chaptersViewModel,
@@ -153,6 +203,19 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
             composable("accountScreen") {
                 AccountScreen(authViewModel = authViewModel, navController = navController)
             }
+            composable("subscription") {
+                SubscriptionDetailsScreen(navController = navController)
+            }
+            composable("discountPaywall") {
+                DiscountPaywall(
+                    onClose = { navController.popBackStack() },
+                    onSuccess = { 
+                        navController.navigate("homeScreen") { 
+                            popUpTo("homeScreen") { inclusive = true } 
+                        } 
+                    }
+                )
+            }
             composable("allBadges") {
                 AllBadgesScreen(navController = navController, profileViewModel = profileViewModel)
             }
@@ -169,6 +232,12 @@ fun AlifbaMainScreen(lessonViewModel: LessonScreenViewModel, homeViewModel: Home
                         navController.navigate("homeScreen")
                     },
                     viewModel = lessonViewModel,
+                    chaptersViewModel = chaptersViewModel
+                )
+            }
+            composable("badgeEarned") {
+                BadgeEarnedScreen(
+                    navController = navController,
                     chaptersViewModel = chaptersViewModel
                 )
             }

@@ -29,10 +29,12 @@ fun CustomInputField(
     value: String,
     onValueChange: (String) -> Unit,
     labelText: String,
+    modifier: Modifier = Modifier,
     leadingIcon: @Composable (() -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
-    onImeAction: () -> Unit = {}
+    onImeAction: () -> Unit = {},
+    textColor: Color = navyBlue
 ) {
     val alifbaFont = FontFamily(
         Font(R.font.vag_round, FontWeight.SemiBold)
@@ -48,8 +50,8 @@ fun CustomInputField(
                 color = navyBlue.copy(alpha = 0.8f)
             )
             TextFieldDefaults.colors(
-                focusedTextColor = navyBlue,
-                cursorColor = navyBlue
+                focusedTextColor = textColor,
+                cursorColor = textColor
             )
 
         },
@@ -57,9 +59,10 @@ fun CustomInputField(
         textStyle = TextStyle(
             fontFamily = alifbaFont,
             fontSize = 16.sp,
-            color = navyBlue
+            color = textColor
         ),
         modifier = Modifier
+            .then(modifier)
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .shadow(
@@ -74,7 +77,9 @@ fun CustomInputField(
             focusedContainerColor = white,
             unfocusedContainerColor = white.copy(alpha = 0.9f),
             focusedLabelColor = navyBlue,
-            cursorColor = navyBlue
+            cursorColor = textColor,
+            focusedTextColor = textColor,
+            unfocusedTextColor = textColor
         ),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,

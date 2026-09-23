@@ -6,13 +6,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Bundle
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.alifba.alifba.R
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.analytics
 import java.util.Calendar
 
 class LessonReminderReceiver : BroadcastReceiver() {
@@ -31,13 +28,15 @@ class LessonReminderReceiver : BroadcastReceiver() {
     private fun createLessonReminderNotification(context: Context) {
         Log.d(TAG, "Creating notification")
 
+        val notificationTime = System.currentTimeMillis()
+
         // Prepare an intent to launch the app when the notification is tapped.
         val launchIntent = context.packageManager
             .getLaunchIntentForPackage(context.packageName)
             ?.apply {
                 putExtra("track_notification", true)
                 putExtra("notification_type", "daily_reminder")
-                putExtra("notification_time", System.currentTimeMillis())
+                putExtra("notification_time", notificationTime)
             }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -196,21 +195,4 @@ class LessonReminderReceiver : BroadcastReceiver() {
             Log.d(TAG, "Reminder canceled")
         }
     }
-}
-
-/**
- * Logs notification events to Firebase Analytics.
- */
-fun logNotificationEvent(
-    eventName: String,
-    notificationType: String,
-    notificationTime: Long? = null,
-    clickTime: Long? = null
-) {
-    val bundle = Bundle().apply {
-        putString("notification_type", notificationType)
-        notificationTime?.let { putLong("notification_time", it) }
-        clickTime?.let { putLong("click_time", it) }
-    }
-    Firebase.analytics.logEvent(eventName, bundle)
 }

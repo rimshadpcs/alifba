@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.alifba.alifba.data.local.PlaybackProgressStore
 
 @HiltViewModel
 class AudioPlayerViewModel @Inject constructor(
@@ -25,6 +26,7 @@ class AudioPlayerViewModel @Inject constructor(
     
     private var audioService: AudioPlayerService? = null
     private var isBound = false
+    private var playWhenReady = false
     
     private val _currentStory = MutableStateFlow<Story?>(null)
     val currentStory: StateFlow<Story?> = _currentStory.asStateFlow()
@@ -44,6 +46,8 @@ class AudioPlayerViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     
+    private val progressStore by lazy { PlaybackProgressStore(context) }
+    
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as AudioPlayerService.AudioPlayerBinder
@@ -58,7 +62,13 @@ class AudioPlayerViewModel @Inject constructor(
             // Load current story if available
             _currentStory.value?.let { story ->
                 if (story.audio.isNotEmpty()) {
-                    audioService?.loadAudio(story.audio, story.name, story.background)
+                    audioService?.loadAudio(
+                        audioUrl = story.audio,
+                        storyName = story.name,
+                        imageUrl = story.background,
+                        storyId = story.documentId,
+                        category = story.category.ifBlank { "stories" }
+                    )
                 }
             }
         }
@@ -97,6 +107,17 @@ class AudioPlayerViewModel @Inject constructor(
             viewModelScope.launch {
                 service.currentPosition.collect { position ->
                     _currentPosition.value = position
+                    // Persist progress for current story
+                    _currentStory.value?.let { s ->
+                        val dur = _duration.value
+                        val isCompleted = dur > 0L && position >= (dur * 0.98f).toLong()
+                        progressStore.setProgress(
+                            documentId = s.documentId,
+                            position = position,
+                            duration = dur,
+                            completed = isCompleted
+                        )
+                    }
                 }
             }
             
@@ -109,6 +130,10 @@ class AudioPlayerViewModel @Inject constructor(
             viewModelScope.launch {
                 service.isLoading.collect { loading ->
                     _isLoading.value = loading
+                    if (!loading && playWhenReady && _currentStory.value?.audio?.isNotEmpty() == true) {
+                        playWhenReady = false
+                        play()
+                    }
                 }
             }
             
@@ -120,12 +145,21 @@ class AudioPlayerViewModel @Inject constructor(
         }
     }
     
-    fun loadStory(story: Story) {
+    fun loadStory(story: Story, autoPlay: Boolean = false) {
         _currentStory.value = story
         _error.value = null
+        playWhenReady = autoPlay
+        // Mark last played for resume/hero banner
+        progressStore.setLastPlayed(story.documentId)
         
         if (story.audio.isNotEmpty()) {
-            audioService?.loadAudio(story.audio, story.name, story.background)
+            audioService?.loadAudio(
+                audioUrl = story.audio,
+                storyName = story.name,
+                imageUrl = story.background,
+                storyId = story.documentId,
+                category = story.category.ifBlank { "stories" }
+            )
             Log.d("AudioPlayerViewModel", "Loading audio for story: ${story.name}")
         } else {
             _error.value = "No audio available for this story"

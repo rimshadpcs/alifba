@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalConfiguration
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -28,16 +30,13 @@ import com.alifba.alifba.data.models.LessonSegment
 import com.alifba.alifba.data.models.OptionsForFillInTheBlanks
 import com.alifba.alifba.presenation.main.logScreenView
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.OptionButton
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
-import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -49,12 +48,6 @@ fun FillInTheBlanksExerciseScreen(
 ) {
     LaunchedEffect(Unit) {
         logScreenView("lesson_screen")
-    }
-    LaunchedEffect(Unit) {
-        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, "FillInTheBlanksExerciseScreen")
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, "FillInTheBlanksExerciseScreen")
-        }
     }
     val exerciseKey = segment.exercise.hashCode()
 
@@ -87,13 +80,20 @@ fun FillInTheBlanksExerciseScreen(
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp > 600
     val showDialog = remember { mutableStateOf(false) }
+    val showWrongDialog = remember { mutableStateOf(false) }
     val animationFinished = remember { mutableStateOf(false) }
     val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
 
+    LaunchedEffect(Unit) {
+        SoundEffectManager.initialize(context)
+    }
+
     val checkAnswer = {
-        val normalizedUserAnswer = blanksState.value.entries
-            .sortedBy { it.key }
-            .map { it.value?.position ?: -1 }
+        val sortedBlankIndices = blanksState.value.keys.sorted()
+
+        val normalizedUserAnswer = sortedBlankIndices.map { index ->
+            blanksState.value[index]?.position ?: -1
+        }
 
         val normalizedCorrectAnswer = segment.exercise.correctAnswers.map { it ?: -1 }
 
@@ -102,9 +102,23 @@ fun FillInTheBlanksExerciseScreen(
         Log.d("FillInTheBlanks", "Normalized Correct answer: $normalizedCorrectAnswer")
 
         if (normalizedUserAnswer == normalizedCorrectAnswer) {
+            SoundEffectManager.playCorrectSound()
             showDialog.value = true
         } else {
-            Toast.makeText(context, "Wrong answer", Toast.LENGTH_SHORT).show()
+            SoundEffectManager.playWrongSound()
+            showWrongDialog.value = true
+
+            // Return only wrong choices back to the options list:
+            // keep correct blanks filled, clear incorrect ones.
+            val newBlanks = blanksState.value.toMutableMap()
+            sortedBlankIndices.forEachIndexed { idx, blankIndex ->
+                val selectedPos = blanksState.value[blankIndex]?.position ?: -1
+                val expectedPos = normalizedCorrectAnswer.getOrNull(idx) ?: -1
+                if (selectedPos != expectedPos) {
+                    newBlanks[blankIndex] = null
+                }
+            }
+            blanksState.value = newBlanks
 
             val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -119,7 +133,7 @@ fun FillInTheBlanksExerciseScreen(
     Column(
         modifier = Modifier
             .padding(if (isTablet) 24.dp else 16.dp)
-            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())
     ) {
         // Display Image
         Image(
@@ -188,7 +202,7 @@ fun FillInTheBlanksExerciseScreen(
 
         // Animation Dialog after Correct Answer
         if (showDialog.value) {
-            LottieAnimationDialog(showDialog = showDialog, lottieFileRes = R.raw.tick)
+            LottieAnimationDialog(showDialog = showDialog, lottieFileRes = R.raw.tick, durationMs = 2000)
             LaunchedEffect(showDialog.value) {
                 delay(2000)
                 showDialog.value = false
@@ -196,7 +210,15 @@ fun FillInTheBlanksExerciseScreen(
             }
         }
 
-        Spacer(Modifier.weight(1f))
+        if (showWrongDialog.value) {
+            LottieAnimationDialog(showDialog = showWrongDialog, lottieFileRes = R.raw.error, durationMs = 1000)
+            LaunchedEffect(showWrongDialog.value) {
+                delay(1000)
+                showWrongDialog.value = false
+            }
+        }
+
+        Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
 
         // Check Answer Button
         Box(

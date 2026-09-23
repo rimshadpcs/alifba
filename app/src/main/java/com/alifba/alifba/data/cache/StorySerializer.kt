@@ -18,6 +18,7 @@ data class SerializableStory(
     val isLocked: Boolean = false,
     val isBedtime: Boolean = false,
     val duration: Long = 0L,
+    val durationSeconds: Long = 0L,
     val category: String = "",
     val status: String = ""
 )
@@ -37,6 +38,7 @@ object StorySerializer {
             isLocked = story.isLocked,
             isBedtime = story.isBedtime,
             duration = story.duration,
+            durationSeconds = story.durationSeconds,
             category = story.category,
             status = story.status
         )
@@ -56,6 +58,7 @@ object StorySerializer {
             isLocked = serializable.isLocked,
             isBedtime = serializable.isBedtime,
             duration = serializable.duration,
+            durationSeconds = serializable.durationSeconds,
             category = serializable.category,
             status = serializable.status
         )

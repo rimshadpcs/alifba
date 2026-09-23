@@ -380,7 +380,7 @@ fun createPolygonPath(cx: Float, cy: Float, sides: Int, radius: Float): Path {
 @Composable
 fun AnimateAngleAndPositionOnPathSample() {
 
-    val painter = painterResource(R.drawable.down_arrow)
+    val painter = painterResource(R.drawable.privacy_policy)
     val path = remember {
         Path()
     }

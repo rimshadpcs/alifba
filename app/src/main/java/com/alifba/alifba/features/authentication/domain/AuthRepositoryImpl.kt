@@ -3,7 +3,6 @@ package com.alifba.alifba.features.authentication.domain
 import com.alifba.alifba.presenation.login.AuthState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.OAuthProvider
 import kotlinx.coroutines.tasks.await
 
 class AuthRepositoryImpl(private val firebaseAuth: FirebaseAuth): AuthRepository
@@ -46,12 +45,8 @@ class AuthRepositoryImpl(private val firebaseAuth: FirebaseAuth): AuthRepository
     }
 
     override suspend fun signInWithApple(appleToken: String): AuthState {
-        return try {
-            val credential = OAuthProvider.getCredential("apple.com", appleToken, null.toString())
-            firebaseAuth.signInWithCredential(credential).await()
-            AuthState.Success
-        } catch (e: Exception) {
-            AuthState.Error(e.message ?: "Apple Sign-In failed")
-        }
+        return AuthState.Error(
+            "Apple sign-in on Android must use Firebase OAuth activity flow."
+        )
     }
 }

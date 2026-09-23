@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.AlertDialog
@@ -65,6 +67,7 @@ import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightRed
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
+import com.alifba.alifba.ui_components.widgets.DotLottieView
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -108,9 +111,9 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top Bar with improved alignment
             Row(
@@ -145,169 +148,177 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                 modifier = Modifier.size(140.dp)
             )
 
-//            Spacer(modifier = Modifier.height(2.dp))
             Spacer(modifier = Modifier.height(-8.dp)) // Add this after the animation
-            // Profile Card with black border
-            Card(
+
+            // Scrollable content: profile card and action buttons
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                backgroundColor = cardBackground,
-                elevation = 4.dp,
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    width = 2.dp,
-                    color = cardBorder
-                )
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    Text(
-                        text = "Account Information",
-                        style = TextStyle(
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = navyBlue
-                        ),
-                        fontFamily = alifbaFont,
+                // Profile Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    backgroundColor = cardBackground,
+                    elevation = 4.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 2.dp,
+                        color = cardBorder
                     )
-
-                    Divider(color = cardBorder.copy(alpha = 0.5f), thickness = 1.dp)
-
-                    // Parent Name
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Parent",
-                            tint = iconTint,
-                            modifier = Modifier.size(32.dp)
+                        Text(
+                            text = "Account Information",
+                            style = TextStyle(
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = navyBlue
+                            ),
+                            fontFamily = alifbaFont,
                         )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = "Parent Name",
-                                style = TextStyle(
-                                    fontSize = 14.sp,
-                                    color = navyBlue.copy(alpha = 0.7f)
-                                ),
-                                fontFamily = alifbaFont,
+
+                        Divider(color = cardBorder.copy(alpha = 0.5f), thickness = 1.dp)
+
+                        // Parent Name
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Parent",
+                                tint = iconTint,
+                                modifier = Modifier.size(32.dp)
                             )
-                            Text(
-                                text = parentAccount?.parentName ?: "Loading...",
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = textHighlightColor
-                                ),
-                                fontFamily = alifbaFont,
-                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = "Parent Name",
+                                    style = TextStyle(
+                                        fontSize = 14.sp,
+                                        color = navyBlue.copy(alpha = 0.7f)
+                                    ),
+                                    fontFamily = alifbaFont,
+                                )
+                                Text(
+                                    text = parentAccount?.parentName ?: "Loading...",
+                                    style = TextStyle(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textHighlightColor
+                                    ),
+                                    fontFamily = alifbaFont,
+                                )
+                            }
                         }
-                    }
 
-                    Divider(color = cardBorder.copy(alpha = 0.2f), thickness = 1.dp)
+                        Divider(color = cardBorder.copy(alpha = 0.2f), thickness = 1.dp)
 
-                    // Email
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = "Email",
-                            tint = iconTint,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = "Email Address",
-                                style = TextStyle(
-                                    fontSize = 14.sp,
-                                    color = navyBlue.copy(alpha = 0.7f)
-                                ),
-                                fontFamily = alifbaFont,
+                        // Email
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = "Email",
+                                tint = iconTint,
+                                modifier = Modifier.size(32.dp)
                             )
-                            Text(
-                                text = parentAccount?.email ?: "Loading...",
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = textHighlightColor
-                                ),
-                                fontFamily = alifbaFont,
-                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = "Email Address",
+                                    style = TextStyle(
+                                        fontSize = 14.sp,
+                                        color = navyBlue.copy(alpha = 0.7f)
+                                    ),
+                                    fontFamily = alifbaFont,
+                                )
+                                Text(
+                                    text = parentAccount?.primaryEmail
+                                        ?: parentAccount?.contactEmail
+                                        ?: "Not set",
+                                    style = TextStyle(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textHighlightColor
+                                    ),
+                                    fontFamily = alifbaFont,
+                                )
+                            }
                         }
-                    }
 
-                    Divider(color = cardBorder.copy(alpha = 0.2f), thickness = 1.dp)
+                        Divider(color = cardBorder.copy(alpha = 0.2f), thickness = 1.dp)
 
-                    // User ID
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "User ID",
-                            tint = iconTint,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = "Account ID",
-                                style = TextStyle(
-                                    fontSize = 14.sp,
-                                    color = navyBlue.copy(alpha = 0.7f)
-                                ),
-                                fontFamily = alifbaFont,
+                        // User ID
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "User ID",
+                                tint = iconTint,
+                                modifier = Modifier.size(32.dp)
                             )
-                            Text(
-                                text = parentAccount?.userId ?: "Loading...",
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = textHighlightColor
-                                ),
-                                fontFamily = alifbaFont,
-                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = "Account ID",
+                                    style = TextStyle(
+                                        fontSize = 14.sp,
+                                        color = navyBlue.copy(alpha = 0.7f)
+                                    ),
+                                    fontFamily = alifbaFont,
+                                )
+                                Text(
+                                    text = parentAccount?.userId ?: "Loading...",
+                                    style = TextStyle(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textHighlightColor
+                                    ),
+                                    fontFamily = alifbaFont,
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.weight(1f))
+                // Buttons with spacing below the card, all scroll together
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CommonButton(
+                        onClick = {
+                            authViewModel.logout() // Clears user data and signs out
+                            navController.navigate("login") {
+                                popUpTo("homeScreen") { inclusive = true } // Clear back stack
+                            }
+                        },
+                        buttonText = "Logout",
+                        shadowColor = navyBlue,
+                        mainColor = lightNavyBlue,
+                        textColor = white,
+                    )
 
-            // Buttons at the bottom with more space
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                CommonButton(
-                    onClick = {
-                        authViewModel.logout() // Clears user data and signs out
-                        navController.navigate("login") {
-                            popUpTo("homeScreen") { inclusive = true } // Clear back stack
-                        }
-                    },
-                    buttonText = "Logout",
-                    shadowColor = navyBlue,
-                    mainColor = lightNavyBlue,
-                    textColor = white,
-                )
-
-                CommonButton(
-                    onClick = { showDeleteConfirmDialog = true },
-                    buttonText = "Delete Account",
-                    shadowColor = darkRed,
-                    mainColor = lightRed,
-                    textColor = white,
-                )
+                    CommonButton(
+                        onClick = { showDeleteConfirmDialog = true },
+                        buttonText = "Delete Account",
+                        shadowColor = darkRed,
+                        mainColor = lightRed,
+                        textColor = white,
+                    )
+                }
             }
         }
     }
@@ -334,12 +345,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                 .background(Color.Black.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center
         ) {
-            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading_lottie))
-            LottieAnimation(
-                composition = composition,
-                iterations = LottieConstants.IterateForever,
-                modifier = Modifier.size(200.dp)
-            )
+            DotLottieView(name = "moon_waiting", modifier = Modifier.size(200.dp))
         }
     }
 

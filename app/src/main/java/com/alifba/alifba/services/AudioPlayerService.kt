@@ -28,6 +28,7 @@ import androidx.core.content.FileProvider
 import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -38,6 +39,8 @@ import coil.request.ImageRequest
 import coil.target.Target
 import androidx.core.app.NotificationCompat
 import com.alifba.alifba.R
+import com.alifba.alifba.BuildConfig
+import com.posthog.PostHog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,7 +75,11 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
     
     private val _currentStoryImageUrl = MutableStateFlow<String?>(null)
     val currentStoryImageUrl: StateFlow<String?> = _currentStoryImageUrl.asStateFlow()
-    
+
+    private var currentStoryId: String? = null
+    private var currentStoryCategory: String? = null
+    private var hasLoggedCompletion = false
+
     private var currentStoryBitmap: Bitmap? = null
     private var enhancedBackgroundBitmap: Bitmap? = null
     private var enhancedBackgroundUri: Uri? = null
@@ -181,10 +188,20 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
         }
     }
     
-    fun loadAudio(audioUrl: String, storyName: String? = null, imageUrl: String? = null) {
+    fun loadAudio(
+        audioUrl: String,
+        storyName: String? = null,
+        imageUrl: String? = null,
+        storyId: String? = null,
+        category: String? = null
+    ) {
         try {
             // Check if same audio is already loaded
             if (_currentAudioUrl.value == audioUrl && mediaPlayer != null) {
+                _currentStoryName.value = storyName
+                _currentStoryImageUrl.value = imageUrl
+                currentStoryId = storyId
+                currentStoryCategory = category?.ifBlank { "stories" }
                 Log.d("AudioPlayerService", "Audio already loaded: $audioUrl")
                 return
             }
@@ -194,7 +211,9 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
             _currentAudioUrl.value = audioUrl
             _currentStoryName.value = storyName
             _currentStoryImageUrl.value = imageUrl
-            
+            currentStoryId = storyId
+            currentStoryCategory = category?.ifBlank { "stories" }
+            hasLoggedCompletion = false
             // Load story background image if provided
             if (imageUrl != null) {
                 loadStoryImage(imageUrl)
@@ -218,6 +237,7 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
                 }
                 
                 setOnCompletionListener {
+                    logAudioStoryCompleted()
                     _isPlaying.value = false
                     _currentPosition.value = 0L
                     stopPositionUpdates()
@@ -249,6 +269,10 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
         try {
             mediaPlayer?.let { player ->
                 if (!player.isPlaying) {
+                    if (_currentPosition.value == 0L) {
+                        hasLoggedCompletion = false
+                    }
+                    logAudioStoryStarted()
                     player.start()
                     _isPlaying.value = true
                     startPositionUpdates()
@@ -314,6 +338,9 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
             _currentAudioUrl.value = ""
             _currentStoryName.value = null
             _currentStoryImageUrl.value = null
+            currentStoryId = null
+            currentStoryCategory = null
+            hasLoggedCompletion = false
             currentStoryBitmap = null
             enhancedBackgroundBitmap = null
             enhancedBackgroundUri = null
@@ -335,6 +362,15 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
                 mediaPlayer?.let { player ->
                     if (player.isPlaying) {
                         _currentPosition.value = player.currentPosition.toLong()
+                        if (!hasLoggedCompletion) {
+                            val durationMs = _duration.value
+                            if (durationMs > 0L) {
+                                val completionThreshold = (durationMs * 0.95).toLong()
+                                if (_currentPosition.value >= completionThreshold) {
+                                    logAudioStoryCompleted()
+                                }
+                            }
+                        }
                         updateMediaSessionState() // Update MediaSession with current position
                         handler.postDelayed(this, 1000) // Update every second
                     }
@@ -350,7 +386,62 @@ class AudioPlayerService : MediaBrowserServiceCompat() {
             positionUpdateRunnable = null
         }
     }
-    
+
+    private fun logAudioStoryStarted() {
+        captureAudioEvent("audio_story_started")
+    }
+
+    private fun logAudioStoryCompleted() {
+        if (hasLoggedCompletion) {
+            return
+        }
+        hasLoggedCompletion = true
+        val durationMs = _duration.value
+        val positionMs = _currentPosition.value
+        val properties = mutableMapOf<String, Any>()
+        if (durationMs > 0L) {
+            properties["duration_ms"] = durationMs
+            if (positionMs >= 0L) {
+                properties["completion_ratio"] = positionMs.toDouble() / durationMs.toDouble()
+            }
+        }
+        if (positionMs >= 0L) {
+            properties["position_ms"] = positionMs
+        }
+        captureAudioEvent("audio_story_completed", properties)
+    }
+
+    private fun captureAudioEvent(
+        eventName: String,
+        extraProperties: Map<String, Any> = emptyMap()
+    ) {
+        try {
+            val properties = mutableMapOf<String, Any>()
+            currentStoryId?.let { properties["story_id"] = it }
+            currentStoryName.value?.let { properties["story_title"] = it }
+            currentStoryCategory?.let { properties["category"] = it }
+            if (extraProperties.isNotEmpty()) {
+                properties.putAll(extraProperties)
+            }
+            if (properties.isEmpty()) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("PostHog", "capture $eventName")
+                }
+                PostHog.capture(event = eventName)
+            } else {
+                if (BuildConfig.DEBUG) {
+                    Log.d("PostHog", "capture $eventName $properties")
+                }
+                PostHog.capture(event = eventName, properties = properties)
+            }
+            if (BuildConfig.DEBUG) {
+                PostHog.flush()
+            }
+        } catch (e: Exception) {
+            Log.e("PostHog", "Failed to capture audio event: ${e.message}", e)
+        }
+    }
+
     private fun updateMediaSessionState() {
         val state = if (_isPlaying.value) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
         mediaSession?.setPlaybackState(

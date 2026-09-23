@@ -177,7 +177,7 @@ fun NotificationDialog(
                             reminderTime.second
                         )
 
-                        // Mark it handled
+                        // Mark it handled so we don't show this dialog again
                         ReminderPreferences.setNotificationPermissionHandled(
                             context,
                             true
@@ -198,6 +198,10 @@ fun NotificationDialog(
                 TextButton(
                     onClick = {
                         // User chose to skip
+                        ReminderPreferences.setNotificationPermissionHandled(
+                            context,
+                            true
+                        )
                         onDismiss()
                     }
                 ) {
@@ -207,4 +211,3 @@ fun NotificationDialog(
         )
     }
 }
-

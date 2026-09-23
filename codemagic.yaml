@@ -1,0 +1,87 @@
+workflows:
+  android-build-test:
+    name: Android Build & Test
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      vars:
+        PACKAGE_NAME: "com.alifba.alifba"
+      java: 17
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+      - name: Run unit tests
+        script: |
+          cd $CM_BUILD_DIR
+          ./gradlew testDebugUnitTest --stacktrace
+      - name: Assemble debug APK
+        script: |
+          cd $CM_BUILD_DIR
+          ./gradlew assembleDebug --stacktrace
+    artifacts:
+      - app/build/outputs/apk/debug/*.apk
+      - app/build/reports/tests/**
+    publishing:
+      email:
+        recipients:
+          - rimshadpcs@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  android-release:
+    name: Android Release (Play Console)
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      # Matches the reference name given when uploading the release keystore under
+      # Codemagic → alifba app → Code signing identities → Android keystores. Codemagic
+      # injects CM_KEYSTORE_PATH / CM_KEYSTORE_PASSWORD / CM_KEY_ALIAS / CM_KEY_PASSWORD from
+      # it automatically — app/build.gradle.kts's signingConfigs.release reads exactly those
+      # (falling back to a local, gitignored keystore.properties for local dev builds).
+      android_signing:
+        - alifba_release_keystore
+      groups:
+        - android_release
+      vars:
+        PACKAGE_NAME: "com.alifba.alifba"
+      java: 17
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+      - name: Build signed release bundle
+        script: |
+          cd $CM_BUILD_DIR
+          ./gradlew bundleRelease --stacktrace
+    artifacts:
+      - app/build/outputs/bundle/release/*.aab
+    publishing:
+      email:
+        recipients:
+          - rimshadpcs@gmail.com
+        notify:
+          success: true
+          failure: true
+      google_play:
+        # Set as an app-level (not personal-account-global) encrypted environment variable in
+        # Codemagic → alifba app → Environment variables, containing the full contents of
+        # alifba-app-bdf7756740c7.json pasted in as a "Secret" variable named exactly this.
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false

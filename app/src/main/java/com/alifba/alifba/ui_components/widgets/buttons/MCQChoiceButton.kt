@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,8 +91,10 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, s
                 fontFamily = alifbaFont,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
-                fontSize = if (actualIsTablet) 36.sp else 28.sp,
-                letterSpacing = 0.8.sp
+                fontSize = if (actualIsTablet) 30.sp else 24.sp,
+                letterSpacing = 0.8.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 2
             )
         }
     }

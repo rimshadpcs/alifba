@@ -26,20 +26,17 @@ class DownloadLessonWorker(
         return try {
             val firestore = FirebaseFirestore.getInstance()
 
-            val collectionPath = "lessons/$levelId/chapters"
-            val querySnapshot = firestore.collection(collectionPath)
-                .whereEqualTo("id", chapterId.toLong())
+            val documentPath = "chapters/$chapterId"
+            val chapterDoc = firestore.document(documentPath)
                 .get()
                 .await()
 
-            if (querySnapshot.documents.isEmpty()) {
-                Log.e("DownloadLessonWorker", "No chapter document found for id: $chapterId")
+            if (!chapterDoc.exists()) {
+                Log.e("DownloadLessonWorker", "No chapter document found at path: $documentPath")
                 return Result.failure()
             }
 
 
-
-            val chapterDoc = querySnapshot.documents.first()
             Log.d("DownloadLessonWorker", "Full document data: ${chapterDoc.data}")
 
 

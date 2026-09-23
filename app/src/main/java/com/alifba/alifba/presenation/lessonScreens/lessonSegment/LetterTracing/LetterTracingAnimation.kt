@@ -50,10 +50,6 @@ import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
-import com.google.firebase.analytics.logEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.atan2
@@ -66,12 +62,6 @@ fun LetterTracingAnimation(
     LaunchedEffect(Unit) {
         logScreenView("lesson_screen")
     }
-    LaunchedEffect(Unit) {
-        Firebase.analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
-            param(FirebaseAnalytics.Param.SCREEN_NAME, "LetterTracingAnimation")
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, "LetterTracingAnimation")
-        }
-    }
 
     val letterShape = remember {
         when (letterId?.lowercase()) {
@@ -83,7 +73,7 @@ fun LetterTracingAnimation(
             else   -> createBaaShape()
         }
     }
-    val arrowPainter = painterResource(id = R.drawable.down_arrow)
+    val arrowPainter = painterResource(id = R.drawable.privacy_policy)
     val handPainter = painterResource(id = R.drawable.hand)
 
     val path = remember { Path() }
