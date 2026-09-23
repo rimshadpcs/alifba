@@ -2,7 +2,7 @@ workflows:
   android-build-test:
     name: Android Build & Test
     max_build_duration: 30
-    instance_type: linux_x2
+    instance_type: linux
     environment:
       vars:
         PACKAGE_NAME: "com.alifba.alifba"
@@ -40,7 +40,7 @@ workflows:
   android-release:
     name: Android Release (Play Console)
     max_build_duration: 60
-    instance_type: linux_x2
+    instance_type: linux
     environment:
       # Matches the reference name given when uploading the release keystore under
       # Codemagic → alifba app → Code signing identities → Android keystores. Codemagic
