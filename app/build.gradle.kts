@@ -35,6 +35,13 @@ android {
             if (requested.group == "org.jetbrains.kotlin") {
                 useVersion("1.9.25")
             }
+            // okio 3.10+ ships Kotlin 2.x metadata, which this project's Kotlin 1.9.25 compiler
+            // can't read ("Module was compiled with an incompatible version of Kotlin"). It
+            // arrives transitively (PostHog -> OkHttp -> okio), so cap it here.
+            if (requested.group == "com.squareup.okio") {
+                useVersion("3.9.1")
+                because("okio 3.10+ needs a Kotlin 2.x compiler")
+            }
         }
     }
 
@@ -43,7 +50,9 @@ android {
         minSdk = 25
         //noinspection EditedTargetSdkVersion
         targetSdk = 36
-        versionCode = 15
+        // Google Play rejects a re-used versionCode, so CI works out the next one from Play
+        // (NEW_VERSION_CODE, set in codemagic.yaml); local builds just use the checked-in 15.
+        versionCode = maxOf(15, System.getenv("NEW_VERSION_CODE")?.toIntOrNull() ?: 0)
         versionName = "2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -154,7 +163,9 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.0")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation ("com.google.firebase:firebase-messaging-ktx:24.1.0")
-    implementation("com.posthog:posthog-android:3.+")
+    // Pinned: a floating "3.+" silently pulled in a release whose okio needed Kotlin 2.x and
+    // broke every clean CI build. Bump deliberately.
+    implementation("com.posthog:posthog-android:3.71.6")
 
     // Lottie for animations
     implementation("com.airbnb.android:lottie-compose:4.0.0")
@@ -237,12 +248,21 @@ dependencies {
 }
 
 
+// Uploads need SENTRY_AUTH_TOKEN (a secret env var in the Codemagic android_release group).
+// Without it — a local build, or CI before the variable is added — skip the uploads instead of
+// failing a bundleRelease that has otherwise built fine.
+val sentryAuthToken: String? = System.getenv("SENTRY_AUTH_TOKEN")?.takeIf { it.isNotBlank() }
+if (sentryAuthToken == null) {
+    logger.warn("SENTRY_AUTH_TOKEN is not set: skipping Sentry source-context/mapping uploads")
+}
+
 sentry {
     org.set("alifba-ltd")
     projectName.set("alifba-android")
-    authToken.set(System.getenv("SENTRY_AUTH_TOKEN"))
+    authToken.set(sentryAuthToken)
 
     // this will upload your source code to Sentry to show it as part of the stack traces
     // disable if you don't want to expose your sources
-    includeSourceContext.set(true)
+    includeSourceContext.set(sentryAuthToken != null)
+    autoUploadProguardMapping.set(sentryAuthToken != null)
 }

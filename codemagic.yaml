@@ -63,6 +63,15 @@ workflows:
       - name: Set up local.properties
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+      - name: Set versionCode from Google Play
+        script: |
+          # Play rejects a re-used versionCode, so use the latest published one + 1.
+          # app/build.gradle.kts reads NEW_VERSION_CODE and falls back to its checked-in value
+          # (so this is harmless before the very first upload, or if Play can't be reached).
+          LATEST=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" 2>/dev/null | tail -1)
+          case "$LATEST" in ''|*[!0-9]*) LATEST=0 ;; esac
+          echo "Latest versionCode on Google Play: $LATEST"
+          echo "NEW_VERSION_CODE=$((LATEST + 1))" >> "$CM_ENV"
       - name: Build signed release bundle
         script: |
           cd $CM_BUILD_DIR
