@@ -75,11 +75,41 @@ class SubscriptionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Records that a standard paywall was closed without a purchase and returns whether the
+     * discount paywall should follow it. One rule for every paywall entry point, matching iOS
+     * (DownsellManager.recordStandardPaywallSkip):
+     *  - never for premium users, and never while the 24h discount timer is running (the home
+     *    banner already surfaces that offer),
+     *  - at most once per app session,
+     *  - otherwise on the first skip ever, then on every 3rd skip.
+     * The skip itself is always counted, even when no discount follows.
+     */
+    fun recordStandardPaywallSkip(): Boolean {
+        val timerActive = discountExpiryTimestamp.value > System.currentTimeMillis()
+        val isFirstSkipEver = !hasSeenDownsellModal.value
+        val skipCountAfter = standardPaywallSkipCount.value + 1
+        incrementStandardSkipCount()
+
+        if (isPremium.value || timerActive || discountShownThisSession) return false
+        if (!isFirstSkipEver && skipCountAfter % 3 != 0) return false
+
+        if (isFirstSkipEver) setHasSeenDownsellModal(true)
+        discountShownThisSession = true
+        return true
+    }
+
     fun togglePremium() {
         viewModelScope.launch {
             val current = isPremium.value
             dataStoreManager.setPremium(!current)
         }
     }
-}
 
+    private companion object {
+        // Process-wide (not per-ViewModel — each nav entry gets its own instance), so the
+        // "once per app session" cap holds no matter which screen the skip came from.
+        @Volatile
+        var discountShownThisSession = false
+    }
+}

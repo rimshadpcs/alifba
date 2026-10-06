@@ -186,6 +186,12 @@ fun DiscountPaywall(
     // overlay alone doesn't stop.
     BackHandler(enabled = isPurchasing) {}
 
+    // Whichever path opened this screen (skip chain, banner, notification), the "first skip
+    // ever" discount has now been seen. Matches iOS markDownsellSeen() on appear.
+    LaunchedEffect(Unit) {
+        subscriptionViewModel.setHasSeenDownsellModal(true)
+    }
+
     LaunchedEffect(Unit) {
         delay(3000)
         showIgnore = true
@@ -261,19 +267,24 @@ fun DiscountPaywall(
     }
 
     val onCloseAction = {
-        val current = System.currentTimeMillis()
-        val extension = current + (24 * 60 * 60 * 1000L)
-        subscriptionViewModel.setDiscountExpiry(extension)
+        // The 24h window starts once (first time this offer is dismissed) and is never
+        // restarted by later closes, so the countdown the banner shows is real. Matches iOS
+        // DownsellManager.startDiscountTimerIfNeeded.
+        if (subscriptionViewModel.discountExpiryTimestamp.value == 0L) {
+            val current = System.currentTimeMillis()
+            val extension = current + (24 * 60 * 60 * 1000L)
+            subscriptionViewModel.setDiscountExpiry(extension)
 
-        // Ensure notification permission is granted
-        if (context.shouldAskNotifications()) {
-            requestNotificationPermission(context)
-        }
+            // Ensure notification permission is granted
+            if (context.shouldAskNotifications()) {
+                requestNotificationPermission(context)
+            }
 
-        // Schedule notification 2 hours before expiry (22 hours from now)
-        val reminderTime = extension - (2 * 60 * 60 * 1000L)
-        if (reminderTime > current) {
-            SubscriptionTrialReminderReceiver.scheduleDiscountReminder(context, reminderTime)
+            // Schedule notification 2 hours before expiry (22 hours from now)
+            val reminderTime = extension - (2 * 60 * 60 * 1000L)
+            if (reminderTime > current) {
+                SubscriptionTrialReminderReceiver.scheduleDiscountReminder(context, reminderTime)
+            }
         }
 
         onClose()

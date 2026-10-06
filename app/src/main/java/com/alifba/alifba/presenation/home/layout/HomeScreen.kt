@@ -125,17 +125,12 @@ fun HomeScreenGate(
     chaptersViewModel: com.alifba.alifba.presenation.chapters.ChaptersViewModel,
     onPaywallVisibilityChanged: (Boolean) -> Unit = {}
 ) {
-    // session flag to prevent auto-discount loop - MOVED UP
-    var hasShownDiscountThisSession by remember { mutableStateOf(false) }
-    
     val subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
     val isPremium by subscriptionViewModel.isPremium.collectAsState()
     val appOpenCount by viewModel.appOpenCount.collectAsState()
     val lastPaywallOpenCount by viewModel.lastPaywallOpenCount.collectAsState()
     val hasShownHomePaywall by viewModel.hasShownHomePaywall.collectAsState()
     var showPaywall by remember { mutableStateOf<Boolean?>(null) }
-    var pendingInitialPaywall by remember { mutableStateOf(false) }
-    var pendingNthPaywall by remember { mutableStateOf(false) }
     // Set by RevenueCatPaywall's onPurchased — NOT read from isPremium.value in onClose below,
     // since setPremium() writes to DataStore asynchronously and onClose() fires essentially
     // immediately after, before that value has propagated (same reasoning as MainActivity's
@@ -156,24 +151,20 @@ fun HomeScreenGate(
         if (DEV_DISABLE_PAYWALL_AND_GATE) return@LaunchedEffect
         if (isPremium) {
             showPaywall = false
-            pendingInitialPaywall = false
-            pendingNthPaywall = false
             return@LaunchedEffect
         }
 
         val shouldShowInitial = !hasShownHomePaywall
-        val shouldShowFifth =
-            appOpenCount > 0 && appOpenCount % 5 == 0 && lastPaywallOpenCount != appOpenCount
+        val shouldShowEveryThird =
+            appOpenCount > 0 && appOpenCount % 3 == 0 && lastPaywallOpenCount != appOpenCount
 
-        if (shouldShowInitial || shouldShowFifth) {
+        if (shouldShowInitial || shouldShowEveryThird) {
             if (showPaywall != true) {
                 showPaywall = true
-                pendingInitialPaywall = shouldShowInitial
-                pendingNthPaywall = shouldShowFifth
                 if (shouldShowInitial) {
                     viewModel.markHomePaywallShown()
                 }
-                if (shouldShowFifth) {
+                if (shouldShowEveryThird) {
                     viewModel.markPaywallShownForOpen(appOpenCount)
                 }
             }
@@ -193,30 +184,11 @@ fun HomeScreenGate(
             onClose = {
                 showPaywall = false
 
-                // Add discount paywall logic
-                if (!justPurchased) {
-                    val skipCount = subscriptionViewModel.standardPaywallSkipCount.value
-                    val hasSeenDownsellModal = subscriptionViewModel.hasSeenDownsellModal.value
-
-                    val isEveryThirdSkip = skipCount > 0 && (skipCount + 1) % 3 == 0
-                    val isFirstSkipEver = !hasSeenDownsellModal
-
-                    val shouldShowDiscount = pendingInitialPaywall || isFirstSkipEver || isEveryThirdSkip
-
-                    if (shouldShowDiscount && !hasShownDiscountThisSession) {
-                        if (isFirstSkipEver) {
-                            subscriptionViewModel.setHasSeenDownsellModal(true)
-                        }
-                        hasShownDiscountThisSession = true
-                        subscriptionViewModel.incrementStandardSkipCount()
-                        navController.navigate("discountPaywall")
-                    } else {
-                        subscriptionViewModel.incrementStandardSkipCount()
-                    }
+                // Discount-after-skip: one shared rule (see recordStandardPaywallSkip)
+                if (!justPurchased && subscriptionViewModel.recordStandardPaywallSkip()) {
+                    navController.navigate("discountPaywall")
                 }
                 justPurchased = false
-                pendingInitialPaywall = false
-                pendingNthPaywall = false
             },
             source = "home_entry"
         )
@@ -226,9 +198,7 @@ fun HomeScreenGate(
             isUserLoggedIn = isUserLoggedIn,
             profileViewModel = profileViewModel,
             chaptersViewModel = chaptersViewModel,
-            onPaywallVisibilityChanged = onPaywallVisibilityChanged,
-            hasShownDiscountThisSession = hasShownDiscountThisSession,
-            onDiscountShown = { hasShownDiscountThisSession = true }
+            onPaywallVisibilityChanged = onPaywallVisibilityChanged
         )
     }
 }
@@ -241,9 +211,7 @@ fun HomeScreen(
     isUserLoggedIn: Boolean,
     profileViewModel: ProfileViewModel,
     chaptersViewModel: com.alifba.alifba.presenation.chapters.ChaptersViewModel,
-    onPaywallVisibilityChanged: (Boolean) -> Unit = {},
-    hasShownDiscountThisSession: Boolean = false,
-    onDiscountShown: () -> Unit = {}
+    onPaywallVisibilityChanged: (Boolean) -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
@@ -436,25 +404,8 @@ fun HomeScreen(
             onPurchased = { justPurchasedFromChapterGate = true },
             onClose = {
                 showPremiumUnlock = false
-                if (!justPurchasedFromChapterGate) {
-                    val skipCount = subscriptionViewModel.standardPaywallSkipCount.value
-                    val hasSeenDownsellModal = subscriptionViewModel.hasSeenDownsellModal.value
-
-                    val isEveryThirdSkip = skipCount > 0 && (skipCount + 1) % 3 == 0
-                    val isFirstSkipEver = !hasSeenDownsellModal
-
-                    val shouldShowDiscount = isFirstSkipEver || isEveryThirdSkip
-
-                    if (shouldShowDiscount && !hasShownDiscountThisSession) {
-                        if (isFirstSkipEver) {
-                            subscriptionViewModel.setHasSeenDownsellModal(true)
-                        }
-                        onDiscountShown()
-                        subscriptionViewModel.incrementStandardSkipCount()
-                        navController.navigate("discountPaywall")
-                    } else {
-                        subscriptionViewModel.incrementStandardSkipCount()
-                    }
+                if (!justPurchasedFromChapterGate && subscriptionViewModel.recordStandardPaywallSkip()) {
+                    navController.navigate("discountPaywall")
                 }
                 justPurchasedFromChapterGate = false
             },

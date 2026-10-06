@@ -31,8 +31,6 @@ fun StoriesWithAudioPlayerScreen(
     val audioViewModel: AudioPlayerViewModel = hiltViewModel()
     val subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
     val isPremium by subscriptionViewModel.isPremium.collectAsState()
-    val hasSeenDownsellModal by subscriptionViewModel.hasSeenDownsellModal.collectAsState()
-    val skipCount by subscriptionViewModel.standardPaywallSkipCount.collectAsState()
     
     // Handle audio player opening trigger
     LaunchedEffect(shouldOpenAudioPlayer) {
@@ -54,21 +52,8 @@ fun StoriesWithAudioPlayerScreen(
             RevenueCatPaywall(
                 onClose = {
                     showPremiumUnlock = false
-                    if (!isPremium) {
-                        val isEveryThirdSkip = skipCount > 0 && (skipCount + 1) % 3 == 0
-                        val isFirstSkipEver = !hasSeenDownsellModal
-
-                        val shouldShowDiscount = isFirstSkipEver || isEveryThirdSkip
-
-                        if (shouldShowDiscount) {
-                            if (isFirstSkipEver) {
-                                subscriptionViewModel.setHasSeenDownsellModal(true)
-                            }
-                            subscriptionViewModel.incrementStandardSkipCount()
-                            navController.navigate("discountPaywall")
-                        } else {
-                            subscriptionViewModel.incrementStandardSkipCount()
-                        }
+                    if (!isPremium && subscriptionViewModel.recordStandardPaywallSkip()) {
+                        navController.navigate("discountPaywall")
                     }
                 },
                 source = "audio_story"

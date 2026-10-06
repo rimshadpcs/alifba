@@ -86,6 +86,10 @@ class MainActivity : ComponentActivity() {
     private var pendingNotificationType: String? = null
     private var pendingNotificationTime: Long? = null
     private var forceLoginOnLaunch = false
+    // True only for a fresh launch (not a rotation/config change or a return from the
+    // background), so the app-open count — which drives the every-3rd-open paywall — matches
+    // iOS, which counts cold launches only.
+    private var isFreshLaunch = false
     private var navigateToRoute by mutableStateOf<String?>(null)
 
     override fun onNewIntent(intent: Intent) {
@@ -100,6 +104,7 @@ class MainActivity : ComponentActivity() {
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isFreshLaunch = savedInstanceState == null
 
         // True edge-to-edge: on Android 15+ (targetSdk 35) this is already enforced by the
         // platform and window.statusBarColor is a no-op, but declaring it explicitly is the
@@ -295,19 +300,10 @@ class MainActivity : ComponentActivity() {
                                         // so it stays consistent regardless of which paywall this is.
                                         if (justPurchased) {
                                             proceedPastPaywall()
+                                        } else if (subscriptionViewModel.recordStandardPaywallSkip()) {
+                                            showDiscountPaywall = true
                                         } else {
-                                            val isFirstSkipEver = !subscriptionViewModel.hasSeenDownsellModal.value
-                                            val skipCount = subscriptionViewModel.standardPaywallSkipCount.value
-                                            val isEveryThirdSkip = skipCount > 0 && (skipCount + 1) % 3 == 0
-                                            if (isFirstSkipEver) {
-                                                subscriptionViewModel.setHasSeenDownsellModal(true)
-                                            }
-                                            subscriptionViewModel.incrementStandardSkipCount()
-                                            if (isFirstSkipEver || isEveryThirdSkip) {
-                                                showDiscountPaywall = true
-                                            } else {
-                                                proceedPastPaywall()
-                                            }
+                                            proceedPastPaywall()
                                         }
                                     }
                                 )
@@ -416,8 +412,10 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         isInForeground = true
         val source = pendingAppOpenSource ?: "direct"
+        val countThisOpen = isFreshLaunch
+        isFreshLaunch = false
         lifecycleScope.launch {
-            dataStoreManager.incrementAppOpenCount()
+            if (countThisOpen) dataStoreManager.incrementAppOpenCount()
             authViewModel.identifyCurrentUserForAppOpen()
             logAppOpened(
                 source = source,
