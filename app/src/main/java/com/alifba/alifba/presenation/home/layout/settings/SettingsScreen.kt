@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.TabRowDefaults.Divider
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -39,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
@@ -108,6 +110,7 @@ fun SettingsScreen(navController: NavController) {
                 Image(
                     painter = painterResource(id = R.drawable.goback),
                     contentDescription = "Back",
+                    colorFilter = ColorFilter.tint(LocalContentColor.current),
                     modifier = Modifier
                         .clickable {
                             SoundEffectManager.playClickSound()
@@ -120,7 +123,6 @@ fun SettingsScreen(navController: NavController) {
                     text = "Settings",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = navyBlue,
                     fontFamily = alifbaFont
                 )
 
@@ -327,9 +329,8 @@ fun SettingsCategoryHeader(title: String) {
         Text(
             text = title,
             fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            color = navyBlue,
-            fontFamily = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
+            fontSize = 20.sp,
+            fontFamily = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
         )
     }
 }
@@ -361,7 +362,7 @@ fun SettingsButton(
     isToggled: Boolean = false
 ) {
     val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Bold)
+        Font(R.font.vag_round, FontWeight.Normal)
     )
 
     Row(
@@ -395,9 +396,8 @@ fun SettingsButton(
                     )
                 )
             ),
-            color = Color.DarkGray,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Normal,
             fontFamily = alifbaFont,
             modifier = Modifier.weight(1f)
         )
@@ -419,7 +419,8 @@ fun SettingsButton(
             Image(
                 painter = painterResource(id = R.drawable.rightarrowsettings),
                 contentDescription = "Arrow Right",
-                modifier = Modifier.size(20.dp)
+                colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.4f)),
+                modifier = Modifier.size(16.dp)
             )
         }
     }
@@ -432,6 +433,9 @@ private fun SubscriptionSettingsButton(
 ) {
     val alifbaFont = FontFamily(
         Font(R.font.vag_round, FontWeight.Bold)
+    )
+    val labelFont = FontFamily(
+        Font(R.font.vag_round, FontWeight.Normal)
     )
 
     Row(
@@ -463,10 +467,9 @@ private fun SubscriptionSettingsButton(
                     )
                 )
             ),
-            color = Color.DarkGray,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = alifbaFont,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Normal,
+            fontFamily = labelFont,
             modifier = Modifier.weight(1f)
         )
 
@@ -493,7 +496,8 @@ private fun SubscriptionSettingsButton(
         Image(
             painter = painterResource(id = R.drawable.rightarrowsettings),
             contentDescription = "Arrow Right",
-            modifier = Modifier.size(20.dp)
+            colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.4f)),
+            modifier = Modifier.size(16.dp)
         )
     }
 }

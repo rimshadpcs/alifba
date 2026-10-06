@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -16,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -31,9 +33,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,7 +66,6 @@ import com.alifba.alifba.ui_components.theme.lightCandyGreen
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.lightRed
-import com.alifba.alifba.ui_components.theme.lightSkyBlue
 import com.alifba.alifba.ui_components.theme.lightYellow
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
@@ -204,8 +207,9 @@ fun ProfileScreenWithoutTopBar(
                 )
             }
 
-            // User Stats: a Day Streak hero card, then a single list card for the other three
-            // stats — replaces the old four-card grid entirely.
+            // User Stats: a 2x2 grid of soft outlined tiles (streak, lessons, quizzes, XP). The
+            // streak tile is tinted while a streak is live and greyed out at zero, with a one-line
+            // nudge above the grid.
             item {
                 val deviceType = getDeviceType()
                 val horizontalPadding = when (deviceType) {
@@ -217,39 +221,56 @@ fun ProfileScreenWithoutTopBar(
                 val streak = currentChildProfile?.dayStreak ?: 0
 
                 Column(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                    DayStreakHeroCard(
-                        streak = streak,
-                        isTablet = isTablet
-                    )
+                    if (streak == 0) {
+                        Text(
+                            text = "Complete a lesson today to start your streak!",
+                            fontSize = if (isTablet) 16.sp else 14.sp,
+                            fontFamily = alifbaFont,
+                            color = Color(0xFF6D6A63),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    StatsListCard(
+                    StatsGrid(
                         stats = listOf(
-                            StatRowData(
+                            StatTileData(
+                                R.drawable.streakscore,
+                                "Day Streak",
+                                "$streak",
+                                lightRed,
+                                tint = if (streak > 0) StatStreakTint else white,
+                                border = if (streak > 0) StatStreakBorder else StatNeutralBorder,
+                                dimmed = streak == 0
+                            ),
+                            StatTileData(
                                 R.drawable.lessonsattended,
                                 "Lessons Completed",
                                 "${(currentChildProfile?.lessonsCompleted?.size ?: 0) + (currentChildProfile?.storiesCompleted?.size ?: 0)}",
-                                lightCandyGreen
+                                lightCandyGreen,
+                                tint = StatLessonsTint,
+                                border = StatLessonsBorder
                             ),
-                            StatRowData(
+                            StatTileData(
                                 R.drawable.quizzesattended,
                                 "Quizzes Attended",
                                 "${currentChildProfile?.quizzesAttended ?: 0}",
-                                lightSkyBlue
+                                lightYellow,
+                                tint = StatQuizzesTint,
+                                border = StatQuizzesBorder
                             ),
-                            StatRowData(
+                            StatTileData(
                                 R.drawable.xpgained,
                                 "Total XP",
                                 "${currentChildProfile?.xp ?: 0}",
-                                lightYellow
+                                lightNavyBlue,
+                                tint = StatXpTint,
+                                border = StatXpBorder
                             )
                         ),
                         isTablet = isTablet
                     )
                 }
             }
-
             
             // Spacer
             item {
@@ -280,7 +301,6 @@ fun ProfileScreenWithoutTopBar(
                             text = "View All",
                             fontSize = if (isTablet) 18.sp else 16.sp,
                             fontWeight = FontWeight.Normal,
-                            color = navyBlue,
                             modifier = Modifier.clickable {
                                 SoundEffectManager.playClickSound()
                                 navController.navigate("allBadges")
@@ -325,32 +345,42 @@ fun ProfileScreenWithoutTopBar(
                             }
                         }
 
+                        // Same arrangement as iOS: each badge is an equal share of the row
+                        // width (tight gaps), and a partly filled last row is centred rather
+                        // than left-aligned.
                         val columns = if (isTablet) 4 else 3
-                        val rows = (badgesToShow.size + columns - 1) / columns
-                        repeat(rows) { rowIndex ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = if (isTablet) 4.dp else 2.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                        val spacing = if (isTablet) 8.dp else 4.dp
+                        val rowSpacing = if (isTablet) 4.dp else 2.dp
+                        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                            val badgeWidth = (maxWidth - spacing * (columns - 1)) / columns
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(rowSpacing),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                repeat(columns) { columnIndex ->
-                                    val badgeIndex = rowIndex * columns + columnIndex
-                                    if (badgeIndex < badgesToShow.size) {
-                                        Image(
-                                            painter = rememberAsyncImagePainter(badgesToShow[badgeIndex].imageUrl),
-                                            contentDescription = badgesToShow[badgeIndex].title,
-                                            modifier = Modifier
-                                                .size(if (isTablet) 180.dp else 90.dp)
-                                                .clickable {
-                                                    SoundEffectManager.playClickSound()
-                                                    selectedBadge = badgesToShow[badgeIndex]
-                                                },
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    } else {
-                                        // Empty space for grid alignment
-                                        Spacer(modifier = Modifier.weight(1f))
+                                badgesToShow.chunked(columns).forEach { rowBadges ->
+                                    Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                                        rowBadges.forEach { badge ->
+                                            val painter = rememberAsyncImagePainter(badge.imageUrl)
+                                            val intrinsic = painter.intrinsicSize
+                                            // Height follows the image's own proportions (iOS
+                                            // scaledToFit); a neutral ratio until it has loaded.
+                                            val ratio = if (intrinsic.isSpecified && intrinsic.height > 0f) {
+                                                intrinsic.width / intrinsic.height
+                                            } else 1f
+                                            Image(
+                                                painter = painter,
+                                                contentDescription = badge.title,
+                                                modifier = Modifier
+                                                    .width(badgeWidth)
+                                                    .aspectRatio(ratio)
+                                                    .clickable {
+                                                        SoundEffectManager.playClickSound()
+                                                        selectedBadge = badge
+                                                    },
+                                                contentScale = ContentScale.Fit
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -485,6 +515,9 @@ private fun EditProfileBottomSheetContent(
     isTablet: Boolean
 ) {
     val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
+    // Captured here because inside the text field's label slot LocalContentColor is the label's own
+    // (grey/primary) colour, not the sheet's.
+    val textBlack = LocalContentColor.current
 
     Column(
         modifier = Modifier
@@ -497,7 +530,6 @@ private fun EditProfileBottomSheetContent(
             fontSize = if (isTablet) 24.sp else 20.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = alifbaFont,
-            color = navyBlue,
             textAlign = TextAlign.Center
         )
 
@@ -508,7 +540,7 @@ private fun EditProfileBottomSheetContent(
         OutlinedTextField(
             value = name,
             onValueChange = onNameChange,
-            label = { Text("Child's name") },
+            label = { Text("Child's name", color = textBlack) },
             singleLine = true,
             isError = nameError != null,
             modifier = Modifier
@@ -613,162 +645,120 @@ fun getDeviceType(): DeviceType {
 
 enum class DeviceType { Phone, SmallTablet, Tablet, LargeTablet }
 
-// Full-width hero card for Day Streak — replaces its slot in the old four-card grid.
+// Each stat tile is tinted (12%) and bordered (60%) in its own icon colour, so the four tiles read
+// as a matching set. Keep these in sync with the icon colours passed to StatTileData.
+private val StatStreakTint = Color(0xFFFEEAEA)
+private val StatStreakBorder = Color(0xFFF89797)
+private val StatLessonsTint = Color(0xFFEBF7ED)
+private val StatLessonsBorder = Color(0xFF9BD9A3)
+private val StatQuizzesTint = Color(0xFFFFF6E5)
+private val StatQuizzesBorder = Color(0xFFFFD37C)
+private val StatXpTint = Color(0xFFEEF1FF)
+private val StatXpBorder = Color(0xFFABBAFF)
+private val StatNeutralBorder = Color(0xFFEDEDED)
+
+// A stat in the 2x2 grid. [tint] and [border] colour the tile; [dimmed] greys out the icon (an
+// empty state, which also uses the neutral white tile).
+data class StatTileData(
+    val imageRes: Int,
+    val title: String,
+    val value: String,
+    val iconColor: Color,
+    val tint: Color = white,
+    val border: Color = StatNeutralBorder,
+    val dimmed: Boolean = false
+)
+
 @Composable
-fun DayStreakHeroCard(
-    streak: Int,
+fun StatsGrid(
+    stats: List<StatTileData>,
     isTablet: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
-    val circleSize = if (isTablet) 72.dp else 56.dp
-    val subtitle = if (streak == 0) {
-        "Complete a lesson today to start!"
-    } else {
-        "You're on a $streak-day streak. Keep it up!"
-    }
-
-    Card(
-        shape = RoundedCornerShape(if (isTablet) 28.dp else 24.dp),
-        elevation = CardDefaults.cardElevation(6.dp),
+    val gap = if (isTablet) 16.dp else 12.dp
+    Column(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(Color(0xFFE1533F))
+        verticalArrangement = Arrangement.spacedBy(gap)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = if (isTablet) 24.dp else 16.dp, vertical = if (isTablet) 20.dp else 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
+        stats.chunked(2).forEach { rowStats ->
+            // IntrinsicSize.Min keeps both tiles in a row the same height if a label wraps.
+            Row(
                 modifier = Modifier
-                    .size(circleSize)
-                    .background(white, CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(gap)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.streakscore),
-                    contentDescription = "Day Streak",
-                    modifier = Modifier.size(circleSize * 0.6f),
-                    contentScale = ContentScale.Fit
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "$streak",
-                        fontSize = if (isTablet) 34.sp else 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = alifbaFontBold,
-                        color = white
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Day Streak",
-                        fontSize = if (isTablet) 18.sp else 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = alifbaFontBold,
-                        color = white
+                rowStats.forEach { stat ->
+                    StatTile(
+                        stat = stat,
+                        isTablet = isTablet,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = if (isTablet) 14.sp else 12.sp,
-                    fontFamily = alifbaFontBold,
-                    color = white.copy(alpha = 0.85f),
-                    maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
+                if (rowStats.size == 1) Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
 }
 
-data class StatRowData(
-    val imageRes: Int,
-    val title: String,
-    val value: String,
-    val iconColor: androidx.compose.ui.graphics.Color
-)
-
-// Single white list card holding the remaining stats as rows (icon + label + right-aligned
-// value), with a thin divider between rows — replaces the other three slots in the old grid.
 @Composable
-fun StatsListCard(
-    stats: List<StatRowData>,
+private fun StatTile(
+    stat: StatTileData,
     isTablet: Boolean,
     modifier: Modifier = Modifier
 ) {
     val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
+    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Normal))
+    val shape = RoundedCornerShape(if (isTablet) 22.dp else 18.dp)
     val iconCircleSize = if (isTablet) 44.dp else 36.dp
 
-    Card(
-        shape = RoundedCornerShape(if (isTablet) 24.dp else 20.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEDEDED)),
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(white)
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .background(stat.tint)
+            .border(width = 1.5.dp, color = stat.border, shape = shape)
+            .padding(
+                horizontal = if (isTablet) 18.dp else 14.dp,
+                vertical = if (isTablet) 18.dp else 14.dp
+            )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = if (isTablet) 20.dp else 16.dp)
-        ) {
-            stats.forEachIndexed { index, stat ->
-                Row(
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(iconCircleSize)
+                    .background(if (stat.dimmed) Color(0xFFE3E1DC) else stat.iconColor, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = stat.imageRes),
+                    contentDescription = stat.title,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = if (isTablet) 16.dp else 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(iconCircleSize)
-                            .background(stat.iconColor, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = stat.imageRes),
-                            contentDescription = stat.title,
-                            modifier = Modifier.size(iconCircleSize * 0.55f),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Text(
-                        text = stat.title,
-                        modifier = Modifier.weight(1f),
-                        fontSize = if (isTablet) 16.sp else 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = alifbaFontBold,
-                        color = Color.Black
-                    )
-
-                    Text(
-                        text = stat.value,
-                        fontSize = if (isTablet) 18.sp else 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = alifbaFontBold,
-                        color = Color.Black
-                    )
-                }
-
-                if (index != stats.lastIndex) {
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFFEDEDED))
-                    )
-                }
+                        .size(iconCircleSize * 0.55f)
+                        .alpha(if (stat.dimmed) 0.45f else 1f),
+                    contentScale = ContentScale.Fit
+                )
             }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Text(
+                text = stat.value,
+                fontSize = if (isTablet) 30.sp else 24.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = alifbaFontBold
+            )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = stat.title,
+            fontSize = if (isTablet) 15.sp else 13.sp,
+            fontFamily = alifbaFont,
+            maxLines = 2
+        )
     }
 }
 
@@ -987,6 +977,7 @@ fun AllBadgesScreen(
             Image(
                 painter = painterResource(id = R.drawable.backarrow),
                 contentDescription = "Back",
+                colorFilter = ColorFilter.tint(LocalContentColor.current),
                 modifier = Modifier
                     .size(32.dp)
                     .clickable {
@@ -1002,8 +993,7 @@ fun AllBadgesScreen(
                 text = "All Badges",
                 fontSize = if (isTablet) 28.sp else 24.sp,
                 fontWeight = FontWeight.Bold,
-                fontFamily = alifbaFont,
-                color = navyBlue
+                fontFamily = alifbaFont
             )
         }
         
@@ -1068,41 +1058,42 @@ fun AllBadgesScreen(
                 }
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                items(rows) { rowIndex ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        repeat(3) { columnIndex ->
-                            val badgeIndex = rowIndex * 3 + columnIndex
-                            if (badgeIndex < earnedBadges.size) {
+            // Same arrangement as the profile badges (and iOS): three equal-width badges per
+            // row with tight gaps, and a partly filled last row centred, not left-aligned.
+            val columns = 3
+            val spacing = 4.dp
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val badgeWidth = (maxWidth - spacing * (columns - 1)) / columns
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    items(rows) { rowIndex ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterHorizontally)
+                        ) {
+                            earnedBadges.drop(rowIndex * columns).take(columns).forEach { badge ->
                                 Image(
-                                    painter = rememberAsyncImagePainter(earnedBadges[badgeIndex].imageUrl),
-                                    contentDescription = earnedBadges[badgeIndex].title,
+                                    painter = rememberAsyncImagePainter(badge.imageUrl),
+                                    contentDescription = badge.title,
                                     modifier = Modifier
-                                        .weight(1f)
+                                        .width(badgeWidth)
                                         .aspectRatio(1f)
                                         .clickable {
                                             SoundEffectManager.playClickSound()
-                                            selectedBadge = earnedBadges[badgeIndex]
+                                            selectedBadge = badge
                                         },
                                     contentScale = ContentScale.Fit
                                 )
-                            } else {
-                                // Empty space for grid alignment
-                                Spacer(modifier = Modifier.weight(1f))
                             }
                         }
                     }
-                }
 
-                // Bottom spacing for navigation
-                item {
-                    Spacer(modifier = Modifier.height(100.dp))
+                    // Bottom spacing for navigation
+                    item {
+                        Spacer(modifier = Modifier.height(100.dp))
+                    }
                 }
             }
         }
@@ -1180,26 +1171,51 @@ fun ExpandedHeader(
                     text = childProfile?.childName ?: "Loading...",
                     fontSize = headerNameSize,
                     fontWeight = FontWeight.Bold,
-                    color = navyBlue,
                     fontFamily = alifbaFont
                 )
                 Text(
                     text = "Age: ${childProfile?.age ?: "--"}",
                     fontSize = headerAgeSize,
-                    color = navyBlue,
                     fontFamily = alifbaFont
                 )
             }
         }
         
         // Settings button aligned with profile picture
-        Image(
-            painter = painterResource(id = R.drawable.setting),
-            contentDescription = "Settings",
-            modifier = Modifier
-                .size(if (isTablet) 64.dp else 36.dp)
-                .clickable { onSettingsClick() }
+        SettingsButton(
+            buttonSize = if (isTablet) 72.dp else 48.dp,
+            onClick = onSettingsClick
         )
+    }
+}
+
+// Solid cog in a black-ringed circle (no fill), matching the black ring around the avatar. The
+// visible ring is tighter than the tap area so the button stays easy to hit.
+@Composable
+private fun SettingsButton(
+    buttonSize: Dp,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(buttonSize)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(buttonSize * 0.83f)
+                .border(1.5.dp, black, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.setting),
+                contentDescription = "Settings",
+                colorFilter = ColorFilter.tint(LocalContentColor.current),
+                modifier = Modifier.size(buttonSize * 0.58f)
+            )
+        }
     }
 }
 
@@ -1262,18 +1278,14 @@ fun CollapsedHeader(
                 text = childProfile?.childName ?: "Loading...",
                 fontSize = if (isTablet) 28.sp else 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = navyBlue,
                 fontFamily = alifbaFont
             )
         }
 
         // Settings button on the right
-        Image(
-            painter = painterResource(id = R.drawable.setting),
-            contentDescription = "Settings",
-            modifier = Modifier
-                .size(if (isTablet) 48.dp else 36.dp)
-                .clickable { onSettingsClick() }
+        SettingsButton(
+            buttonSize = if (isTablet) 56.dp else 40.dp,
+            onClick = onSettingsClick
         )
     }
 }

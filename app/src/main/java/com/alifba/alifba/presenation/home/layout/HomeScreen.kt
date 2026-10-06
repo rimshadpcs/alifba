@@ -20,6 +20,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,6 +75,7 @@ import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
 import com.alifba.alifba.ui_components.theme.lightRed
+import com.alifba.alifba.ui_components.widgets.DotLottieView
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.utils.DownloadLessonWorker
 import com.alifba.alifba.presenation.lessonScreens.domain.repository.LessonCacheRepository
@@ -685,19 +687,27 @@ fun ChapterDownloadBottomSheetContent(
             text = chapter.title,
             fontFamily = alifbaFont,
             fontWeight = FontWeight.Bold,
-            color = navyBlue,
             fontSize = if (isTablet) 30.sp else 23.sp,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(bottom = if (isTablet) 20.dp else 16.dp)
         )
 
-        Image(
-            painter = painterResource(id = avatarRes),
-            contentDescription = "User Avatar",
-            modifier = Modifier.size(if (isTablet) 200.dp else 150.dp),
-            contentScale = ContentScale.Crop
-        )
+        // The Moon mascot reacts to the sheet's state instead of showing the profile avatar. The
+        // key() recreates the animation view when the state (and so the animation) changes.
+        val mascotName = when (downloadState) {
+            DownloadState.Initial -> "moonwave"
+            DownloadState.Downloading -> "moon_waiting"
+            DownloadState.Cached, DownloadState.Downloaded ->
+                if (chapter.isCompleted) "moon_victory" else "moon_excited_jump"
+            DownloadState.Error -> "moon_thinking"
+        }
+        key(mascotName) {
+            DotLottieView(
+                name = mascotName,
+                modifier = Modifier.size(if (isTablet) 200.dp else 150.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(if (isTablet) 32.dp else 24.dp))
 

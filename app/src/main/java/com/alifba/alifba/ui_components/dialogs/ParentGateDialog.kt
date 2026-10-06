@@ -113,7 +113,7 @@ fun ParentGate(
                     fontSize = if (isTablet) 32.sp else MaterialTheme.typography.headlineMedium.fontSize
                 ),
                 textAlign = TextAlign.Center,
-                color = navyBlue,
+                color = Color(0xFF33333A),
                 fontFamily = alifbaFontBold
             )
 
@@ -168,7 +168,7 @@ fun ParentGate(
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontSize = if (isTablet) 32.sp else MaterialTheme.typography.headlineMedium.fontSize
                         ),
-                        color = navyBlue,
+                        color = if (char == '_') Color(0xFFCFCFCF) else navyBlue,
                         fontFamily = alifbaFontBold
                     )
                 }

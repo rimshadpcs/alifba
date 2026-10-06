@@ -57,17 +57,23 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
+import com.alifba.alifba.ui_components.widgets.DotLottieView
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
 import com.alifba.alifba.ui_components.widgets.textFields.PasswordInputField
 import com.alifba.alifba.ui_components.widgets.textFields.GoogleAndAppleSignInButtons
@@ -84,6 +90,143 @@ enum class LoginEntryMode {
     Landing,
     SignUp,
     SignIn
+}
+
+private val LandingTextSecondary = Color(0xFF6D6A63)
+private val LandingLinkBackdrop = Color(0xE6FFF8EC)
+
+// Bold rounded white greeting with a navy outline and soft drop shadow (mirrored by OutlineText on
+// iOS). The stroked copy sits behind the white fill, so only its outer half shows as the outline.
+@Composable
+private fun OutlinedGreeting(
+    isTablet: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val fontFamily = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
+    val fontSize = if (isTablet) 38.sp else 32.sp
+    val outlinePx = with(density) { (if (isTablet) 2.dp else 1.dp).toPx() }
+    val shadow = with(density) {
+        Shadow(
+            color = Color.Black.copy(alpha = 0.3f),
+            offset = Offset(1.dp.toPx(), 1.dp.toPx()),
+            blurRadius = 2.dp.toPx()
+        )
+    }
+    Box(modifier = modifier) {
+        Text(
+            text = "Assalamu Alaikkum",
+            fontSize = fontSize,
+            fontFamily = fontFamily,
+            color = navyBlue,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+            style = TextStyle(
+                drawStyle = Stroke(width = outlinePx * 2, join = StrokeJoin.Round),
+                shadow = shadow
+            )
+        )
+        Text(
+            text = "Assalamu Alaikkum",
+            fontSize = fontSize,
+            fontFamily = fontFamily,
+            color = white,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun LandingContent(
+    isTablet: Boolean,
+    onGetStarted: () -> Unit
+) {
+    val configuration = LocalConfiguration.current
+    // Scales the hero down on short phones so the CTA never gets pushed off-screen.
+    val mascotSize = if (isTablet) 320.dp else (configuration.screenHeightDp * 0.27f).dp.coerceIn(150.dp, 240.dp)
+
+    // Lifts the whole block above the vertical centre. Bottom padding on a centred column only
+    // moves the content up by half its size, hence the doubling.
+    val lift = (configuration.screenHeightDp * if (isTablet) 0.05f else 0.07f).dp
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = if (isTablet) 560.dp else 380.dp)
+            .padding(bottom = (configuration.screenHeightDp * if (isTablet) 0.06f else 0.08f).dp + lift * 2),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        DotLottieView(
+            name = "moonwave",
+            modifier = Modifier.size(mascotSize)
+        )
+        Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 4.dp))
+        Image(
+            painter = painterResource(id = R.drawable.alifba_wordmark),
+            contentDescription = "Alifba",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.width(if (isTablet) 340.dp else 210.dp)
+        )
+        OutlinedGreeting(
+            isTablet = isTablet,
+            modifier = Modifier.padding(top = if (isTablet) 10.dp else 6.dp)
+        )
+        Spacer(modifier = Modifier.height(if (isTablet) 44.dp else 28.dp))
+        CommonButton(
+            onClick = onGetStarted,
+            buttonText = "Get Started",
+            shadowColor = navyBlue,
+            mainColor = lightNavyBlue,
+            textColor = white,
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (isTablet) Modifier.height(80.dp)
+                    else Modifier
+                )
+        )
+    }
+}
+
+@Composable
+private fun LandingLoginLink(
+    isTablet: Boolean,
+    onLogIn: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val alifbaFont = FontFamily(
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
+    )
+    // Pinned to the bottom, on the grass, so it reads as a secondary action well clear of the CTA.
+    // The backdrop keeps it legible over the grass and the background's bees/butterflies.
+    Row(
+        modifier = modifier
+            .navigationBarsPadding()
+            .padding(bottom = if (isTablet) 40.dp else 28.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(LandingLinkBackdrop)
+            .clickable(onClick = onLogIn)
+            .padding(horizontal = 16.dp, vertical = if (isTablet) 14.dp else 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Already have an account?",
+            fontFamily = alifbaFont,
+            fontWeight = FontWeight.Normal,
+            fontSize = if (isTablet) 20.sp else 15.sp,
+            color = LandingTextSecondary
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = "Log in",
+            fontFamily = alifbaFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = if (isTablet) 20.sp else 15.sp,
+            color = navyBlue
+        )
+    }
 }
 
 @Composable
@@ -301,84 +444,24 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(if (isTablet) 60.dp else 40.dp)) // Reduced space for better centering
-
-                Text(
-                    text = "Assalamu Alaikkum",
-                    fontSize = if (isTablet) 38.sp else 32.sp,
-                    color = white,
-                    fontFamily = FontFamily(
-                        Font(
-                            R.font.vag_round,
-                            FontWeight.Bold
-                        )
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = if (isTablet) 24.dp else 16.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    style = TextStyle(
-                        shadow = Shadow(
-                            color = Color.Black,
-                            offset = Offset(2.5f, 2.5f),
-                            blurRadius = 3f
-                        )
-                    )
-                )
-
                 if (entryMode == LoginEntryMode.Landing) {
-                    Column(
-                        modifier = Modifier
-                            .then(
-                                if (isTablet) {
-                                    Modifier
-                                        .widthIn(max = 500.dp)
-                                        .fillMaxWidth(0.8f)
-                                } else {
-                                    Modifier
-                                        .widthIn(max = 300.dp)
-                                        .fillMaxWidth(0.85f)
-                                }
+                    LandingContent(
+                        isTablet = isTablet,
+                        onGetStarted = {
+                            navController.navigate(
+                                if (hasCompletedOnboarding) "authOptions/signup" else "onboarding"
                             )
-                            .padding(bottom = if (isTablet) 24.dp else 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CommonButton(
-                            onClick = {
-                                navController.navigate(
-                                    if (hasCompletedOnboarding) "authOptions/signup" else "onboarding"
-                                )
-                            },
-                            buttonText = "I'm new to Alifba",
-                            shadowColor = navyBlue,
-                            mainColor = lightNavyBlue,
-                            textColor = white,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .then(
-                                    if (isTablet) Modifier.height(80.dp)
-                                    else Modifier
-                                )
-                        )
+                        }
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(if (isTablet) 60.dp else 40.dp)) // Reduced space for better centering
 
-                        Spacer(modifier = Modifier.height(if (isTablet) 20.dp else 16.dp))
-
-                        CommonButton(
-                            onClick = {
-                                navController.navigate("authOptions/login")
-                            },
-                            buttonText = "I'm already with Alifba",
-                            shadowColor = navyBlue,
-                            mainColor = white,
-                            textColor = navyBlue,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .then(
-                                    if (isTablet) Modifier.height(80.dp)
-                                    else Modifier
-                                )
-                        )
-                    }
+                    OutlinedGreeting(
+                        isTablet = isTablet,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = if (isTablet) 24.dp else 16.dp)
+                    )
                 }
 
                 AnimatedVisibility(
@@ -665,6 +748,13 @@ fun LoginScreen(
                 }
             }
 
+            if (entryMode == LoginEntryMode.Landing) {
+                LandingLoginLink(
+                    isTablet = isTablet,
+                    onLogIn = { navController.navigate("authOptions/login") },
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
     }
 
     if (isLoading) {

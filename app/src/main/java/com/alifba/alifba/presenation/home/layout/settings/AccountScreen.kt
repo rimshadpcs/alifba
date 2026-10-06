@@ -50,7 +50,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -126,6 +128,7 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                 Image(
                     painter = painterResource(id = R.drawable.goback),
                     contentDescription = "Back",
+                    colorFilter = ColorFilter.tint(LocalContentColor.current),
                     modifier = Modifier
                         .clickable { navController.popBackStack() }
                         .size(40.dp),
@@ -134,7 +137,6 @@ fun AccountScreen(authViewModel: AuthViewModel, navController: NavController) {
                     text = "My Account",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = navyBlue,
                     fontFamily = alifbaFont
                 )
                 // Empty box for symmetry

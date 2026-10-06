@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -32,12 +33,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -72,6 +75,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -98,6 +105,7 @@ import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.lightPink
 import com.alifba.alifba.ui_components.theme.lightPurple
 import com.alifba.alifba.ui_components.theme.lightRed
+import com.alifba.alifba.ui_components.theme.lightYellow
 import com.alifba.alifba.ui_components.theme.mediumpurple
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
@@ -120,6 +128,10 @@ private val TextSecondary = Color(0xFF6D6A63)
 private val SoftGreen = Color(0xFFEAF7DC)
 private val SoftPink = Color(0xFFFFEDF6)
 private val SoftBlue = Color(0xFFEFF4FF)
+private val DisabledButton = Color(0xFFD3D1CB)
+private val DisabledButtonShadow = Color(0xFFB9B6AE)
+private val MotivationSelectedBackground = Color(0xFFFFF4D1)
+private val OptionBorder = Color(0xFFE8DFC9)
 
 enum class OnboardingQuestionType {
     PictureMcq,
@@ -146,6 +158,10 @@ data class HabitTimeOption(
 )
 
 data class Testimonial(val quote: String, val author: String)
+
+// title doubles as the stored selection key (OnboardingUiState.selectedMotivations), so keep
+// the wording stable even if the icon or description changes.
+data class MotivationOption(val title: String, val description: String, val emoji: String)
 
 object OnboardingCopy {
     const val lastStepIndex = 17
@@ -180,12 +196,32 @@ object OnboardingCopy {
         "forbid what is evil, and endure patiently whatever befalls you. Surely this is a " +
         "resolve to aspire to."
 
-    val motivations: List<String> = listOf(
-        "Reduce passive screen time",
-        "Build a daily Islamic routine",
-        "Teach Prophets' stories",
-        "Build better Islamic habits",
-        "All of the above"
+    val motivationOptions: List<MotivationOption> = listOf(
+        MotivationOption(
+            title = "Reduce passive screen time",
+            description = "Swap mindless scrolling for learning",
+            emoji = "📱"
+        ),
+        MotivationOption(
+            title = "Build a daily Islamic routine",
+            description = "Make a little learning part of every day",
+            emoji = "🌙"
+        ),
+        MotivationOption(
+            title = "Teach Prophets' stories",
+            description = "Audio stories they'll remember",
+            emoji = "📖"
+        ),
+        MotivationOption(
+            title = "Build better Islamic habits",
+            description = "Kindness, gratitude and good manners",
+            emoji = "🌱"
+        ),
+        MotivationOption(
+            title = "All of the above",
+            description = "Show me everything Alifba offers",
+            emoji = "✨"
+        )
     )
 
     val questions: List<OnboardingQuestion> = listOf(
@@ -482,23 +518,33 @@ fun MotivationOnboardingScreen(
 ) {
     val isTablet = LocalConfiguration.current.screenWidthDp > 600
     OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.65f else 0.45f))
+        Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 8.dp))
         MascotSpeech(
             mascotName = "moon_thinking",
             text = "What are you hoping to achieve with Alifba for your little one?"
         )
-        Spacer(modifier = Modifier.height(if (isTablet) 14.dp else 22.dp))
-        OnboardingCopy.motivations.forEach { motivation ->
-            SelectableOptionRow(
-                text = motivation,
-                selected = motivation in selectedMotivations,
-                onClick = { onMotivationSelected(motivation) }
-            )
+        Spacer(modifier = Modifier.height(if (isTablet) 14.dp else 16.dp))
+        // Scrolls rather than clipping on short screens now that each card carries a
+        // description line and is taller than the old single-line rows.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+        ) {
+            OnboardingCopy.motivationOptions.forEach { option ->
+                MotivationOptionCard(
+                    option = option,
+                    selected = option.title in selectedMotivations,
+                    onToggle = { onMotivationSelected(option.title) }
+                )
+            }
         }
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(8.dp))
         StableContinueButton(
             visible = selectedMotivations.isNotEmpty(),
-            onClick = onContinue
+            onClick = onContinue,
+            greyedWhenDisabled = true
         )
     }
 }
@@ -1279,6 +1325,14 @@ private fun OnboardingTopBar(
     onBack: () -> Unit
 ) {
     val isTablet = LocalConfiguration.current.screenWidthDp > 600
+    val clampedProgress = progress.coerceIn(0f, 1f)
+    val animatedProgress by animateFloatAsState(
+        targetValue = clampedProgress,
+        animationSpec = tween(durationMillis = 350),
+        label = "onboardingProgress"
+    )
+    val thumbSize = if (isTablet) 48.dp else 36.dp
+    val barHeight = if (isTablet) 12.dp else 10.dp
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1293,16 +1347,41 @@ private fun OnboardingTopBar(
             modifier = Modifier,
             padded = false
         )
-        LinearProgressIndicator(
-            progress = { progress.coerceIn(0f, 1f) },
+        BoxWithConstraints(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = if (isTablet) 16.dp else 12.dp)
-                .height(if (isTablet) 10.dp else 8.dp)
-                .clip(RoundedCornerShape(50)),
-            color = lightNavyBlue,
-            trackColor = Color(0xFFE5DFD1)
-        )
+                .height(thumbSize)
+                .semantics {
+                    progressBarRangeInfo = ProgressBarRangeInfo(clampedProgress, 0f..1f)
+                },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            // The mascot rides the leading edge of the fill: thumbX sweeps the full track so the
+            // mascot ends flush right at 100% instead of hanging past the bar's end.
+            val thumbX = (maxWidth - thumbSize) * animatedProgress
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(barHeight)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color(0xFFE5DFD1))
+            )
+            Box(
+                modifier = Modifier
+                    .width(thumbX + thumbSize / 2)
+                    .height(barHeight)
+                    .clip(RoundedCornerShape(50))
+                    .background(lightNavyBlue)
+            )
+            Image(
+                painter = painterResource(id = R.drawable.moon_progress_thumb),
+                contentDescription = null,
+                modifier = Modifier
+                    .offset(x = thumbX)
+                    .size(thumbSize)
+            )
+        }
     }
 }
 
@@ -1310,16 +1389,18 @@ private fun OnboardingTopBar(
 private fun StableContinueButton(
     visible: Boolean,
     onClick: () -> Unit,
-    text: String = "Continue"
+    text: String = "Continue",
+    greyedWhenDisabled: Boolean = false
 ) {
+    val showGreyed = greyedWhenDisabled && !visible
     CommonButton(
         onClick = onClick,
         buttonText = text,
-        shadowColor = navyBlue,
-        mainColor = lightNavyBlue,
+        shadowColor = if (showGreyed) DisabledButtonShadow else navyBlue,
+        mainColor = if (showGreyed) DisabledButton else lightNavyBlue,
         textColor = white,
         enabled = visible,
-        modifier = Modifier.alpha(if (visible) 1f else 0f)
+        modifier = Modifier.alpha(if (visible || greyedWhenDisabled) 1f else 0f)
     )
 }
 
@@ -1367,6 +1448,88 @@ private fun SelectableOptionRow(
                 tint = darkCandyGreen,
                 modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun MotivationOptionCard(
+    option: MotivationOption,
+    selected: Boolean,
+    onToggle: () -> Unit
+) {
+    val isTablet = LocalConfiguration.current.screenWidthDp > 600
+    val shape = RoundedCornerShape(if (isTablet) 20.dp else 16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = if (isTablet) 8.dp else 5.dp)
+            .clip(shape)
+            .background(if (selected) MotivationSelectedBackground else white)
+            .border(
+                width = if (isTablet) 3.dp else 2.dp,
+                color = if (selected) lightYellow else OptionBorder,
+                shape = shape
+            )
+            .toggleable(
+                value = selected,
+                role = Role.Checkbox,
+                onValueChange = { onToggle() }
+            )
+            .padding(
+                horizontal = if (isTablet) 22.dp else 14.dp,
+                vertical = if (isTablet) 18.dp else 12.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = option.emoji,
+            fontSize = if (isTablet) 34.sp else 26.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(if (isTablet) 52.dp else 40.dp)
+        )
+        Spacer(modifier = Modifier.width(if (isTablet) 14.dp else 10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = option.title,
+                fontFamily = AlifbaFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = if (isTablet) 22.sp else 17.sp,
+                lineHeight = if (isTablet) 28.sp else 22.sp,
+                color = TextPrimary
+            )
+            Text(
+                text = option.description,
+                fontFamily = AlifbaFont,
+                fontWeight = FontWeight.Normal,
+                fontSize = if (isTablet) 18.sp else 14.sp,
+                lineHeight = if (isTablet) 24.sp else 19.sp,
+                color = TextSecondary,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(if (isTablet) 14.dp else 10.dp))
+        val checkSize = if (isTablet) 34.dp else 26.dp
+        Box(
+            modifier = Modifier
+                .size(checkSize)
+                .clip(CircleShape)
+                .background(if (selected) lightYellow else white)
+                .border(
+                    width = 2.dp,
+                    color = if (selected) lightYellow else OptionBorder,
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = white,
+                    modifier = Modifier.size(checkSize * 0.65f)
+                )
+            }
         }
     }
 }
