@@ -53,7 +53,7 @@ android {
         // Google Play rejects a re-used versionCode, so CI works out the next one from Play
         // (NEW_VERSION_CODE, set in codemagic.yaml); local builds just use the checked-in 15.
         versionCode = maxOf(15, System.getenv("NEW_VERSION_CODE")?.toIntOrNull() ?: 0)
-        versionName = "2.5"
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

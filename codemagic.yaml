@@ -37,7 +37,7 @@ workflows:
           failure: true
 
   android-release:
-    name: Android Release (Play Console)
+    name: Android Release (Play Store production)
     max_build_duration: 60
     environment:
       # Matches the reference name given when uploading the release keystore under
@@ -52,13 +52,14 @@ workflows:
       vars:
         PACKAGE_NAME: "com.alifba.alifba"
       java: 17
+    # Releases go straight to production, so only a version tag starts one (git tag v3.0 &&
+    # git push origin v3.0); pushes to main just run android-build-test above
     triggering:
       events:
-        - push
-      branch_patterns:
-        - pattern: main
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
           include: true
-          source: true
     scripts:
       - name: Set up local.properties
         script: |
@@ -90,5 +91,6 @@ workflows:
         # Codemagic → alifba app → Environment variables, containing the full contents of
         # alifba-app-bdf7756740c7.json pasted in as a "Secret" variable named exactly this.
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
-        submit_as_draft: false
+        # Sent for Google's review and released to everyone once approved; "What's new" comes
+        # from release_notes.json in the repo root
+        track: production
