@@ -2,27 +2,26 @@ package com.alifba.alifba.presenation.home.layout.profile
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.Button
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,23 +37,19 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.R
-import com.alifba.alifba.presenation.login.Avatar
+import androidx.compose.ui.unit.Dp
+import com.alifba.alifba.presenation.login.AllAvatars
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
-import com.alifba.alifba.ui_components.theme.black
-import com.alifba.alifba.ui_components.theme.navyBlue
-import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
-import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
-import kotlinx.coroutines.delay
+import com.alifba.alifba.ui_components.widgets.LessonCircleButton
+import com.alifba.alifba.ui_components.widgets.LessonPageDots
+import com.alifba.alifba.ui_components.widgets.LessonPrimaryButton
+import com.alifba.alifba.ui_components.widgets.LessonTheme
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
@@ -64,10 +59,7 @@ fun ChangeAvatarScreen(
     navController: NavController,
     profileViewModel: ProfileViewModel
 ) {
-    val alifbaFontBold = FontFamily(
-        Font(R.font.vag_round_boldd)
-    )
-
+    val k = LessonTheme.scale()
 
     // Retrieve the user's current avatar
     val currentChildProfile by profileViewModel.currentChildProfile.collectAsState()
@@ -79,7 +71,7 @@ fun ChangeAvatarScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(white)
+            .background(Color.White)
     ) {
         // Background Image
         Image(
@@ -89,89 +81,78 @@ fun ChangeAvatarScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        val configuration = LocalConfiguration.current
-        val isTablet = configuration.screenWidthDp >= 600
-        val iconSize = if (isTablet) 32.dp else 24.dp
-        val backIconSize = if (isTablet) 64.dp else 48.dp // 2x larger
-
-        // Top Bar with Back Button and Title
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Back Button (matching AllStories style, no circular background)
-            Image(
-                painter = painterResource(id = R.drawable.back),
-                contentDescription = "Back",
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Round back button on the left, title in a dark translucent pill in the middle
+            Box(
                 modifier = Modifier
-                    .size(backIconSize)
-                    .clickable {
-                        SoundEffectManager.playClickSound()
-                        navController.popBackStack()
-                    }
-            )
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Choose Avatar",
+                    style = LessonTheme.question().copy(
+                        fontSize = (28 * k).sp,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier
+                        .background(LessonTheme.ink.copy(alpha = 0.35f), RoundedCornerShape(50))
+                        .padding(horizontal = 28.dp, vertical = 8.dp)
+                )
+                Box(modifier = Modifier.align(Alignment.CenterStart)) {
+                    LessonCircleButton(
+                        iconRes = R.drawable.backarrow,
+                        contentDescription = "Back",
+                        onClick = { navController.popBackStack() }
+                    )
+                }
+            }
 
-            // Title
-            Text(
-                text = "Choose Avatar",
-                style = MaterialTheme.typography.titleLarge,
-                fontFamily = alifbaFontBold,
-                color = white,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
-            )
-        }
+            Spacer(modifier = Modifier.weight(1f))
 
-        // Avatar Carousel
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = if (isTablet) 96.dp else 64.dp)
-        ) {
             AvatarCarousels(
                 selectedAvatarName = selectedAvatarName,
                 currentAvatarName = currentAvatar
             )
-        }
 
-        // "Select Avatar" Button
-        CommonButton(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            onClick = {
-                android.util.Log.d("ChangeAvatar", "Updating avatar to: ${selectedAvatarName.value}")
-                profileViewModel.updateAvatar(selectedAvatarName.value)
-                android.util.Log.d("ChangeAvatar", "Avatar update called, navigating back")
-                navController.popBackStack()
-            },
-            buttonText = "Select Avatar",
-            shadowColor = black,
-            mainColor = white,
-            textColor = navyBlue
-        )
+            // Bottom sheet: name, page dots and the primary button
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                    .navigationBarsPadding()
+                    .padding(start = LessonTheme.margin, end = LessonTheme.margin, top = 24.dp, bottom = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = selectedAvatarName.value,
+                    style = LessonTheme.question().copy(fontSize = (32 * k).sp)
+                )
+                LessonPageDots(modifier = Modifier.padding(bottom = 8.dp))
+                LessonPrimaryButton(
+                    title = "Choose ${selectedAvatarName.value}",
+                    onClick = {
+                        android.util.Log.d("ChangeAvatar", "Updating avatar to: ${selectedAvatarName.value}")
+                        profileViewModel.updateAvatar(selectedAvatarName.value)
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
     }
 }
+
 @Composable
 fun AvatarCarousels(
     selectedAvatarName: androidx.compose.runtime.MutableState<String>,
-    currentAvatarName: String
+    currentAvatarName: String,
+    /** The centre buddy's size, with the arrows level with its middle; null keeps this screen's own */
+    avatarSize: Dp? = null,
+    onIndexChange: (Int) -> Unit = {}
 ) {
-    val avatars = listOf(
-        Avatar(R.drawable.deenasaur, "Deenasaur"),
-        Avatar(R.drawable.duallama, "Duallama"),
-        Avatar(R.drawable.firdawsaur, "Firdawsaur"),
-        Avatar(R.drawable.ihsaninguin, "Ihsaninguin"),
-        Avatar(R.drawable.imamoth, "Imamoth"),
-        Avatar(R.drawable.khilafox, "Khilafox"),
-        Avatar(R.drawable.shukraf, "Shukraf"),
-        Avatar(R.drawable.jannahbee, "Jannah Bee"),
-        Avatar(R.drawable.qadragon, "Qadragon"),
-        Avatar(R.drawable.sabracorn, "Sabracorn"),
-        Avatar(R.drawable.sadiqling, "Sadiqling"),
-        Avatar(R.drawable.sidqhog, "Sidqhog")
-    )
+    val avatars = AllAvatars
 
 
     val avatarsSize = avatars.size
@@ -193,6 +174,7 @@ fun AvatarCarousels(
 
     LaunchedEffect(pagerState.currentPage) {
         selectedAvatarName.value = infiniteAvatars[pagerState.currentPage % avatarsSize].name
+        onIndexChange(pagerState.currentPage % avatarsSize)
 
         // Avoid reaching the boundaries
         if (pagerState.currentPage == 0 || pagerState.currentPage == infiniteAvatars.size - 1) {
@@ -205,108 +187,87 @@ fun AvatarCarousels(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val isTablet = configuration.screenWidthDp >= 600
-    // Scale avatar size on tablets slightly smaller to avoid clipping
-    val proposedSize = screenWidth * 0.35f
-    val avatarDisplaySize = if (isTablet) proposedSize.coerceAtMost(380.dp) else 200.dp
+    val avatarDisplaySize = avatarSize
+        ?: if (isTablet) (screenWidth * 0.35f).coerceAtMost(300.dp) else 190.dp
     val horizontalPadding = (screenWidth - avatarDisplaySize) / 2
+    val arrowSize = (48 * LessonTheme.scale()).dp
 
-    val containerHeight = if (isTablet) avatarDisplaySize + 180.dp else 300.dp
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(containerHeight),
-        contentAlignment = Alignment.Center
+            .height(if (avatarSize != null) avatarDisplaySize else avatarDisplaySize + 60.dp)
+            .padding(bottom = if (avatarSize != null) 0.dp else 12.dp),
+        contentAlignment = Alignment.BottomCenter
     ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                // Increase pager height to keep the name fully visible
-                .height(avatarDisplaySize + if (isTablet) 48.dp else 36.dp),
+                .height(avatarDisplaySize),
             // The padding centers the current item on the screen
             contentPadding = PaddingValues(horizontal = horizontalPadding),
-            // Increase the gap between items
-            pageSpacing = if (isTablet) 48.dp else 32.dp,
+            pageSpacing = 0.dp,
         ) { page ->
             val actualPage = page % avatarsSize
-            val scale = lerp(
-                start = 0.8f,
-                stop = 1f,
-                fraction = 1f - pagerState.currentPageOffsetFraction.absoluteValue.coerceIn(0f, 1f)
-            )
+            // Distance of this page from the centre: 0 = current, 1 = a full page away
+            val distance = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+                .absoluteValue.coerceIn(0f, 1f)
+            val scale = lerp(start = 1f, stop = 0.55f, fraction = distance)
+            val alpha = lerp(start = 1f, stop = 0.3f, fraction = distance)
             Box(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = avatars[actualPage].id),
                     contentDescription = "Avatar ${avatars[actualPage].name}",
-                    modifier = Modifier.size(avatarDisplaySize)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                val alifbaFontBold = FontFamily(
-                    Font(R.font.vag_round_boldd)
-                )
-                Text(
-                    text = avatars[actualPage].name,
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = if (isTablet) (-28).dp else (-24).dp),
-                    fontFamily = alifbaFontBold,
-                    color = black,
-                    fontSize = if (isTablet) 28.sp else 22.sp,
+                        .size(avatarDisplaySize)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            this.alpha = alpha
+                        }
                 )
             }
         }
 
-        // Navigation buttons
+        // Round arrows at the outer edges, level with the avatar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
-                .align(Alignment.BottomCenter),
+                .padding(horizontal = 20.dp)
+                .offset(
+                    y = if (avatarSize != null) -((avatarDisplaySize - arrowSize) / 2).coerceAtLeast(0.dp)
+                    else (-avatarDisplaySize * 0.2f)
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(
+            LessonCircleButton(
+                size = arrowSize,
                 onClick = {
-                    coroutineScope.launch {
-                        SoundEffectManager.playClickSound()
-                        delay(100)
-                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
-                elevation = ButtonDefaults.elevation(0.dp),
-                modifier = Modifier.size(if (isTablet) 96.dp else 64.dp)
+                    coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                }
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.leftarrow),
+                Icon(
+                    imageVector = Icons.Filled.ChevronLeft,
                     contentDescription = "Scroll Left",
-                    modifier = Modifier.size(if (isTablet) 96.dp else 64.dp)
+                    tint = LessonTheme.primary,
+                    modifier = Modifier.size((30 * LessonTheme.scale()).dp)
                 )
             }
-
-            Button(
+            LessonCircleButton(
+                size = arrowSize,
                 onClick = {
-                    coroutineScope.launch {
-                        SoundEffectManager.playClickSound()
-                        delay(100)
-                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
-                elevation = ButtonDefaults.elevation(0.dp),
-                modifier = Modifier.size(if (isTablet) 96.dp else 64.dp)
+                    coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                }
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.rightarrow),
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
                     contentDescription = "Scroll Right",
-                    modifier = Modifier.size(if (isTablet) 96.dp else 64.dp)
+                    tint = LessonTheme.primary,
+                    modifier = Modifier.size((30 * LessonTheme.scale()).dp)
                 )
             }
         }

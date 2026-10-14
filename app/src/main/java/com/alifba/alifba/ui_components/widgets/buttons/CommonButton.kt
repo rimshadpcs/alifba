@@ -4,6 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.media.AudioAttributes
 import android.media.SoundPool
+import android.os.Build
+import android.os.VibrationAttributes
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.provider.Settings
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -53,11 +59,18 @@ object SoundEffectManager {
     private var isInitialized = false
     private var volume: Float = 1.0f
     private lateinit var prefs: SharedPreferences
+    private var appContext: Context? = null
+    private var vibrator: Vibrator? = null
 
     // Using proper property declaration
     private var _isSoundEnabled by mutableStateOf(true)
     val isSoundEnabled: Boolean
         get() = _isSoundEnabled
+
+    /** Settings > Vibration: the tap tick and the lesson buzzes. Same key as iOS. */
+    private var _isHapticEnabled by mutableStateOf(true)
+    val isHapticEnabled: Boolean
+        get() = _isHapticEnabled
 
     fun initialize(context: Context) {
         if (isInitialized) return
@@ -65,6 +78,7 @@ object SoundEffectManager {
         // Initialize SharedPreferences
         prefs = context.getSharedPreferences("sound_settings", Context.MODE_PRIVATE)
         _isSoundEnabled = prefs.getBoolean("sound_enabled", true)
+        _isHapticEnabled = prefs.getBoolean("haptic_enabled", true)
 
         val attributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
@@ -79,6 +93,12 @@ object SoundEffectManager {
         clickSoundId = soundPool?.load(context, R.raw.buttonclick, 1) ?: 0
         correctSoundId = soundPool?.load(context, R.raw.rightanswer, 1) ?: 0
         wrongSoundId = soundPool?.load(context, R.raw.wronganswer, 1) ?: 0
+        appContext = context.applicationContext
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
+        } else {
+            context.getSystemService(Vibrator::class.java)
+        }
         isInitialized = true
     }
 
@@ -87,8 +107,14 @@ object SoundEffectManager {
         prefs.edit().putBoolean("sound_enabled", enabled).apply()
     }
 
+    fun toggleHaptic(enabled: Boolean) {
+        _isHapticEnabled = enabled
+        prefs.edit().putBoolean("haptic_enabled", enabled).apply()
+    }
+
 
     fun playClickSound() {
+        tapHaptic()
         if (_isSoundEnabled) {
             soundPool?.play(clickSoundId, volume, volume, 1, 0, 1f)
         }
@@ -103,6 +129,40 @@ object SoundEffectManager {
     fun playWrongSound() {
         if (_isSoundEnabled) {
             soundPool?.play(wrongSoundId, volume, volume, 1, 0, 1f)
+        }
+    }
+
+    /**
+     * The tiny tick felt on every tap, alongside the click sound (and still there when sounds are
+     * off). iOS plays the same tick (SoundEffectManager.triggerTapHaptic). Skipped when the
+     * phone's touch feedback setting is off, and below Android 10, which has no tick this light.
+     */
+    fun tapHaptic() {
+        if (!_isHapticEnabled || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val vibrator = vibrator ?: return
+        val context = appContext ?: return
+        if (!vibrator.hasVibrator()) return
+        val touchFeedbackOn = Settings.System.getInt(
+            context.contentResolver, Settings.System.HAPTIC_FEEDBACK_ENABLED, 1
+        ) != 0
+        if (!touchFeedbackOn) return
+        val tick = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            vibrator.vibrate(tick, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH))
+        } else {
+            vibrator.vibrate(tick)
+        }
+    }
+
+    /** The short buzz for a wrong answer in a lesson */
+    fun wrongAnswerHaptic() {
+        if (!_isHapticEnabled) return
+        val vibrator = vibrator ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(100)
         }
     }
 

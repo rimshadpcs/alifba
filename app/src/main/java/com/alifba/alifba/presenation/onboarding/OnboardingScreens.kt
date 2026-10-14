@@ -8,12 +8,18 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,39 +34,46 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -68,70 +81,54 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.progressBarRangeInfo
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.Story
-import com.alifba.alifba.service.LessonReminderReceiver
+import com.alifba.alifba.presenation.home.layout.settings.SettingsDivider
+import com.alifba.alifba.presenation.home.layout.settings.SettingsGroup
 import com.alifba.alifba.presenation.stories.AudioPlayerViewModel
-import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
+import com.alifba.alifba.service.LessonReminderReceiver
+import com.alifba.alifba.ui_components.widgets.AnswerCard
+import com.alifba.alifba.ui_components.widgets.AnswerState
+import com.alifba.alifba.ui_components.widgets.AuthTextField
+import com.alifba.alifba.ui_components.widgets.AuthTheme
 import com.alifba.alifba.ui_components.widgets.DotLottieView
-import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
-import com.alifba.alifba.ui_components.theme.Beige
-import com.alifba.alifba.ui_components.theme.darkCandyGreen
-import com.alifba.alifba.ui_components.theme.darkPink
-import com.alifba.alifba.ui_components.theme.darkRed
-import com.alifba.alifba.ui_components.theme.lightCandyGreen
-import com.alifba.alifba.ui_components.theme.lightNavyBlue
-import com.alifba.alifba.ui_components.theme.lightPink
-import com.alifba.alifba.ui_components.theme.lightPurple
-import com.alifba.alifba.ui_components.theme.lightRed
-import com.alifba.alifba.ui_components.theme.lightYellow
-import com.alifba.alifba.ui_components.theme.mediumpurple
-import com.alifba.alifba.ui_components.theme.navyBlue
-import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
-import com.alifba.alifba.ui_components.widgets.buttons.MCQChoiceButton
-import com.alifba.alifba.ui_components.widgets.buttons.OptionButton
-import com.alifba.alifba.ui_components.widgets.buttons.PictureButton
+import com.alifba.alifba.ui_components.widgets.LessonButtonKind
+import com.alifba.alifba.ui_components.widgets.LessonCircleButton
+import com.alifba.alifba.ui_components.widgets.LessonPrimaryButton
+import com.alifba.alifba.ui_components.widgets.LessonTheme
+import com.alifba.alifba.ui_components.widgets.MoonProgressBar
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.alifba.alifba.utils.ReminderPreferences
 import kotlinx.coroutines.delay
-
-private val AlifbaFont = FontFamily(
-    Font(R.font.vag_round, FontWeight.Normal),
-    Font(R.font.vag_round_boldd, FontWeight.Bold)
-)
-
-private val OnboardingBackground = Color(0xFFFFF8EC)
-private val TextPrimary = Color(0xFF33333A)
-private val TextSecondary = Color(0xFF6D6A63)
-private val SoftGreen = Color(0xFFEAF7DC)
-private val SoftPink = Color(0xFFFFEDF6)
-private val SoftBlue = Color(0xFFEFF4FF)
-private val DisabledButton = Color(0xFFD3D1CB)
-private val DisabledButtonShadow = Color(0xFFB9B6AE)
-private val MotivationSelectedBackground = Color(0xFFFFF4D1)
-private val OptionBorder = Color(0xFFE8DFC9)
 
 enum class OnboardingQuestionType {
     PictureMcq,
@@ -180,9 +177,9 @@ object OnboardingCopy {
     const val bedtimeHadithAttribution = "Sahih al-Bukhari 5009, Sahih Muslim 807"
 
     val testimonialSarah = Testimonial(
-        quote = "Finally, an app that isn't just dry lectures! My kids actually ask to do their " +
-            "\"Alifba time\" before bed. The audio stories about the Prophets are their favorite.",
-        author = "Sarah K."
+        quote = "My kids actually ask for their \"Alifba time\" before bed. The audio stories " +
+            "about the Prophets are their favourite.",
+        author = "Sarah K., parent of two"
     )
 
     val testimonialAisha = Testimonial(
@@ -311,27 +308,36 @@ fun OnboardingScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Individual screens still keep their own white/beige card behind mascot speech,
-        // quotes, and option rows — this is only the full-bleed backdrop behind those, not
-        // a replacement for that legibility layer. Matches iOS's OnboardingView alternation.
-        Image(
-            painter = painterResource(
-                id = if (state.stepIndex % 2 == 0) R.drawable.onboardingbgone else R.drawable.onboardingbgtwo
-            ),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        // Alternates per screen (even stepIndex -> clouds, odd -> grass hill), cross-fading so the
+        // change reads as a soft transition. Matches iOS's OnboardingView.
+        Crossfade(
+            targetState = state.stepIndex % 2 == 0,
+            animationSpec = tween(durationMillis = 350),
+            label = "onboardingBackground"
+        ) { clouds ->
+            Image(
+                painter = painterResource(
+                    id = if (clouds) R.drawable.onboardingbgone else R.drawable.onboardingbgtwo
+                ),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(WindowInsets.safeDrawing.asPaddingValues())
+                // Top and sides only: each screen handles the bottom inset (and the keyboard) itself so
+                // its pinned button and the feedback sheet can reach the screen edge.
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+                )
         ) {
             val quizQuestionIndex = OnboardingCopy.quizStepToQuestionIndex[state.stepIndex]
-            // Shared across every screen — shows overall progress through the whole 18-screen
-            // flow, not just the quiz's own 5 questions. Deliberately no step numbers, per spec.
+            // Round back button, the Moon riding the bar, and "N of 18" on the right.
             OnboardingTopBar(
-                progress = (state.stepIndex + 1f) / (OnboardingCopy.lastStepIndex + 1f),
+                current = state.stepIndex + 1,
+                total = OnboardingCopy.lastStepIndex + 1,
                 onBack = {
                     val handled = viewModel.previousStep()
                     if (!handled) {
@@ -368,6 +374,8 @@ fun OnboardingScreen(
                         }
                         OnboardingQuizScreen(
                             question = question,
+                            questionNumber = quizQuestionIndex + 1,
+                            childName = state.childName,
                             audioPreviewStory = state.audioPreviewStory,
                             isAudioPreviewLoading = state.isAudioPreviewLoading ||
                                 (isAudioLoading && currentStory?.documentId == state.audioPreviewStory?.documentId),
@@ -407,9 +415,13 @@ fun OnboardingScreen(
                         testimonial = OnboardingCopy.testimonialAisha,
                         onContinue = viewModel::nextStep
                     )
-                    state.stepIndex == 12 -> OnboardingLoadingScreen(onFinished = viewModel::nextStep)
+                    state.stepIndex == 12 -> OnboardingLoadingScreen(
+                        childName = state.childName,
+                        onFinished = viewModel::nextStep
+                    )
                     state.stepIndex == 13 -> OnboardingResultsScreen(
                         childName = state.childName,
+                        score = state.score,
                         onContinue = viewModel::nextStep
                     )
                     state.stepIndex == 14 -> ThanksForSharingScreen(
@@ -421,6 +433,7 @@ fun OnboardingScreen(
                         onContinue = viewModel::nextStep
                     )
                     state.stepIndex == 16 -> HabitBuilderScreen(
+                        childName = state.childName,
                         selectedHabitTime = state.selectedHabitTime,
                         selectedReminderHour = state.selectedReminderHour,
                         selectedReminderMinute = state.selectedReminderMinute,
@@ -434,6 +447,10 @@ fun OnboardingScreen(
                         onRemindMe = {
                             // TODO analytics: onboarding_completed
                             onComplete(state.childName)
+                        },
+                        onSkip = {
+                            // No permission prompt and no reminder scheduled
+                            onComplete(state.childName)
                         }
                     )
                 }
@@ -442,70 +459,295 @@ fun OnboardingScreen(
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Shell: top bar, scaffold, shared pieces
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+private fun OnboardingTopBar(
+    current: Int,
+    total: Int,
+    onBack: () -> Unit
+) {
+    val k = LessonTheme.scale()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        LessonCircleButton(
+            iconRes = R.drawable.backarrow,
+            contentDescription = "Back",
+            onClick = onBack
+        )
+        MoonProgressBar(
+            progress = current.toFloat() / total.coerceAtLeast(1),
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = "$current of $total",
+            style = LessonTheme.answer().copy(fontSize = (17 * k).sp)
+        )
+    }
+}
+
+/**
+ * Scrolling content with the primary action pinned underneath (above the nav bar / keyboard).
+ * [centered] vertically centres the content when it is shorter than the screen.
+ */
+@Composable
+private fun OnboardingScaffold(
+    centered: Boolean = false,
+    bottom: @Composable ColumnScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit
+) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        val isTablet = maxWidth > 600.dp
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth()
+                .widthIn(max = if (isTablet) 720.dp else 560.dp)
+                .padding(horizontal = LessonTheme.margin)
+        ) {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                val minHeight = maxHeight
+                val focusManager = LocalFocusManager.current
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = minHeight)
+                        .verticalScroll(rememberScrollState())
+                        // Tapping empty space drops the keyboard
+                        .pointerInput(Unit) { detectTapGestures { focusManager.clearFocus() } },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = if (centered) Arrangement.Center else Arrangement.Top,
+                    content = content
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
+                    .padding(top = 8.dp, bottom = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = bottom
+            )
+        }
+    }
+}
+
+/** White card with a 2dp border and a raised bottom edge */
+@Composable
+private fun RaisedPanel(
+    modifier: Modifier = Modifier,
+    radius: Dp = 24.dp,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val shape = RoundedCornerShape(radius)
+    val edge = LessonTheme.answerEdge
+    Box(modifier = modifier.padding(bottom = edge)) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .offset(y = edge)
+                    .background(LessonTheme.lineEdge, shape)
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape)
+                    .border(2.dp, LessonTheme.line, shape),
+                content = content
+            )
+        }
+    }
+}
+
+/** Padded raised card used for lists, quotes and the like */
+@Composable
+private fun OnboardingCard(
+    modifier: Modifier = Modifier,
+    padding: Dp = 18.dp,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    RaisedPanel(modifier = modifier.fillMaxWidth(), radius = LessonTheme.radius + 4.dp) {
+        Column(modifier = Modifier.padding(padding), content = content)
+    }
+}
+
+/** The Moon (animated) beside a white speech bubble with a small tail */
+@Composable
+private fun MascotSpeech(
+    mascotName: String?,
+    text: String,
+    compact: Boolean = false
+) {
+    val k = LessonTheme.scale()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        if (mascotName != null) {
+            DotLottieView(
+                name = mascotName,
+                modifier = Modifier.size(((if (compact) 78 else 100) * k).dp)
+            )
+        }
+        Box(modifier = Modifier.weight(1f)) {
+            RaisedPanel(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = text,
+                    style = LessonTheme.question().copy(
+                        fontSize = ((if (compact) 22 else 26) * k).sp,
+                        textAlign = TextAlign.Start
+                    ),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)
+                )
+            }
+            if (mascotName != null) {
+                BubbleTail(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .offset(x = (-11).dp)
+                )
+            }
+        }
+    }
+}
+
+/** Left-pointing notch on the speech bubble */
+@Composable
+private fun BubbleTail(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier.size(width = 14.dp, height = 26.dp)) {
+        val path = Path().apply {
+            moveTo(size.width, 0f)
+            lineTo(0f, size.height / 2f)
+            lineTo(size.width, size.height)
+        }
+        drawPath(path, Color.White)
+        drawPath(path, LessonTheme.line, style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round))
+        // Hides the bubble's own border where the tail joins it
+        drawRect(
+            color = Color.White,
+            topLeft = Offset(size.width - 2.dp.toPx(), 4.dp.toPx()),
+            size = Size(4.dp.toPx(), size.height - 8.dp.toPx())
+        )
+    }
+}
+
+/** Blue CONTINUE-style button; greyed out until the screen has what it needs */
+@Composable
+private fun PrimaryOnboardingButton(
+    text: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    LessonPrimaryButton(
+        title = text,
+        kind = if (enabled) LessonButtonKind.Primary else LessonButtonKind.Disabled,
+        onClick = onClick
+    )
+}
+
+/** Small secondary action under the primary button ("Not now") */
+@Composable
+private fun OnboardingGhostButton(text: String, onClick: () -> Unit) {
+    val k = LessonTheme.scale()
+    Box(
+        modifier = Modifier
+            .padding(top = 14.dp)
+            .height((52 * k).dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.85f))
+            .clickable {
+                SoundEffectManager.playClickSound()
+                onClick()
+            }
+            .padding(horizontal = 44.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = LessonTheme.answer().copy(fontSize = (20 * k).sp, color = LessonTheme.primaryEdge)
+        )
+    }
+}
+
+/** Centred pill above a quiz question ("Question 2 of 5") */
+@Composable
+private fun QuestionPill(text: String) {
+    val k = LessonTheme.scale()
+    Text(
+        text = text,
+        style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = AuthTheme.badgeInk),
+        modifier = Modifier
+            .background(Color(0xFFFFF3D6), CircleShape)
+            .padding(horizontal = 18.dp, vertical = 8.dp)
+    )
+}
+
+@Composable
+private fun EmojiTile(emoji: String, size: Int = 44) {
+    val k = LessonTheme.scale()
+    Box(
+        modifier = Modifier
+            .size((size * k).dp)
+            .background(LessonTheme.sky, RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = emoji, fontSize = (size * 0.5f * k).sp, textAlign = TextAlign.Center)
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Screens
+// ---------------------------------------------------------------------------------------------
+
 @Composable
 fun ChildNameOnboardingScreen(
     childName: String,
     onChildNameChange: (String) -> Unit,
     onContinue: () -> Unit
 ) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.9f else 0.65f))
+    val k = LessonTheme.scale()
+    OnboardingScaffold(
+        bottom = {
+            PrimaryOnboardingButton(text = "Continue", enabled = childName.isNotBlank(), onClick = onContinue)
+        }
+    ) {
+        Spacer(modifier = Modifier.height(10.dp))
         MascotSpeech(
             mascotName = "moonwave",
-            text = "Assalamu alaikum — What's your child's name?"
+            text = "Assalamu alaikum! What's your child's name?"
         )
-        Spacer(modifier = Modifier.height(if (isTablet) 14.dp else 22.dp))
-        CustomInputField(
+        Spacer(modifier = Modifier.height((36 * k).dp))
+        AuthTextField(
             value = childName,
             onValueChange = onChildNameChange,
-            labelText = "Child's Name",
-            modifier = Modifier.padding(horizontal = if (isTablet) 40.dp else 12.dp)
+            label = "Child's name",
+            placeholder = "Your child's name",
+            icon = Icons.Outlined.Person,
+            capitalization = KeyboardCapitalization.Words,
+            imeAction = ImeAction.Done
         )
         Text(
             text = "You can add more children later.",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 20.sp else 15.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 16.dp else 10.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        StableContinueButton(
-            visible = childName.isNotBlank(),
-            onClick = onContinue
-        )
-    }
-}
-
-@Composable
-fun BusyFamiliesScreen(childName: String, onContinue: () -> Unit) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.9f else 0.65f))
-        MascotSpeech(
-            mascotName = "moon_waiting",
-            text = "Designed for Busy Families — Just a Few Minutes a Day 🕰️"
-        )
-        Text(
-            text = "That's all it takes to build a lasting connection to faith, and Alifba " +
-                "will guide you and $childName every step of the way.",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 22.sp else 18.sp,
-            lineHeight = if (isTablet) 28.sp else 24.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 24.dp else 18.dp, start = 20.dp, end = 20.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        CommonButton(
-            onClick = onContinue,
-            buttonText = "Continue",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white
+            style = LessonTheme.answer().copy(fontSize = (17 * k).sp, textAlign = TextAlign.Start),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp, start = 4.dp)
         )
     }
 }
@@ -516,86 +758,178 @@ fun MotivationOnboardingScreen(
     onMotivationSelected: (String) -> Unit,
     onContinue: () -> Unit
 ) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 8.dp))
+    OnboardingScaffold(
+        bottom = {
+            PrimaryOnboardingButton(
+                text = "Continue",
+                enabled = selectedMotivations.isNotEmpty(),
+                onClick = onContinue
+            )
+        }
+    ) {
+        Spacer(modifier = Modifier.height(10.dp))
         MascotSpeech(
             mascotName = "moon_thinking",
             text = "What are you hoping to achieve with Alifba for your little one?"
         )
-        Spacer(modifier = Modifier.height(if (isTablet) 14.dp else 16.dp))
-        // Scrolls rather than clipping on short screens now that each card carries a
-        // description line and is taller than the old single-line rows.
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-        ) {
-            OnboardingCopy.motivationOptions.forEach { option ->
-                MotivationOptionCard(
-                    option = option,
-                    selected = option.title in selectedMotivations,
-                    onToggle = { onMotivationSelected(option.title) }
-                )
-            }
+        Spacer(modifier = Modifier.height(22.dp))
+        OnboardingCopy.motivationOptions.forEach { option ->
+            MotivationOptionCard(
+                option = option,
+                selected = option.title in selectedMotivations,
+                onToggle = { onMotivationSelected(option.title) }
+            )
+            Spacer(modifier = Modifier.height(5.dp))
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        StableContinueButton(
-            visible = selectedMotivations.isNotEmpty(),
-            onClick = onContinue,
-            greyedWhenDisabled = true
+    }
+}
+
+@Composable
+fun BusyFamiliesScreen(childName: String, onContinue: () -> Unit) {
+    val k = LessonTheme.scale()
+    OnboardingScaffold(
+        bottom = { PrimaryOnboardingButton(text = "Continue", onClick = onContinue) }
+    ) {
+        Spacer(modifier = Modifier.height(10.dp))
+        MascotSpeech(
+            mascotName = "moon_waiting",
+            text = "Made for busy families: just a few minutes a day."
+        )
+        Spacer(modifier = Modifier.height(30.dp))
+        SettingsGroup {
+            FeatureRow(icon = Icons.Outlined.Timer, text = "Short, bite-sized lessons")
+            SettingsDivider()
+            FeatureRow(icon = Icons.Outlined.Book, text = "Stories, quizzes and duas")
+            SettingsDivider()
+            FeatureRow(icon = Icons.Outlined.FavoriteBorder, text = "A lasting connection to faith")
+        }
+        Text(
+            text = "Alifba will guide you and $childName every step of the way.",
+            style = LessonTheme.story().copy(fontSize = (19 * k).sp, lineHeight = 1.35.em),
+            modifier = Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun FeatureRow(icon: ImageVector, text: String) {
+    val k = LessonTheme.scale()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size((44 * k).dp)
+                .background(LessonTheme.sky, RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = LessonTheme.primary,
+                modifier = Modifier.size((24 * k).dp)
+            )
+        }
+        Text(
+            text = text,
+            style = LessonTheme.answer().copy(fontSize = (21 * k).sp, textAlign = TextAlign.Start),
+            modifier = Modifier.weight(1f)
         )
     }
 }
 
 @Composable
 fun ParentChallengeIntroScreen(childName: String, onTakeChallenge: () -> Unit) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.9f else 0.65f))
+    val k = LessonTheme.scale()
+    OnboardingScaffold(
+        bottom = { PrimaryOnboardingButton(text = "Let's try", onClick = onTakeChallenge) }
+    ) {
+        Spacer(modifier = Modifier.height(10.dp))
         MascotSpeech(
             mascotName = "moon_excited_jump",
-            text = "Let's explore what $childName will learn inside Alifba!"
+            text = "Let's see what $childName will learn inside Alifba!"
         )
         Text(
-            text = "Just 5 quick questions inspired by our lessons.",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 32.sp else 26.sp,
-            lineHeight = if (isTablet) 38.sp else 32.sp,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 30.dp else 24.dp, start = 20.dp, end = 20.dp)
+            text = "Try ${OnboardingCopy.questions.size} quick questions from our lessons, together.",
+            style = LessonTheme.question().copy(fontSize = (29 * k).sp, lineHeight = 1.3.em),
+            modifier = Modifier.padding(top = 34.dp)
         )
-        Text(
-            text = "Trusted by 10,000+ Muslim families.",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 22.sp else 18.sp,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
+        Row(
             modifier = Modifier
-                .padding(top = if (isTablet) 24.dp else 18.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(SoftGreen)
-                .padding(horizontal = if (isTablet) 24.dp else 16.dp, vertical = if (isTablet) 12.dp else 10.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        CommonButton(
-            onClick = onTakeChallenge,
-            buttonText = "Take the Challenge",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white
-        )
+                .fillMaxWidth()
+                .padding(top = 26.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StepCard(number = 1, text = "Pick a picture", modifier = Modifier.weight(1f))
+            StepCard(number = 2, text = "Choose an answer", modifier = Modifier.weight(1f))
+            StepCard(number = 3, text = "Fill the gap", modifier = Modifier.weight(1f))
+        }
+        Row(
+            modifier = Modifier
+                .padding(top = 24.dp)
+                .background(Color.White.copy(alpha = 0.9f), CircleShape)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = null,
+                tint = Color(0xFFF5B800),
+                modifier = Modifier.size((20 * k).dp)
+            )
+            Text(
+                text = "Trusted by 10,000+ Muslim families",
+                style = LessonTheme.answer().copy(fontSize = (18 * k).sp)
+            )
+        }
     }
 }
+
+@Composable
+private fun StepCard(number: Int, text: String, modifier: Modifier = Modifier) {
+    val k = LessonTheme.scale()
+    OnboardingCard(modifier = modifier, padding = 12.dp) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size((42 * k).dp)
+                    .background(Color(0xFFFFF3D6), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$number",
+                    style = LessonTheme.answer().copy(fontSize = (22 * k).sp, color = AuthTheme.badgeInk)
+                )
+            }
+            Text(
+                text = text,
+                style = LessonTheme.answer().copy(fontSize = (17 * k).sp),
+                minLines = 2,
+                maxLines = 2
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Quiz
+// ---------------------------------------------------------------------------------------------
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun OnboardingQuizScreen(
     question: OnboardingQuestion,
+    questionNumber: Int,
+    childName: String,
     audioPreviewStory: Story? = null,
     isAudioPreviewLoading: Boolean = false,
     isAudioPreviewPlaying: Boolean = false,
@@ -605,11 +939,12 @@ fun OnboardingQuizScreen(
     onNext: () -> Unit
 ) {
     val context = LocalContext.current
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
+    val k = LessonTheme.scale()
     val isPreview = LocalInspectionMode.current
+    // What's picked but not checked yet, and what's locked in after CHECK
     var selectedAnswer by remember(question.id) { mutableStateOf<String?>(null) }
-    var showFeedback by remember(question.id) { mutableStateOf(false) }
-    val isAnswered = selectedAnswer != null
+    var checkedAnswer by remember(question.id) { mutableStateOf<String?>(null) }
+    val isChecked = checkedAnswer != null
 
     if (!isPreview) {
         LaunchedEffect(Unit) {
@@ -617,134 +952,561 @@ fun OnboardingQuizScreen(
         }
     }
 
-    LaunchedEffect(selectedAnswer) {
-        if (isPreview) return@LaunchedEffect
-        val answer = selectedAnswer ?: return@LaunchedEffect
-        val isCorrect = answer == question.correctAnswer
-        onAnswered(isCorrect)
-        if (isCorrect) SoundEffectManager.playCorrectSound() else SoundEffectManager.playWrongSound()
-        showFeedback = true
-        delay(850)
-        showFeedback = false
+    val pillText = buildString {
+        append("Question $questionNumber of ${OnboardingCopy.questions.size}")
+        if (question.type == OnboardingQuestionType.FillBlank) append(" · Fill the gap")
     }
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = if (isTablet) 36.dp else 18.dp, vertical = if (isTablet) 22.dp else 14.dp),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        val quizWidth = if (maxWidth > 900.dp) 900.dp else maxWidth
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth()
-                .widthIn(max = quizWidth),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // No mascot on quiz screens, per spec — question.speech is still shown as
-                    // plain text (it's the question prompt itself, not decorative copy).
-                    question.speech?.let {
-                        MascotSpeech(
-                            mascotName = null,
-                            text = it,
-                            compact = true
-                        )
-                    }
-
-                    if (question.showAudioHint) {
-                        AudioHintButton(
-                            story = audioPreviewStory,
-                            isLoading = isAudioPreviewLoading,
-                            isPlaying = isAudioPreviewPlaying,
-                            error = audioPreviewError,
-                            onClick = onAudioPreviewClick
-                        )
-                    }
-
-                    question.prompt?.let {
-                        FillBlankPrompt(text = it, selectedAnswer = selectedAnswer)
-                    }
-
-                    Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
-
-                    when (question.type) {
-                        OnboardingQuestionType.PictureMcq -> PictureQuestionOptions(
-                            question = question,
-                            selectedAnswer = selectedAnswer,
-                            onSelected = { if (!isAnswered) selectedAnswer = it }
-                        )
-                        OnboardingQuestionType.TextMcq -> TextQuestionOptions(
-                            question = question,
-                            onSelected = { if (!isAnswered) selectedAnswer = it }
-                        )
-                        OnboardingQuestionType.FillBlank -> FillBlankOptions(
-                            question = question,
-                            selectedAnswer = selectedAnswer,
-                            onSelected = { if (!isAnswered) selectedAnswer = it }
-                        )
-                    }
-
-                    val correct = selectedAnswer == question.correctAnswer
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(if (isTablet) 54.dp else 40.dp)
-                            .padding(top = if (isTablet) 18.dp else 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (correct) "Great answer!" else "Good try - Alifba teaches this gently.",
-                            fontFamily = AlifbaFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = if (isTablet) 22.sp else 18.sp,
-                            color = if (correct) darkCandyGreen else darkPink,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.alpha(if (isAnswered) 1f else 0f)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 18.dp))
-                    ValueBanner(text = question.valueBanner)
-                    Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 18.dp))
-
-                    StableContinueButton(
-                        visible = isAnswered,
-                        onClick = onNext
+    Box(modifier = Modifier.fillMaxSize()) {
+        OnboardingScaffold(
+            bottom = {
+                // The feedback sheet takes this slot once the answer is checked
+                Box(modifier = Modifier.alpha(if (isChecked) 0f else 1f)) {
+                    PrimaryOnboardingButton(
+                        text = "Check",
+                        enabled = selectedAnswer != null && !isChecked,
+                        onClick = {
+                            val answer = selectedAnswer ?: return@PrimaryOnboardingButton
+                            checkedAnswer = answer
+                            val isCorrect = answer == question.correctAnswer
+                            onAnswered(isCorrect)
+                            if (!isPreview) {
+                                if (isCorrect) SoundEffectManager.playCorrectSound() else SoundEffectManager.playWrongSound()
+                            }
+                        }
                     )
                 }
             }
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            QuestionPill(pillText)
+
+            if (question.type != OnboardingQuestionType.FillBlank) {
+                question.speech?.let {
+                    Text(
+                        text = it,
+                        style = LessonTheme.question().copy(fontSize = (29 * k).sp, lineHeight = 1.3.em),
+                        modifier = Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)
+                    )
+                }
+            }
+
+            if (question.showAudioHint) {
+                AudioHintButton(
+                    story = audioPreviewStory,
+                    isLoading = isAudioPreviewLoading,
+                    isPlaying = isAudioPreviewPlaying,
+                    error = audioPreviewError,
+                    onClick = onAudioPreviewClick
+                )
+            }
+
+            Spacer(modifier = Modifier.height(if (question.type == OnboardingQuestionType.FillBlank) 18.dp else 26.dp))
+
+            val onSelected: (String?) -> Unit = { if (!isChecked) selectedAnswer = it }
+            when (question.type) {
+                OnboardingQuestionType.PictureMcq -> PictureQuestionOptions(
+                    question = question,
+                    selected = selectedAnswer,
+                    checked = checkedAnswer,
+                    onSelected = onSelected
+                )
+                OnboardingQuestionType.TextMcq -> TextQuestionOptions(
+                    question = question,
+                    selected = selectedAnswer,
+                    checked = checkedAnswer,
+                    onSelected = onSelected
+                )
+                OnboardingQuestionType.FillBlank -> FillBlankQuestion(
+                    question = question,
+                    selected = selectedAnswer,
+                    checked = checkedAnswer,
+                    onSelected = onSelected
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        AnimatedVisibility(
+            visible = isChecked,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut()
+        ) {
+            val correct = checkedAnswer == question.correctAnswer
+            OnboardingFeedbackSheet(
+                isCorrect = correct,
+                title = if (correct) "Masha'Allah, $childName!" else "Good try, $childName!",
+                message = if (correct) {
+                    question.valueBanner
+                } else {
+                    "The answer is ${question.correctAnswer}. ${question.valueBanner}"
+                },
+                onContinue = onNext
+            )
         }
     }
+}
 
-    if (showFeedback && !isPreview) {
-        val correct = selectedAnswer == question.correctAnswer
-        val showDialog = remember { mutableStateOf(true) }
-        LottieAnimationDialog(
-            showDialog = showDialog,
-            lottieFileRes = if (correct) R.raw.tick else R.raw.error,
-            durationMs = 800
+/** Card state for an option, given what's selected / checked */
+private fun optionState(option: String, selected: String?, checked: String?, correct: String): AnswerState {
+    if (checked != null) {
+        if (option == correct) return AnswerState.Correct
+        if (option == checked) return AnswerState.Wrong
+    }
+    return if (checked == null && option == selected) AnswerState.Selected else AnswerState.Normal
+}
+
+@Composable
+private fun ResultBadge(state: AnswerState, modifier: Modifier = Modifier) {
+    val k = LessonTheme.scale()
+    Box(
+        modifier = modifier
+            .size((28 * k).dp)
+            .background(if (state == AnswerState.Correct) LessonTheme.correct else LessonTheme.wrong, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (state == AnswerState.Correct) Icons.Filled.Check else Icons.Filled.Close,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size((17 * k).dp)
         )
     }
 }
 
 @Composable
-fun OnboardingLoadingScreen(onFinished: () -> Unit) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
+private fun PictureQuestionOptions(
+    question: OnboardingQuestion,
+    selected: String?,
+    checked: String?,
+    onSelected: (String?) -> Unit
+) {
+    val k = LessonTheme.scale()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        question.options.chunked(2).forEachIndexed { rowIndex, rowOptions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                rowOptions.forEachIndexed { itemIndex, option ->
+                    val imageIndex = rowIndex * 2 + itemIndex
+                    val state = optionState(option, selected, checked, question.correctAnswer)
+                    // The weight has to sit on the Row's direct child, so the card gets a wrapper
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .alpha(if (checked != null && state == AnswerState.Normal) 0.5f else 1f)
+                    ) {
+                        AnswerCard(
+                            state = state,
+                            modifier = Modifier.fillMaxWidth().height((168 * k).dp),
+                            enabled = checked == null,
+                            onClick = { onSelected(option) }
+                        ) { labelColor ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(
+                                        id = question.pictureResources.getOrElse(imageIndex) { R.drawable.qna }
+                                    ),
+                                    contentDescription = option,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.height((100 * k).dp)
+                                )
+                                Text(
+                                    text = option,
+                                    style = LessonTheme.answer().copy(fontSize = (22 * k).sp, color = labelColor),
+                                    maxLines = 1
+                                )
+                            }
+                            if (checked != null && (state == AnswerState.Correct || state == AnswerState.Wrong)) {
+                                ResultBadge(
+                                    state = state,
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TextQuestionOptions(
+    question: OnboardingQuestion,
+    selected: String?,
+    checked: String?,
+    onSelected: (String?) -> Unit
+) {
+    val k = LessonTheme.scale()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        question.options.forEach { option ->
+            val state = optionState(option, selected, checked, question.correctAnswer)
+            Box(modifier = Modifier.alpha(if (checked != null && state == AnswerState.Normal) 0.5f else 1f)) {
+                AnswerCard(
+                    state = state,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = (66 * k).dp),
+                    enabled = checked == null,
+                    onClick = { onSelected(option) }
+                ) { labelColor ->
+                    Text(
+                        text = option,
+                        style = LessonTheme.answer().copy(fontSize = (22 * k).sp, color = labelColor),
+                        modifier = Modifier.padding(horizontal = 48.dp, vertical = 14.dp)
+                    )
+                    if (checked != null && (state == AnswerState.Correct || state == AnswerState.Wrong)) {
+                        ResultBadge(
+                            state = state,
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Sentence card with an inline blank, plus the answer chips underneath */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FillBlankQuestion(
+    question: OnboardingQuestion,
+    selected: String?,
+    checked: String?,
+    onSelected: (String?) -> Unit
+) {
+    val k = LessonTheme.scale()
+    val pieces = (question.prompt ?: "").split("[ ______ ]")
+    val before = pieces.firstOrNull().orEmpty().split(" ").filter { it.isNotBlank() }
+    val after = pieces.getOrNull(1).orEmpty().split(" ").filter { it.isNotBlank() }
+    val rowHeight = (46 * k).dp
+    val blankState = when {
+        checked == null -> AnswerState.Selected
+        checked == question.correctAnswer -> AnswerState.Correct
+        else -> AnswerState.Wrong
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
+        OnboardingCard(padding = 20.dp) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                @Composable
+                fun Word(word: String) {
+                    Box(modifier = Modifier.height(rowHeight), contentAlignment = Alignment.Center) {
+                        Text(text = word, style = LessonTheme.question().copy(fontSize = (27 * k).sp))
+                    }
+                }
+                before.forEach { Word(it) }
+                if (selected != null) {
+                    // The chosen chip sits in the sentence; tap it to take it back
+                    Box(
+                        modifier = Modifier
+                            .height(rowHeight)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(
+                                when (blankState) {
+                                    AnswerState.Correct -> LessonTheme.correctTint
+                                    AnswerState.Wrong -> LessonTheme.wrongTint
+                                    else -> LessonTheme.sky
+                                }
+                            )
+                            .border(2.dp, blankState.border, RoundedCornerShape(14.dp))
+                            .clickable(enabled = checked == null) { onSelected(null) }
+                            .padding(horizontal = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = selected,
+                            style = LessonTheme.question().copy(fontSize = (27 * k).sp, color = blankState.text)
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.height(rowHeight).width((100 * k).dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .offset(y = (13 * k).dp)
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .background(LessonTheme.blankLine, RoundedCornerShape(2.dp))
+                        )
+                    }
+                }
+                after.forEach { Word(it) }
+            }
+        }
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            question.options.forEach { option ->
+                if (selected == option) {
+                    // The chip has moved into the sentence; leave a dashed slot behind
+                    Box(
+                        modifier = Modifier
+                            .padding(bottom = LessonTheme.answerEdge)
+                            .height((56 * k).dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(LessonTheme.track.copy(alpha = 0.6f))
+                            .drawBehind {
+                                drawRoundRect(
+                                    color = Color(0xFFC4CADB),
+                                    cornerRadius = CornerRadius(18.dp.toPx()),
+                                    style = Stroke(
+                                        width = 2.dp.toPx(),
+                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 12f))
+                                    )
+                                )
+                            }
+                            .padding(horizontal = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = option,
+                            style = LessonTheme.answer().copy(fontSize = (22 * k).sp, color = Color(0xFFA3A9BC))
+                        )
+                    }
+                } else {
+                    Box(modifier = Modifier.alpha(if (checked != null) 0.5f else 1f)) {
+                        AnswerCard(
+                            state = AnswerState.Normal,
+                            modifier = Modifier.height((56 * k).dp),
+                            enabled = checked == null,
+                            onClick = { onSelected(option) }
+                        ) { labelColor ->
+                            Text(
+                                text = option,
+                                style = LessonTheme.answer().copy(fontSize = (22 * k).sp, color = labelColor),
+                                modifier = Modifier.padding(horizontal = 24.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Bottom sheet after CHECK: the Moon, a personal line and one sentence about why it matters */
+@Composable
+private fun OnboardingFeedbackSheet(
+    isCorrect: Boolean,
+    title: String,
+    message: String,
+    onContinue: () -> Unit
+) {
+    val k = LessonTheme.scale()
+    val ink = if (isCorrect) LessonTheme.correctText else LessonTheme.wrongText
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (isCorrect) LessonTheme.correctTint else LessonTheme.wrongTint,
+                RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            )
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
+            .padding(start = LessonTheme.margin, end = LessonTheme.margin, top = 22.dp, bottom = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Image(
+                painter = painterResource(id = R.drawable.moon_progress_thumb),
+                contentDescription = null,
+                modifier = Modifier
+                    .size((70 * k).dp)
+                    .background(LessonTheme.sky, RoundedCornerShape(18.dp))
+                    .padding(8.dp)
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = LessonTheme.question().copy(
+                        fontSize = (29 * k).sp,
+                        color = ink,
+                        textAlign = TextAlign.Start
+                    )
+                )
+                Text(
+                    text = message,
+                    style = LessonTheme.story().copy(
+                        fontSize = (18 * k).sp,
+                        color = ink.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Start,
+                        lineHeight = 1.3.em
+                    )
+                )
+            }
+        }
+        LessonPrimaryButton(
+            title = "Continue",
+            kind = if (isCorrect) LessonButtonKind.Correct else LessonButtonKind.Wrong,
+            onClick = onContinue
+        )
+    }
+}
+
+@Composable
+private fun AudioHintButton(
+    story: Story?,
+    isLoading: Boolean,
+    isPlaying: Boolean,
+    error: String?,
+    onClick: (Story) -> Unit
+) {
+    val k = LessonTheme.scale()
+    val enabled = story != null && !isLoading
+    Row(
+        modifier = Modifier
+            .padding(top = 14.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.92f))
+            .border(2.dp, LessonTheme.line, CircleShape)
+            .clickable(enabled = enabled) { story?.let(onClick) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = LessonTheme.primary,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(20.dp)
+            )
+        } else {
+            Icon(
+                imageVector = if (enabled && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = null,
+                tint = LessonTheme.primary,
+                modifier = Modifier.size((22 * k).dp)
+            )
+        }
+        Text(
+            text = when {
+                isLoading -> "Loading story preview..."
+                error != null -> error
+                isPlaying -> "Pause audio story preview"
+                story != null -> "Play audio story preview"
+                else -> "Audio story preview"
+            },
+            style = LessonTheme.answer().copy(fontSize = (16 * k).sp, color = LessonTheme.primaryEdge)
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Content screens
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+fun BedtimeScreen(childName: String, onContinue: () -> Unit) {
+    val k = LessonTheme.scale()
+    OnboardingScaffold(
+        bottom = { PrimaryOnboardingButton(text = "Continue", onClick = onContinue) }
+    ) {
+        Spacer(modifier = Modifier.height(10.dp))
+        MascotSpeech(
+            mascotName = "moonwave",
+            text = "Bedtime is the perfect time for faith 😴"
+        )
+        Spacer(modifier = Modifier.height(28.dp))
+        OnboardingCard(padding = 22.dp) {
+            QuoteMark()
+            Text(
+                text = OnboardingCopy.bedtimeHadith,
+                style = LessonTheme.answer().copy(
+                    fontSize = (21 * k).sp,
+                    textAlign = TextAlign.Start,
+                    lineHeight = 1.3.em
+                ),
+                modifier = Modifier.padding(top = 10.dp)
+            )
+            Text(
+                text = OnboardingCopy.bedtimeHadithAttribution,
+                style = LessonTheme.answer().copy(
+                    fontSize = (16 * k).sp,
+                    color = AuthTheme.secondaryText,
+                    textAlign = TextAlign.Start
+                ),
+                modifier = Modifier.padding(top = 14.dp)
+            )
+        }
+        Text(
+            text = "Let Alifba guide you and $childName through peaceful bedtime stories and dua each night.",
+            style = LessonTheme.story().copy(fontSize = (19 * k).sp, lineHeight = 1.35.em),
+            modifier = Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)
+        )
+    }
+}
+
+/** Big pale quotation mark that opens quote cards */
+@Composable
+private fun QuoteMark() {
+    val k = LessonTheme.scale()
+    Text(
+        text = "“",
+        style = LessonTheme.question().copy(
+            fontSize = (64 * k).sp,
+            color = LessonTheme.blankLine,
+            textAlign = TextAlign.Start,
+            lineHeight = 0.8.em
+        ),
+        modifier = Modifier.height((38 * k).dp)
+    )
+}
+
+@Composable
+fun TestimonialScreen(testimonial: Testimonial, onContinue: () -> Unit) {
+    val k = LessonTheme.scale()
+    OnboardingScaffold(
+        centered = true,
+        bottom = { PrimaryOnboardingButton(text = "Continue", onClick = onContinue) }
+    ) {
+        OnboardingCard(padding = 24.dp) {
+            QuoteMark()
+            Text(
+                text = testimonial.quote,
+                style = LessonTheme.answer().copy(
+                    fontSize = (23 * k).sp,
+                    textAlign = TextAlign.Start,
+                    lineHeight = 1.35.em
+                ),
+                modifier = Modifier.padding(top = 14.dp)
+            )
+            Text(
+                text = testimonial.author,
+                style = LessonTheme.answer().copy(
+                    fontSize = (18 * k).sp,
+                    color = AuthTheme.secondaryText,
+                    textAlign = TextAlign.Start
+                ),
+                modifier = Modifier.padding(top = 14.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun OnboardingLoadingScreen(
+    childName: String,
+    onFinished: () -> Unit
+) {
+    val k = LessonTheme.scale()
     val isPreview = LocalInspectionMode.current
-    var messageIndex by remember { mutableIntStateOf(0) }
     var progress by remember { mutableFloatStateOf(if (isPreview) 0.62f else 0f) }
     val transition = rememberInfiniteTransition(label = "loadingScale")
     val scale by transition.animateFloat(
@@ -769,8 +1531,6 @@ fun OnboardingLoadingScreen(onFinished: () -> Unit) {
                     else -> elapsedMs - 2_000L
                 }.coerceIn(0L, 10_000L)
                 progress = movingElapsedMs / 10_000f
-                messageIndex = ((elapsedMs / totalDurationMs.toFloat()) * OnboardingCopy.loadingMessages.size).toInt()
-                    .coerceIn(0, OnboardingCopy.loadingMessages.lastIndex)
                 delay(tickMs)
                 elapsedMs += tickMs
             }
@@ -778,272 +1538,262 @@ fun OnboardingLoadingScreen(onFinished: () -> Unit) {
         }
     }
 
+    val steps = listOf(
+        "Bite-sized lessons for $childName",
+        "Bedtime stories and duas",
+        "Fun quizzes to practise",
+        "Badges to celebrate progress"
+    )
+    val doneUpTo = (progress.coerceIn(0f, 1f) * steps.size).toInt()
+
     OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(8.dp))
         DotLottieView(
             name = "moon_thinking",
             modifier = Modifier
-                .fillMaxWidth(if (isTablet) 0.44f else 0.7f)
-                .height(if (isTablet) 320.dp else 260.dp)
+                .height((230 * k).dp)
+                .fillMaxWidth(0.6f)
                 .scale(scale)
         )
         Text(
-            text = "Building your little one's learning path...",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 36.sp else 28.sp,
-            lineHeight = if (isTablet) 42.sp else 34.sp,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 20.dp)
+            text = "Building $childName's learning path...",
+            style = LessonTheme.question().copy(fontSize = (29 * k).sp, lineHeight = 1.3.em),
+            modifier = Modifier.padding(top = 6.dp, start = 6.dp, end = 6.dp)
         )
-        Spacer(modifier = Modifier.height(if (isTablet) 28.dp else 22.dp))
-        LinearProgressIndicator(
-            progress = { progress },
+
+        // Plain track + fill
+        Box(
             modifier = Modifier
-                .fillMaxWidth(if (isTablet) 0.78f else 0.9f)
-                .height(if (isTablet) 16.dp else 12.dp)
-                .clip(RoundedCornerShape(50)),
-            color = lightNavyBlue,
-            trackColor = Color(0xFFE5DFD1)
-        )
-        Text(
-            text = OnboardingCopy.loadingMessages[messageIndex],
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 22.sp else 17.sp,
-            lineHeight = if (isTablet) 28.sp else 22.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 28.dp else 20.dp, start = 20.dp, end = 20.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
+                .padding(top = 22.dp)
+                .fillMaxWidth()
+                .height((14 * k).dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.7f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress.coerceIn(0.03f, 1f))
+                    .height((14 * k).dp)
+                    .clip(CircleShape)
+                    .background(LessonTheme.primary)
+            )
+        }
+
+        OnboardingCard(modifier = Modifier.padding(top = 22.dp), padding = 6.dp) {
+            steps.forEachIndexed { index, text ->
+                if (index > 0) SettingsDivider()
+                LoadingStepRow(
+                    text = text,
+                    done = index < doneUpTo,
+                    working = index == doneUpTo
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun OnboardingResultsScreen(childName: String, onContinue: () -> Unit) {
+private fun LoadingStepRow(text: String, done: Boolean, working: Boolean) {
+    val k = LessonTheme.scale()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(modifier = Modifier.size((30 * k).dp), contentAlignment = Alignment.Center) {
+            when {
+                done -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(LessonTheme.correct, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size((18 * k).dp)
+                        )
+                    }
+                }
+                working -> CircularProgressIndicator(
+                    color = LessonTheme.primary,
+                    trackColor = LessonTheme.track,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.fillMaxSize()
+                )
+                else -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .border(3.dp, LessonTheme.track, CircleShape)
+                )
+            }
+        }
+        Text(
+            text = text,
+            style = LessonTheme.answer().copy(
+                fontSize = (19 * k).sp,
+                textAlign = TextAlign.Start,
+                color = if (done) LessonTheme.ink else AuthTheme.secondaryText
+            ),
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+fun OnboardingResultsScreen(childName: String, score: Int, onContinue: () -> Unit) {
     LaunchedEffect(Unit) {
         // TODO analytics: onboarding_results_viewed
     }
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    val headline = "$childName is going to love this."
+    val k = LessonTheme.scale()
+    val total = OnboardingCopy.questions.size
 
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.45f else 0.3f))
+    OnboardingScaffold(
+        bottom = { PrimaryOnboardingButton(text = "Continue", onClick = onContinue) }
+    ) {
         DotLottieView(
             name = "moon_victory",
             modifier = Modifier
-                .fillMaxWidth(if (isTablet) 0.46f else 0.62f)
-                .height(if (isTablet) 300.dp else 220.dp)
+                .padding(top = 4.dp)
+                .fillMaxWidth(0.6f)
+                .height((190 * k).dp)
         )
+        Row(
+            modifier = Modifier.padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            repeat(total) { index ->
+                Icon(
+                    imageVector = if (index < score) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = null,
+                    tint = if (index < score) Color(0xFFF5B800) else Color(0xFFB7C3DC),
+                    modifier = Modifier.size((34 * k).dp)
+                )
+            }
+        }
         Text(
-            text = headline,
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 36.sp else 27.sp,
-            lineHeight = if (isTablet) 43.sp else 33.sp,
-            color = TextPrimary,
-            textAlign = TextAlign.Center
+            text = if (score >= 3) "$childName got $score out of $total!" else "Great effort, $childName!",
+            style = LessonTheme.question().copy(fontSize = (31 * k).sp),
+            modifier = Modifier.padding(top = 16.dp)
         )
         Text(
             text = "Here's what $childName can achieve in 3 months:",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 26.sp else 20.sp,
-            lineHeight = if (isTablet) 32.sp else 26.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 28.dp else 22.dp, bottom = if (isTablet) 16.dp else 10.dp)
+            style = LessonTheme.story().copy(
+                fontSize = (19 * k).sp,
+                color = AuthTheme.secondaryText,
+                lineHeight = 1.3.em
+            ),
+            modifier = Modifier.padding(top = 8.dp)
         )
-        ValueListItem("🕌 Build a daily Islamic routine - meaningful 5-minute lessons.")
-        ValueListItem("📖 Remember Prophet stories - through audio and visual learning.")
-        ValueListItem("💖 Develop strong character - kindness, gratitude, and good manners.")
-        Spacer(modifier = Modifier.weight(1f))
-        CommonButton(
-            onClick = onContinue,
-            buttonText = "Continue",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white
-        )
+        Spacer(modifier = Modifier.height(22.dp))
+        SettingsGroup {
+            ValueListItem("🕌 Build a daily Islamic routine — meaningful 5-minute lessons.")
+            SettingsDivider()
+            ValueListItem("📖 Remember Prophet stories — through audio and visual learning.")
+            SettingsDivider()
+            ValueListItem("💖 Develop strong character — kindness, gratitude, and good manners.")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-fun BedtimeScreen(childName: String, onContinue: () -> Unit) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.9f else 0.65f))
-        MascotSpeech(
-            mascotName = "moonwave",
-            text = "Bedtime Is the Perfect Time for Faith 😴"
-        )
+private fun ValueListItem(text: String) {
+    val k = LessonTheme.scale()
+    // The text starts with an emoji; it goes in the tile, the rest is the sentence
+    val emoji = text.substringBefore(" ")
+    val rest = text.substringAfter(" ", text)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        EmojiTile(emoji)
         Text(
-            text = "“${OnboardingCopy.bedtimeHadith}”",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 22.sp else 17.sp,
-            lineHeight = if (isTablet) 28.sp else 22.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .padding(top = if (isTablet) 24.dp else 18.dp)
-                .clip(RoundedCornerShape(if (isTablet) 24.dp else 16.dp))
-                .background(white)
-                .border(2.dp, Beige, RoundedCornerShape(if (isTablet) 24.dp else 16.dp))
-                .padding(if (isTablet) 24.dp else 16.dp)
-        )
-        Text(
-            text = "— ${OnboardingCopy.bedtimeHadithAttribution}",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 18.sp else 14.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 12.dp else 8.dp)
-        )
-        Text(
-            text = "Let Alifba guide you and $childName through peaceful bedtime stories and dua each night.",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 22.sp else 18.sp,
-            lineHeight = if (isTablet) 28.sp else 24.sp,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 20.dp else 14.dp, start = 20.dp, end = 20.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        CommonButton(
-            onClick = onContinue,
-            buttonText = "Continue",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white
-        )
-    }
-}
-
-@Composable
-fun TestimonialScreen(testimonial: Testimonial, onContinue: () -> Unit) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(1f))
-        Image(
-            painter = painterResource(id = R.drawable.quote),
-            contentDescription = null,
-            modifier = Modifier
-                .size(if (isTablet) 48.dp else 36.dp)
-                .padding(bottom = if (isTablet) 12.dp else 8.dp)
-        )
-        Text(
-            text = "“${testimonial.quote}”",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 30.sp else 23.sp,
-            lineHeight = if (isTablet) 38.sp else 30.sp,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(if (isTablet) 24.dp else 16.dp))
-                .background(white)
-                .border(2.dp, Beige, RoundedCornerShape(if (isTablet) 24.dp else 16.dp))
-                .padding(if (isTablet) 32.dp else 20.dp)
-        )
-        Text(
-            text = "— ${testimonial.author}",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 22.sp else 17.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 20.dp else 14.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        CommonButton(
-            onClick = onContinue,
-            buttonText = "Continue",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white
+            text = rest,
+            style = LessonTheme.answer().copy(
+                fontSize = (18 * k).sp,
+                textAlign = TextAlign.Start,
+                lineHeight = 1.3.em
+            )
         )
     }
 }
 
 @Composable
 fun ThanksForSharingScreen(childName: String, onContinue: () -> Unit) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.9f else 0.65f))
+    OnboardingScaffold(
+        bottom = { PrimaryOnboardingButton(text = "Continue", onClick = onContinue) }
+    ) {
+        Spacer(modifier = Modifier.height(10.dp))
         MascotSpeech(
             mascotName = "moonwave",
             text = "🙌 Thanks for sharing! Wherever you're starting from, Alifba is here to " +
                 "help you and $childName grow 🌱 in faith 🌙, with lessons 📖 that fit your life."
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        CommonButton(
-            onClick = onContinue,
-            buttonText = "Continue",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white
         )
     }
 }
 
 @Composable
 fun QuoteScreen(childName: String, onContinue: () -> Unit) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = "🌟 You Are Doing Something Beautiful for $childName 🌟",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 32.sp else 25.sp,
-            lineHeight = if (isTablet) 40.sp else 31.sp,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 20.dp)
-        )
-        Text(
-            text = "“${OnboardingCopy.quoteScreenVerse}”",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 24.sp else 19.sp,
-            lineHeight = if (isTablet) 32.sp else 26.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
+    val k = LessonTheme.scale()
+    OnboardingScaffold(
+        centered = true,
+        bottom = { PrimaryOnboardingButton(text = "Continue", onClick = onContinue) }
+    ) {
+        Box(
             modifier = Modifier
-                .padding(top = if (isTablet) 28.dp else 22.dp)
-                .clip(RoundedCornerShape(if (isTablet) 24.dp else 16.dp))
-                .background(white)
-                .border(2.dp, Beige, RoundedCornerShape(if (isTablet) 24.dp else 16.dp))
-                .padding(if (isTablet) 28.dp else 18.dp)
-        )
+                .size((80 * k).dp)
+                .background(Color(0xFFFFF3D6), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = null,
+                tint = Color(0xFFF5B800),
+                modifier = Modifier.size((40 * k).dp)
+            )
+        }
         Text(
-            text = "— ${OnboardingCopy.quoteScreenAttribution}",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 20.sp else 15.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 14.dp else 10.dp)
+            text = "You're doing something beautiful for $childName",
+            style = LessonTheme.question().copy(fontSize = (30 * k).sp, lineHeight = 1.3.em),
+            modifier = Modifier.padding(top = 24.dp, start = 6.dp, end = 6.dp)
         )
-        Spacer(modifier = Modifier.weight(1f))
-        CommonButton(
-            onClick = onContinue,
-            buttonText = "Continue",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white
-        )
+        OnboardingCard(modifier = Modifier.padding(top = 26.dp), padding = 22.dp) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "“${OnboardingCopy.quoteScreenVerse}”",
+                    style = LessonTheme.answer().copy(fontSize = (21 * k).sp, lineHeight = 1.4.em)
+                )
+                Text(
+                    text = OnboardingCopy.quoteScreenAttribution,
+                    style = LessonTheme.answer().copy(fontSize = (16 * k).sp, color = LessonTheme.correctText),
+                    modifier = Modifier
+                        .background(LessonTheme.correctTint, CircleShape)
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                )
+            }
+        }
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Reminder
+// ---------------------------------------------------------------------------------------------
+
 @Composable
 fun HabitBuilderScreen(
+    childName: String,
     selectedHabitTime: String?,
     selectedReminderHour: Int,
     selectedReminderMinute: Int,
@@ -1052,7 +1802,7 @@ fun HabitBuilderScreen(
 ) {
     val context = LocalContext.current
     val isPreview = LocalInspectionMode.current
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
+    val k = LessonTheme.scale()
     var showCustomTimePicker by remember { mutableStateOf(false) }
 
     if (showCustomTimePicker && !isPreview) {
@@ -1074,36 +1824,51 @@ fun HabitBuilderScreen(
         }
     }
 
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.75f else 0.5f))
+    OnboardingScaffold(
+        bottom = {
+            PrimaryOnboardingButton(
+                text = "Continue",
+                enabled = selectedHabitTime != null,
+                onClick = onContinue
+            )
+        }
+    ) {
+        Spacer(modifier = Modifier.height(10.dp))
         MascotSpeech(
             mascotName = "moon_thinking",
-            text = "I'll help your little one build a daily learning habit."
+            text = "When is the best time for $childName to learn?"
         )
-        Text(
-            text = "When is the best time to learn?",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 34.sp else 25.sp,
-            lineHeight = if (isTablet) 40.sp else 31.sp,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(vertical = if (isTablet) 34.dp else 22.dp)
-        )
+        Spacer(modifier = Modifier.height(28.dp))
         OnboardingCopy.habitOptions.forEach { option ->
-            val optionLabel = if (option.label == "Custom Time" && selectedHabitTime?.startsWith("Custom Time") == true) {
+            val isCustom = option.label == "Custom Time"
+            val optionLabel = if (isCustom && selectedHabitTime?.startsWith("Custom Time") == true) {
                 "Custom Time - ${formatReminderTime(selectedReminderHour, selectedReminderMinute)}"
             } else {
                 option.label
             }
-            SelectableOptionRow(
-                text = optionLabel,
-                selected = selectedHabitTime == optionLabel || (option.label == "Custom Time" && selectedHabitTime?.startsWith("Custom Time") == true),
-                leadingIcon = { Icon(Icons.Default.Schedule, contentDescription = null, tint = lightNavyBlue) },
+            val selected = selectedHabitTime == optionLabel ||
+                (isCustom && selectedHabitTime?.startsWith("Custom Time") == true)
+            RadioOptionRow(
+                title = when (option.label) {
+                    "After School - 6:00 PM" -> "After school"
+                    "Before Bedtime - 9:00 PM" -> "Before bedtime"
+                    else -> "Pick a time"
+                },
+                trailing = when {
+                    isCustom && selected -> formatReminderTime(selectedReminderHour, selectedReminderMinute)
+                    isCustom -> null
+                    else -> formatReminderTime(option.hour, option.minute)
+                },
+                showsChevron = isCustom && !selected,
+                selected = selected,
                 onClick = {
-                    if (option.label == "Custom Time") {
+                    if (isCustom) {
                         if (isPreview) {
-                            onHabitSelected("Custom Time - ${formatReminderTime(selectedReminderHour, selectedReminderMinute)}", selectedReminderHour, selectedReminderMinute)
+                            onHabitSelected(
+                                "Custom Time - ${formatReminderTime(selectedReminderHour, selectedReminderMinute)}",
+                                selectedReminderHour,
+                                selectedReminderMinute
+                            )
                         } else {
                             showCustomTimePicker = true
                         }
@@ -1112,12 +1877,95 @@ fun HabitBuilderScreen(
                     }
                 }
             )
+            Spacer(modifier = Modifier.height(7.dp))
         }
-        Spacer(modifier = Modifier.weight(1f))
-        StableContinueButton(
-            visible = selectedHabitTime != null,
-            onClick = onContinue
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, start = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Notifications,
+                contentDescription = null,
+                tint = LessonTheme.primary,
+                modifier = Modifier.size((20 * k).dp)
+            )
+            Text(
+                text = "We'll send one gentle reminder at this time. You can change it any time in Settings.",
+                style = LessonTheme.answer().copy(
+                    fontSize = (17 * k).sp,
+                    textAlign = TextAlign.Start,
+                    lineHeight = 1.3.em
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun RadioOptionRow(
+    title: String,
+    trailing: String?,
+    showsChevron: Boolean,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val k = LessonTheme.scale()
+    AnswerCard(
+        state = if (selected) AnswerState.Selected else AnswerState.Normal,
+        modifier = Modifier.fillMaxWidth().heightIn(min = (66 * k).dp),
+        onClick = onClick
+    ) { labelColor ->
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size((26 * k).dp)
+                    .border(2.5.dp, if (selected) LessonTheme.primary else Color(0xFFB7C3DC), CircleShape)
+                    .then(if (selected) Modifier.background(LessonTheme.primary, CircleShape) else Modifier),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selected) {
+                    Box(
+                        modifier = Modifier
+                            .size((9 * k).dp)
+                            .background(Color.White, CircleShape)
+                    )
+                }
+            }
+            Text(
+                text = title,
+                style = LessonTheme.answer().copy(
+                    fontSize = (22 * k).sp,
+                    textAlign = TextAlign.Start,
+                    color = labelColor
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            if (trailing != null) {
+                Text(
+                    text = trailing,
+                    style = LessonTheme.answer().copy(
+                        fontSize = (20 * k).sp,
+                        color = if (selected) labelColor else AuthTheme.secondaryText
+                    )
+                )
+            }
+            if (showsChevron) {
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = Color(0xFFA3A9BC),
+                    modifier = Modifier.size((22 * k).dp)
+                )
+            }
+        }
     }
 }
 
@@ -1126,331 +1974,78 @@ fun NotificationPrePromptScreen(
     childName: String,
     reminderHour: Int,
     reminderMinute: Int,
-    onRemindMe: () -> Unit
+    onRemindMe: () -> Unit,
+    onSkip: () -> Unit
 ) {
     val context = LocalContext.current
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
+    val k = LessonTheme.scale()
+    val timeText = formatReminderTime(reminderHour, reminderMinute)
 
-    OnboardingScaffold {
-        Spacer(modifier = Modifier.weight(if (isTablet) 0.85f else 0.55f))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    OnboardingScaffold(
+        centered = true,
+        bottom = {
+            PrimaryOnboardingButton(
+                text = "Remind me at $timeText",
+                onClick = {
+                    // TODO analytics: onboarding_notification_prompt_tapped
+                    enableOnboardingReminder(context, reminderHour, reminderMinute)
+                    onRemindMe()
+                }
+            )
+            OnboardingGhostButton(text = "Not now", onClick = onSkip)
+        }
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Box(
                 modifier = Modifier
-                    .size(if (isTablet) 140.dp else 104.dp)
-                    .clip(CircleShape)
-                    .background(SoftBlue),
+                    .size((104 * k).dp)
+                    .background(Color.White.copy(alpha = 0.9f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Notifications,
                     contentDescription = null,
-                    tint = lightNavyBlue,
-                    modifier = Modifier.size(if (isTablet) 78.dp else 58.dp)
+                    tint = LessonTheme.primary,
+                    modifier = Modifier.size((52 * k).dp)
                 )
             }
-            Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 6.dp))
             // Small wave mascot beside the bell — not replacing it, per spec.
             DotLottieView(
                 name = "moonwave",
-                modifier = Modifier.size(if (isTablet) 70.dp else 52.dp)
+                modifier = Modifier.size((70 * k).dp)
             )
         }
         Text(
             text = "Want a gentle reminder for $childName's daily lesson?",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 38.sp else 29.sp,
-            lineHeight = if (isTablet) 46.sp else 35.sp,
-            color = TextPrimary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 42.dp else 28.dp)
+            style = LessonTheme.question().copy(fontSize = (29 * k).sp, lineHeight = 1.3.em),
+            modifier = Modifier.padding(top = 26.dp, start = 6.dp, end = 6.dp)
         )
         Text(
             text = "We'll only remind you at the time you choose.",
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 24.sp else 18.sp,
-            lineHeight = if (isTablet) 30.sp else 24.sp,
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = if (isTablet) 22.dp else 14.dp)
-        )
-        Text(
-            text = formatReminderTime(reminderHour, reminderMinute),
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 30.sp else 22.sp,
-            color = navyBlue,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .padding(top = if (isTablet) 24.dp else 14.dp)
-                .clip(RoundedCornerShape(40.dp))
-                .background(SoftBlue)
-                .padding(horizontal = if (isTablet) 28.dp else 18.dp, vertical = if (isTablet) 12.dp else 8.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        CommonButton(
-            onClick = {
-                // TODO analytics: onboarding_notification_prompt_tapped
-                enableOnboardingReminder(context, reminderHour, reminderMinute)
-                onRemindMe()
-            },
-            buttonText = "Remind Me",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white
-        )
-    }
-}
-
-@SuppressLint("UnusedBoxWithConstraintsScope")
-@Composable
-private fun OnboardingScaffold(content: @Composable ColumnScope.() -> Unit) {
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        val isTablet = maxWidth > 600.dp
-        val constrainedWidth = if (maxWidth > 920.dp) 920.dp else maxWidth
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth()
-                .widthIn(max = constrainedWidth)
-                .padding(
-                    horizontal = if (isTablet) 44.dp else 22.dp,
-                    vertical = if (isTablet) 30.dp else 14.dp
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            content = content
-        )
-    }
-}
-
-@Composable
-private fun MascotSpeech(
-    mascotName: String?,
-    text: String,
-    compact: Boolean = false
-) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    val mascotSize = when {
-        isTablet && compact -> 124.dp
-        isTablet -> 170.dp
-        compact -> 78.dp
-        else -> 112.dp
-    }
-    val speechFontSize = when {
-        isTablet && compact -> 31.sp
-        isTablet -> 34.sp
-        compact -> 22.sp
-        else -> 24.sp
-    }
-    val speechLineHeight = when {
-        isTablet && compact -> 38.sp
-        isTablet -> 42.sp
-        compact -> 28.sp
-        else -> 31.sp
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        if (mascotName != null) {
-            DotLottieView(
-                name = mascotName,
-                modifier = Modifier.size(mascotSize)
-            )
-            Spacer(modifier = Modifier.width(if (isTablet) 18.dp else 10.dp))
-        }
-        Text(
-            text = text,
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = speechFontSize,
-            lineHeight = speechLineHeight,
-            color = TextPrimary,
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(if (isTablet) 24.dp else 18.dp))
-                .background(white)
-                .border(2.dp, Beige, RoundedCornerShape(if (isTablet) 24.dp else 18.dp))
-                .padding(
-                    horizontal = if (isTablet) 24.dp else 16.dp,
-                    vertical = if (isTablet) 22.dp else 14.dp
-                )
-        )
-    }
-}
-
-@Composable
-private fun OnboardingBackButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    padded: Boolean = true
-) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    Box(
-        modifier = modifier
-            .then(
-                if (padded) {
-                    Modifier.padding(
-                        start = if (isTablet) 28.dp else 16.dp,
-                        top = if (isTablet) 26.dp else 14.dp
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .size(if (isTablet) 56.dp else 44.dp)
-            .clip(CircleShape)
-            .background(white)
-            .border(2.dp, Color(0xFFE8DFC9), CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "Back",
-            tint = TextPrimary,
-            modifier = Modifier.size(if (isTablet) 30.dp else 24.dp)
-        )
-    }
-}
-
-@Composable
-private fun OnboardingTopBar(
-    progress: Float,
-    onBack: () -> Unit
-) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    val clampedProgress = progress.coerceIn(0f, 1f)
-    val animatedProgress by animateFloatAsState(
-        targetValue = clampedProgress,
-        animationSpec = tween(durationMillis = 350),
-        label = "onboardingProgress"
-    )
-    val thumbSize = if (isTablet) 48.dp else 36.dp
-    val barHeight = if (isTablet) 12.dp else 10.dp
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = if (isTablet) 28.dp else 16.dp,
-                vertical = if (isTablet) 26.dp else 14.dp
+            style = LessonTheme.story().copy(
+                fontSize = (19 * k).sp,
+                color = AuthTheme.secondaryText,
+                lineHeight = 1.3.em
             ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OnboardingBackButton(
-            onClick = onBack,
-            modifier = Modifier,
-            padded = false
+            modifier = Modifier.padding(top = 12.dp)
         )
-        BoxWithConstraints(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = if (isTablet) 16.dp else 12.dp)
-                .height(thumbSize)
-                .semantics {
-                    progressBarRangeInfo = ProgressBarRangeInfo(clampedProgress, 0f..1f)
-                },
-            contentAlignment = Alignment.CenterStart
-        ) {
-            // The mascot rides the leading edge of the fill: thumbX sweeps the full track so the
-            // mascot ends flush right at 100% instead of hanging past the bar's end.
-            val thumbX = (maxWidth - thumbSize) * animatedProgress
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(barHeight)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color(0xFFE5DFD1))
-            )
-            Box(
-                modifier = Modifier
-                    .width(thumbX + thumbSize / 2)
-                    .height(barHeight)
-                    .clip(RoundedCornerShape(50))
-                    .background(lightNavyBlue)
-            )
-            Image(
-                painter = painterResource(id = R.drawable.moon_progress_thumb),
-                contentDescription = null,
-                modifier = Modifier
-                    .offset(x = thumbX)
-                    .size(thumbSize)
-            )
-        }
-    }
-}
-
-@Composable
-private fun StableContinueButton(
-    visible: Boolean,
-    onClick: () -> Unit,
-    text: String = "Continue",
-    greyedWhenDisabled: Boolean = false
-) {
-    val showGreyed = greyedWhenDisabled && !visible
-    CommonButton(
-        onClick = onClick,
-        buttonText = text,
-        shadowColor = if (showGreyed) DisabledButtonShadow else navyBlue,
-        mainColor = if (showGreyed) DisabledButton else lightNavyBlue,
-        textColor = white,
-        enabled = visible,
-        modifier = Modifier.alpha(if (visible || greyedWhenDisabled) 1f else 0f)
-    )
-}
-
-@Composable
-private fun SelectableOptionRow(
-    text: String,
-    selected: Boolean,
-    leadingIcon: (@Composable () -> Unit)? = null,
-    onClick: () -> Unit
-) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = if (isTablet) 9.dp else 6.dp)
-            .clip(RoundedCornerShape(if (isTablet) 16.dp else 12.dp))
-            .background(if (selected) SoftGreen else white)
-            .border(
-                width = if (isTablet) 3.dp else 2.dp,
-                color = if (selected) lightCandyGreen else Color(0xFFE8DFC9),
-                shape = RoundedCornerShape(if (isTablet) 16.dp else 12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(
-                horizontal = if (isTablet) 24.dp else 16.dp,
-                vertical = if (isTablet) 22.dp else 16.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        leadingIcon?.invoke()
-        if (leadingIcon != null) Spacer(modifier = Modifier.width(if (isTablet) 14.dp else 10.dp))
         Text(
-            text = text,
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 24.sp else 18.sp,
-            lineHeight = if (isTablet) 30.sp else 23.sp,
-            color = TextPrimary,
-            modifier = Modifier.weight(1f)
+            text = timeText,
+            style = LessonTheme.answer().copy(fontSize = (24 * k).sp, color = LessonTheme.skyText),
+            modifier = Modifier
+                .padding(top = 18.dp)
+                .background(Color.White.copy(alpha = 0.92f), CircleShape)
+                .padding(horizontal = 22.dp, vertical = 10.dp)
         )
-        if (selected) {
-            Icon(
-                Icons.Default.Check,
-                contentDescription = null,
-                tint = darkCandyGreen,
-                modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
-            )
-        }
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// Option cards
+// ---------------------------------------------------------------------------------------------
 
 @Composable
 private fun MotivationOptionCard(
@@ -1458,291 +2053,57 @@ private fun MotivationOptionCard(
     selected: Boolean,
     onToggle: () -> Unit
 ) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    val shape = RoundedCornerShape(if (isTablet) 20.dp else 16.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = if (isTablet) 8.dp else 5.dp)
-            .clip(shape)
-            .background(if (selected) MotivationSelectedBackground else white)
-            .border(
-                width = if (isTablet) 3.dp else 2.dp,
-                color = if (selected) lightYellow else OptionBorder,
-                shape = shape
-            )
-            .toggleable(
-                value = selected,
-                role = Role.Checkbox,
-                onValueChange = { onToggle() }
-            )
-            .padding(
-                horizontal = if (isTablet) 22.dp else 14.dp,
-                vertical = if (isTablet) 18.dp else 12.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = option.emoji,
-            fontSize = if (isTablet) 34.sp else 26.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.width(if (isTablet) 52.dp else 40.dp)
-        )
-        Spacer(modifier = Modifier.width(if (isTablet) 14.dp else 10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = option.title,
-                fontFamily = AlifbaFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) 22.sp else 17.sp,
-                lineHeight = if (isTablet) 28.sp else 22.sp,
-                color = TextPrimary
-            )
-            Text(
-                text = option.description,
-                fontFamily = AlifbaFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = if (isTablet) 18.sp else 14.sp,
-                lineHeight = if (isTablet) 24.sp else 19.sp,
-                color = TextSecondary,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(if (isTablet) 14.dp else 10.dp))
-        val checkSize = if (isTablet) 34.dp else 26.dp
-        Box(
+    val k = LessonTheme.scale()
+    AnswerCard(
+        state = if (selected) AnswerState.Selected else AnswerState.Normal,
+        modifier = Modifier.fillMaxWidth().heightIn(min = (72 * k).dp),
+        onClick = onToggle
+    ) { labelColor ->
+        Row(
             modifier = Modifier
-                .size(checkSize)
-                .clip(CircleShape)
-                .background(if (selected) lightYellow else white)
-                .border(
-                    width = 2.dp,
-                    color = if (selected) lightYellow else OptionBorder,
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (selected) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = white,
-                    modifier = Modifier.size(checkSize * 0.65f)
+            EmojiTile(option.emoji)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = option.title,
+                    style = LessonTheme.answer().copy(
+                        fontSize = (19 * k).sp,
+                        textAlign = TextAlign.Start,
+                        color = labelColor
+                    )
+                )
+                Text(
+                    text = option.description,
+                    style = LessonTheme.story().copy(
+                        fontSize = (15 * k).sp,
+                        textAlign = TextAlign.Start,
+                        color = AuthTheme.secondaryText,
+                        lineHeight = 1.25.em
+                    )
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun AudioHintButton(
-    story: Story?,
-    isLoading: Boolean,
-    isPlaying: Boolean,
-    error: String?,
-    onClick: (Story) -> Unit
-) {
-    val enabled = story != null && !isLoading
-    Row(
-        modifier = Modifier
-            .padding(top = 10.dp)
-            .clip(RoundedCornerShape(40.dp))
-            .background(SoftPink)
-            .border(2.dp, lightPink, RoundedCornerShape(40.dp))
-            .clickable(enabled = enabled) { story?.let(onClick) }
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                color = darkPink,
-                strokeWidth = 2.dp,
-                modifier = Modifier.size(20.dp)
-            )
-        } else if (enabled) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = null,
-                tint = darkPink,
-                modifier = Modifier.size(22.dp)
-            )
-        } else {
-            Image(
-                painter = painterResource(id = R.drawable.audiostory),
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = when {
-                isLoading -> "Loading story preview..."
-                error != null -> error
-                isPlaying -> "Pause audio story preview"
-                story != null -> "Play audio story preview"
-                else -> "Audio story focus"
-            },
-            fontFamily = AlifbaFont,
-            fontWeight = FontWeight.Bold,
-            color = darkPink,
-            fontSize = 15.sp
-        )
-    }
-}
-
-@Composable
-private fun PictureQuestionOptions(
-    question: OnboardingQuestion,
-    selectedAnswer: String?,
-    onSelected: (String) -> Unit
-) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    Column(verticalArrangement = Arrangement.spacedBy(if (isTablet) 22.dp else 12.dp)) {
-        question.options.chunked(2).forEachIndexed { rowIndex, rowOptions ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(if (isTablet) 22.dp else 12.dp)
+            val checkSize = (28 * k).dp
+            Box(
+                modifier = Modifier
+                    .size(checkSize)
+                    .background(if (selected) LessonTheme.primary else Color.White, CircleShape)
+                    .border(2.dp, if (selected) LessonTheme.primary else Color(0xFFB7C3DC), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                rowOptions.forEachIndexed { itemIndex, option ->
-                    val imageIndex = rowIndex * 2 + itemIndex
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .border(
-                                width = if (selectedAnswer == option) 3.dp else 0.dp,
-                                color = if (selectedAnswer == question.correctAnswer) lightCandyGreen else lightRed,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .padding(2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        PictureButton(
-                            onClick = { onSelected(option) },
-                            buttonImage = question.pictureResources.getOrElse(imageIndex) { R.drawable.qna }.toString(),
-                            buttonText = option,
-                            tabletSize = 260.dp,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(checkSize * 0.62f)
+                    )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun TextQuestionOptions(
-    question: OnboardingQuestion,
-    onSelected: (String) -> Unit
-) {
-    question.options.forEachIndexed { index, option ->
-        val (main, shadow) = optionColors(index)
-        MCQChoiceButton(
-            onClick = { onSelected(option) },
-            buttonText = option,
-            mainColor = main,
-            shadowColor = shadow
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun FillBlankOptions(
-    question: OnboardingQuestion,
-    selectedAnswer: String?,
-    onSelected: (String) -> Unit
-) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        question.options.forEach { option ->
-            Box(
-                modifier = Modifier
-                    .border(
-                        width = if (selectedAnswer == option) 3.dp else 0.dp,
-                        color = if (option == question.correctAnswer) lightCandyGreen else lightRed,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-            ) {
-                OptionButton(
-                    onClick = { onSelected(option) },
-                    buttonText = option
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FillBlankPrompt(text: String, selectedAnswer: String?) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    val prompt = selectedAnswer?.let { text.replace("[ ______ ]", "[ $it ]") } ?: text
-    Text(
-        text = prompt,
-        fontFamily = AlifbaFont,
-        fontWeight = FontWeight.Bold,
-        fontSize = if (isTablet) 34.sp else 25.sp,
-        lineHeight = if (isTablet) 44.sp else 34.sp,
-        textAlign = TextAlign.Center,
-        color = TextPrimary,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = if (isTablet) 28.dp else 16.dp)
-            .clip(RoundedCornerShape(if (isTablet) 18.dp else 12.dp))
-            .background(white)
-            .border(2.dp, Beige, RoundedCornerShape(if (isTablet) 18.dp else 12.dp))
-            .padding(if (isTablet) 28.dp else 18.dp)
-    )
-}
-
-@Composable
-private fun ValueBanner(text: String) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    Text(
-        text = text,
-        fontFamily = AlifbaFont,
-        fontWeight = FontWeight.Bold,
-        fontSize = if (isTablet) 22.sp else 16.sp,
-        lineHeight = if (isTablet) 30.sp else 22.sp,
-        color = Color.Black,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(if (isTablet) 16.dp else 10.dp))
-            .background(SoftGreen)
-            .padding(if (isTablet) 22.dp else 14.dp)
-    )
-}
-
-@Composable
-private fun ValueListItem(text: String) {
-    val isTablet = LocalConfiguration.current.screenWidthDp > 600
-    Text(
-        text = text,
-        fontFamily = AlifbaFont,
-        fontWeight = FontWeight.Bold,
-        fontSize = if (isTablet) 24.sp else 18.sp,
-        lineHeight = if (isTablet) 32.sp else 24.sp,
-        color = TextPrimary,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = if (isTablet) 9.dp else 6.dp)
-            .clip(RoundedCornerShape(if (isTablet) 16.dp else 10.dp))
-            .background(white)
-            .border(2.dp, Color(0xFFE8DFC9), RoundedCornerShape(if (isTablet) 16.dp else 10.dp))
-            .padding(if (isTablet) 22.dp else 14.dp)
-    )
-}
-
-private fun optionColors(index: Int): Pair<Color, Color> {
-    return when (index) {
-        0 -> lightRed to darkRed
-        1 -> lightCandyGreen to darkCandyGreen
-        2 -> lightPurple to mediumpurple
-        else -> lightPink to darkPink
     }
 }
 
@@ -1778,206 +2139,89 @@ private tailrec fun Context.findActivity(): Activity? {
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Previews
+// ---------------------------------------------------------------------------------------------
+
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun MotivationOnboardingScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        MotivationOnboardingScreen(
-            selectedMotivations = setOf(
-                "Build a daily Islamic routine",
-                "Teach Prophets' stories"
-            ),
-            onMotivationSelected = {},
-            onContinue = {}
-        )
-    }
+private fun ChildNamePreview() {
+    ChildNameOnboardingScreen(childName = "Rim", onChildNameChange = {}, onContinue = {})
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun ParentChallengeIntroScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        ParentChallengeIntroScreen(childName = "Zayd", onTakeChallenge = {})
-    }
+private fun MotivationPreview() {
+    MotivationOnboardingScreen(
+        selectedMotivations = setOf("Build a daily Islamic routine"),
+        onMotivationSelected = {},
+        onContinue = {}
+    )
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun OnboardingPictureQuizScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingQuizScreen(
-            question = OnboardingCopy.questions[0],
-            onAnswered = {},
-            onNext = {}
-        )
-    }
+private fun ChallengeIntroPreview() {
+    ParentChallengeIntroScreen(childName = "Rim", onTakeChallenge = {})
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun OnboardingTextQuizScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingQuizScreen(
-            question = OnboardingCopy.questions[1],
-            onAnswered = {},
-            onNext = {}
-        )
-    }
+private fun PictureQuizPreview() {
+    OnboardingQuizScreen(
+        question = OnboardingCopy.questions[0],
+        questionNumber = 1,
+        childName = "Rim",
+        onAnswered = {},
+        onNext = {}
+    )
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun OnboardingFillBlankQuizScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingQuizScreen(
-            question = OnboardingCopy.questions[3],
-            onAnswered = {},
-            onNext = {}
-        )
-    }
+private fun FillBlankQuizPreview() {
+    OnboardingQuizScreen(
+        question = OnboardingCopy.questions[3],
+        questionNumber = 4,
+        childName = "Rim",
+        onAnswered = {},
+        onNext = {}
+    )
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun OnboardingLoadingScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingLoadingScreen(onFinished = {})
-    }
+private fun LoadingPreview() {
+    OnboardingLoadingScreen(childName = "Rim", onFinished = {})
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun OnboardingResultsScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingResultsScreen(childName = "Zayd", onContinue = {})
-    }
+private fun ResultsPreview() {
+    OnboardingResultsScreen(childName = "Rim", score = 4, onContinue = {})
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun HabitBuilderScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        HabitBuilderScreen(
-            selectedHabitTime = "Before Bedtime - 9:00 PM",
-            selectedReminderHour = 21,
-            selectedReminderMinute = 0,
-            onHabitSelected = { _, _, _ -> },
-            onContinue = {}
-        )
-    }
+private fun HabitPreview() {
+    HabitBuilderScreen(
+        childName = "Rim",
+        selectedHabitTime = "Before Bedtime - 9:00 PM",
+        selectedReminderHour = 21,
+        selectedReminderMinute = 0,
+        onHabitSelected = { _, _, _ -> },
+        onContinue = {}
+    )
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun NotificationPrePromptScreenPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        NotificationPrePromptScreen(
-            childName = "Zayd",
-            reminderHour = 19,
-            reminderMinute = 30,
-            onRemindMe = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun MotivationOnboardingTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        MotivationOnboardingScreen(
-            selectedMotivations = setOf(
-                "Build a daily Islamic routine",
-                "Teach Prophets' stories"
-            ),
-            onMotivationSelected = {},
-            onContinue = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun ParentChallengeIntroTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        ParentChallengeIntroScreen(childName = "Zayd", onTakeChallenge = {})
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun OnboardingPictureQuizTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingQuizScreen(
-            question = OnboardingCopy.questions[0],
-            onAnswered = {},
-            onNext = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun OnboardingTextQuizTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingQuizScreen(
-            question = OnboardingCopy.questions[1],
-            onAnswered = {},
-            onNext = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun OnboardingFillBlankQuizTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingQuizScreen(
-            question = OnboardingCopy.questions[3],
-            onAnswered = {},
-            onNext = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun OnboardingLoadingTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingLoadingScreen(onFinished = {})
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun OnboardingResultsTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        OnboardingResultsScreen(childName = "Zayd", onContinue = {})
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun HabitBuilderTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        HabitBuilderScreen(
-            selectedHabitTime = "Before Bedtime - 9:00 PM",
-            selectedReminderHour = 21,
-            selectedReminderMinute = 0,
-            onHabitSelected = { _, _, _ -> },
-            onContinue = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
-@Composable
-private fun NotificationPrePromptTabletPreview() {
-    Box(modifier = Modifier.background(OnboardingBackground)) {
-        NotificationPrePromptScreen(
-            childName = "Zayd",
-            reminderHour = 19,
-            reminderMinute = 30,
-            onRemindMe = {}
-        )
-    }
+private fun NotificationPreview() {
+    NotificationPrePromptScreen(
+        childName = "Rim",
+        reminderHour = 21,
+        reminderMinute = 0,
+        onRemindMe = {},
+        onSkip = {}
+    )
 }

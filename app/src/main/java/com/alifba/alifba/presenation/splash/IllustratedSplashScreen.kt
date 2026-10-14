@@ -1,6 +1,8 @@
 package com.alifba.alifba.presenation.splash
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -67,31 +69,48 @@ fun IllustratedSplashScreen(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth(0.8f)
-                .offset(y = maxHeight * 0.12f)
+                .offset(y = maxHeight * 0.14f)
         ) {
+            val ink = Color(0xFF163A3D)
+            val k = if (isTablet) 1.3f else 1f
+            // Arabic: the system's Arabic face (Noto Naskh Arabic on Android), 38 semibold
             Text(
-                text = "Rabbi zidni ilma",
-                color = Color.White,
-                fontFamily = boldFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) 34.sp else 26.sp,
+                text = "رَبِّ زِدْنِي عِلْمًا",
+                color = ink,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = (38 * k).sp,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "My lord, please increase me in knowledge",
-                color = Color.White,
-                fontFamily = regularFont,
-                fontSize = if (isTablet) 18.sp else 14.sp,
+                text = "Rabbi zidni ilma",
+                color = ink,
+                fontFamily = boldFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = (30 * k).sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = (8 * k).dp)
+            )
+            // Bold face for the "medium" line: iOS draws its regular VAG heavier than Android's
+            Text(
+                text = "My Lord, increase me in knowledge",
+                color = ink,
+                fontFamily = boldFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = (19 * k).sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = (8 * k).dp)
             )
             Text(
-                text = "Qur'an 20:114",
-                color = Color.White.copy(alpha = 0.85f),
-                fontFamily = regularFont,
-                fontSize = if (isTablet) 14.sp else 11.sp,
+                text = "Qur\u2019an 20:114",
+                color = ink,
+                fontFamily = boldFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = (15 * k).sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 2.dp)
+                modifier = Modifier
+                    .padding(top = (12 * k).dp)
+                    .background(Color.White.copy(alpha = 0.55f), RoundedCornerShape((12 * k).dp))
+                    .padding(horizontal = (12 * k).dp, vertical = (4 * k).dp)
             )
         }
     }

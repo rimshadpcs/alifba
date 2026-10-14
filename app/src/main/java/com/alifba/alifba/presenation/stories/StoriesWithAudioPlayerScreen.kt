@@ -75,7 +75,7 @@ fun StoriesWithAudioPlayerScreen(
             )
         }
         showAllStories -> {
-            // Show All Stories Screen — same pastel tint as its section on the Stories screen.
+            // Show All Stories Screen
             AllStoriesScreen(
                 onStoryClick = { story ->
                     if (story.status == "premium" && !isPremium) {
@@ -86,8 +86,7 @@ fun StoriesWithAudioPlayerScreen(
                         selectedStory = story
                     }
                 },
-                onBackClick = { showAllStories = false },
-                backgroundTint = storySectionTints[0]
+                onBackClick = { showAllStories = false }
             )
         }
         showAllSahabaStories -> {
@@ -102,8 +101,7 @@ fun StoriesWithAudioPlayerScreen(
                         selectedStory = story
                     }
                 },
-                onBackClick = { showAllSahabaStories = false },
-                backgroundTint = storySectionTints[2]
+                onBackClick = { showAllSahabaStories = false }
             )
         }
         showAllProphetMuhammadStories -> {
@@ -118,8 +116,7 @@ fun StoriesWithAudioPlayerScreen(
                         selectedStory = story
                     }
                 },
-                onBackClick = { showAllProphetMuhammadStories = false },
-                backgroundTint = storySectionTints[1]
+                onBackClick = { showAllProphetMuhammadStories = false }
             )
         }
         showAllWomenAndMothersStories -> {
@@ -134,8 +131,7 @@ fun StoriesWithAudioPlayerScreen(
                         selectedStory = story
                     }
                 },
-                onBackClick = { showAllWomenAndMothersStories = false },
-                backgroundTint = storySectionTints[3]
+                onBackClick = { showAllWomenAndMothersStories = false }
             )
         }
         showAllMiraclesStories -> {
@@ -150,8 +146,7 @@ fun StoriesWithAudioPlayerScreen(
                         selectedStory = story
                     }
                 },
-                onBackClick = { showAllMiraclesStories = false },
-                backgroundTint = storySectionTints[4]
+                onBackClick = { showAllMiraclesStories = false }
             )
         }
         selectedStory != null -> {

@@ -4,70 +4,74 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.TabRowDefaults.Divider
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material.icons.outlined.VolumeUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.R
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.alifba.alifba.presenation.SubscriptionViewModel
-import com.alifba.alifba.ui_components.theme.black
-import com.alifba.alifba.ui_components.theme.navyBlue
-import com.alifba.alifba.ui_components.theme.white
+import com.alifba.alifba.ui_components.widgets.LessonCircleButton
+import com.alifba.alifba.ui_components.widgets.LessonTheme
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 
 @SuppressLint("NewApi")
 @Composable
 fun SettingsScreen(navController: NavController) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Bold)
-    )
     val context = LocalContext.current
+    val k = LessonTheme.scale()
 
     // URLs for external links
     val privacyPolicyUrl = "https://alifba.xyz/privacy-policy"
@@ -79,115 +83,79 @@ fun SettingsScreen(navController: NavController) {
     // State variables
     var showNotificationDialog by remember { mutableStateOf(false) }
     val isSoundEnabled = remember { mutableStateOf(SoundEffectManager.isSoundEnabled) }
+    val isHapticEnabled = remember { mutableStateOf(SoundEffectManager.isHapticEnabled) }
     val subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
     val isPremium by subscriptionViewModel.isPremium.collectAsState()
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF6F8FD))
     ) {
-        // Background with fun pattern or gradient
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(white)
-                )
-
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header with back button and title
-            Row(
+            // Round back button on the left, centred title
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.goback),
-                    contentDescription = "Back",
-                    colorFilter = ColorFilter.tint(LocalContentColor.current),
-                    modifier = Modifier
-                        .clickable {
-                            SoundEffectManager.playClickSound()
-                            navController.popBackStack()
-                        }
-                        .size(48.dp),
-                )
-
                 Text(
                     text = "Settings",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = alifbaFont
+                    style = LessonTheme.question().copy(fontSize = (32 * k).sp, textAlign = TextAlign.Center)
                 )
-
-                // Empty box for symmetry
-                Box(modifier = Modifier.size(48.dp))
-            }
-
-            // Settings categories with icons and colorful cards
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // User settings category
-//            SettingsCategoryHeader(title = "Your Profile", icon = R.drawable.profile_icon)
-
-            SettingsCard {
-                Column {
-                    SettingsButton(
-                        text = "Account",
-                        icon = R.drawable.account,
-                        onClick = {
-                            SoundEffectManager.playClickSound()
-                            navController.navigate("accountScreen")
-                        }
-                    )
-
-                    Divider(
-                        color = black.copy(alpha = 0.5f),
-                        thickness = 1.dp,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-
-                    SubscriptionSettingsButton(
-                        isPremium = isPremium,
-                        onClick = {
-                            SoundEffectManager.playClickSound()
-                            navController.navigate("subscription")
-                        }
+                Box(modifier = Modifier.align(Alignment.CenterStart)) {
+                    LessonCircleButton(
+                        iconRes = R.drawable.backarrow,
+                        contentDescription = "Back",
+                        onClick = { navController.popBackStack() }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // App settings category
-            SettingsCategoryHeader(title = "App Settings")
-
-            SettingsCard {
-                Column {
-                    SettingsButton(
-                        text = "Notifications + Reminders",
-                        icon = R.drawable.notification,
-                        onClick = {
-                            SoundEffectManager.playClickSound()
-                            showNotificationDialog = true
-                        }
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 640.dp)
+                    .fillMaxWidth()
+                    .padding(start = LessonTheme.margin, end = LessonTheme.margin, bottom = 24.dp)
+            ) {
+                SettingsGroup {
+                    SettingsRow(
+                        title = "Account",
+                        icon = rememberVectorPainter(Icons.Outlined.Person),
+                        onClick = { navController.navigate("accountScreen") }
                     )
-
-                    Divider(
-                        color = black.copy(alpha = 0.5f),
-                        thickness = 1.dp,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Subscription",
+                        icon = painterResource(id = R.drawable.ic_crown),
+                        tile = Color(0xFFFFF3D6),
+                        tint = Color(0xFFF5B800),
+                        badge = if (isPremium) {
+                            SettingsBadge("PREMIUM", Color(0xFFFFC83D), Color(0xFF5B3A00))
+                        } else {
+                            SettingsBadge("FREE", LessonTheme.track, Color(0xFF5A5F7A))
+                        },
+                        onClick = { navController.navigate("subscription") }
                     )
+                }
 
-                    SettingsButton(
-                        text = "Button Sound",
-                        icon = R.drawable.sound,
+                SettingsSectionLabel("App settings")
+                SettingsGroup {
+                    SettingsRow(
+                        title = "Notifications",
+                        icon = rememberVectorPainter(Icons.Outlined.Notifications),
+                        onClick = { showNotificationDialog = true }
+                    )
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Button sound",
+                        icon = rememberVectorPainter(Icons.Outlined.VolumeUp),
                         showToggle = true,
                         isToggled = isSoundEnabled.value,
                         onClick = {
@@ -198,104 +166,56 @@ fun SettingsScreen(navController: NavController) {
                             }
                         }
                     )
-                }
-            }
-
-//            Spacer(modifier = Modifier.height(24.dp))
-//
-//            // Developer/Test category (Premium Toggle)
-//            SettingsCategoryHeader(title = "Premium (Test)")
-//
-//            SettingsCard {
-//                SettingsButton(
-//                    text = if (isPremium) "Deactivate Premium" else "Activate Premium",
-//                    icon = R.drawable.account,
-//                    showToggle = true,
-//                    isToggled = isPremium,
-//                    onClick = {
-//                        SoundEffectManager.playClickSound()
-//                        subscriptionViewModel.togglePremium()
-//                    }
-//                )
-//            }
-//
-//            Spacer(modifier = Modifier.height(24.dp))
-
-            // Help category
-            SettingsCategoryHeader(title = "Help Us Improve")
-
-            SettingsCard {
-                Column {
-                    SettingsButton(
-                        text = "Report Bugs",
-                        icon = R.drawable.bug,
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Vibration",
+                        icon = rememberVectorPainter(Icons.Outlined.Vibration),
+                        showToggle = true,
+                        isToggled = isHapticEnabled.value,
                         onClick = {
-                            SoundEffectManager.playClickSound()
-                            openUrl(context, bugReportUrl)
-                        }
-                    )
-
-                    Divider(
-                        color = black.copy(alpha = 0.5f),
-                        thickness = 1.dp,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-
-                    SettingsButton(
-                        text = "Send Feedback",
-                        icon = R.drawable.feedback,
-                        onClick = {
-                            SoundEffectManager.playClickSound()
-                            openUrl(context, feedbackUrl)
-                        }
-                    )
-
-                    Divider(
-                        color = black.copy(alpha = 0.5f),
-                        thickness = 1.dp,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-
-                    SettingsButton(
-                        text = "Suggest a Feature",
-                        icon = R.drawable.suggestfeature,
-                        onClick = {
-                            SoundEffectManager.playClickSound()
-                            openUrl(context, featureSuggestionUrl)
+                            isHapticEnabled.value = !isHapticEnabled.value
+                            SoundEffectManager.toggleHaptic(isHapticEnabled.value)
+                            // A tick to show what was just turned on
+                            if (isHapticEnabled.value) {
+                                SoundEffectManager.tapHaptic()
+                            }
                         }
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Legal category
-            SettingsCategoryHeader(title = "Legal")
-
-            SettingsCard {
-                Column {
-                    SettingsButton(
-                        text = "Privacy Policy",
-                        icon = R.drawable.privacy_policy,
-                        onClick = {
-                            SoundEffectManager.playClickSound()
-                            openUrl(context, privacyPolicyUrl)
-                        }
+                SettingsSectionLabel("Help us improve")
+                SettingsGroup {
+                    SettingsRow(
+                        title = "Report a bug",
+                        icon = rememberVectorPainter(Icons.Outlined.BugReport),
+                        onClick = { openUrl(context, bugReportUrl) }
                     )
-
-                    Divider(
-                        color = black.copy(alpha = 0.5f),
-                        thickness = 1.dp,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Send feedback",
+                        icon = rememberVectorPainter(Icons.Outlined.ChatBubbleOutline),
+                        onClick = { openUrl(context, feedbackUrl) }
                     )
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Suggest a feature",
+                        icon = rememberVectorPainter(Icons.Outlined.Lightbulb),
+                        onClick = { openUrl(context, featureSuggestionUrl) }
+                    )
+                }
 
-                    SettingsButton(
-                        text = "Terms and Conditions",
-                        icon = R.drawable.terms_and_conditions,
-                        onClick = {
-                            SoundEffectManager.playClickSound()
-                            openUrl(context, termsAndConditionsUrl)
-                        }
+                SettingsSectionLabel("Legal")
+                SettingsGroup {
+                    SettingsRow(
+                        title = "Privacy policy",
+                        icon = rememberVectorPainter(Icons.Outlined.Shield),
+                        onClick = { openUrl(context, privacyPolicyUrl) }
+                    )
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Terms and conditions",
+                        icon = rememberVectorPainter(Icons.Outlined.Description),
+                        onClick = { openUrl(context, termsAndConditionsUrl) }
                     )
                 }
             }
@@ -318,186 +238,139 @@ private fun openUrl(context: Context, url: String) {
     context.startActivity(intent)
 }
 
-@Composable
-fun SettingsCategoryHeader(title: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-    ) {
+data class SettingsBadge(val text: String, val face: Color, val ink: Color)
 
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = title,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            fontFamily = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
-        )
+/** A white card with a 2dp border and a raised bottom edge, like the lesson answer cards */
+@Composable
+fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
+    val shape = RoundedCornerShape(LessonTheme.radius)
+    val edge = LessonTheme.answerEdge
+    Box(modifier = Modifier.padding(bottom = edge)) {
+        Box(modifier = Modifier.fillMaxWidth(), propagateMinConstraints = false) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .offset(y = edge)
+                    .background(LessonTheme.lineEdge, shape)
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(shape)
+                    .background(Color.White)
+                    .border(2.dp, LessonTheme.line, shape),
+                content = content
+            )
+        }
     }
 }
 
 @Composable
-fun SettingsCard(content: @Composable () -> Unit) {
-    Card(
+fun SettingsDivider() {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = white
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        ),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        content()
-    }
+            .height(2.dp)
+            .background(Color(0xFFEEF0F7))
+    )
 }
 
 @Composable
-fun SettingsButton(
-    text: String,
-    icon: Int,
+fun SettingsSectionLabel(title: String) {
+    Text(
+        text = title.uppercase(),
+        style = LessonTheme.answer().copy(
+            fontSize = (15 * LessonTheme.scale()).sp,
+            letterSpacing = 1.5.sp,
+            color = Color(0xFF5A5F7A)
+        ),
+        modifier = Modifier.padding(start = 12.dp, top = 26.dp, bottom = 10.dp)
+    )
+}
+
+@Composable
+fun SettingsRow(
+    title: String,
+    icon: Painter,
     onClick: () -> Unit,
+    tile: Color = LessonTheme.sky,
+    tint: Color = LessonTheme.primary,
+    badge: SettingsBadge? = null,
     showToggle: Boolean = false,
     isToggled: Boolean = false
 ) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal)
-    )
+    val k = LessonTheme.scale()
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 12.dp, horizontal = 16.dp),
+            .background(if (pressed) LessonTheme.sky.copy(alpha = 0.6f) else Color.Transparent)
+            .clickable(interactionSource = interaction, indication = null) {
+                SoundEffectManager.playClickSound()
+                onClick()
+            }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Icon
-        Image(
-            painter = painterResource(id = icon),
-            contentDescription = null,
-            modifier = Modifier.size(28.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size((40 * k).dp)
+                .background(tile, RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size((22 * k).dp)
+            )
+        }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
-        // Text
         Text(
-            text = text,
-            style = LocalTextStyle.current.merge(
-                TextStyle(
-                    lineHeight = 1.5.em,
-                    platformStyle = PlatformTextStyle(
-                        includeFontPadding = false
-                    ),
-                    lineHeightStyle = LineHeightStyle(
-                        alignment = LineHeightStyle.Alignment.Center,
-                        trim = LineHeightStyle.Trim.None
-                    )
-                )
-            ),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Normal,
-            fontFamily = alifbaFont,
+            text = title,
+            style = LessonTheme.answer().copy(fontSize = (19 * k).sp),
             modifier = Modifier.weight(1f)
         )
+
+        if (badge != null) {
+            Text(
+                text = badge.text,
+                style = LessonTheme.answer().copy(
+                    fontSize = (13 * k).sp,
+                    letterSpacing = 0.5.sp,
+                    color = badge.ink
+                ),
+                modifier = Modifier
+                    .background(badge.face, CircleShape)
+                    .padding(horizontal = 12.dp, vertical = 5.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
 
         if (showToggle) {
             Switch(
                 checked = isToggled,
-                onCheckedChange = { onClick() },
+                onCheckedChange = null,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = white,
-                    checkedTrackColor = navyBlue,
-                    checkedBorderColor = navyBlue,
-                    uncheckedThumbColor = white,
-                    uncheckedTrackColor = Color.Gray,
-                    uncheckedBorderColor = black
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = LessonTheme.primary,
+                    checkedBorderColor = LessonTheme.primary,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = Color(0xFFD9DEEA),
+                    uncheckedBorderColor = Color(0xFFD9DEEA)
                 )
             )
         } else {
-            Image(
-                painter = painterResource(id = R.drawable.rightarrowsettings),
-                contentDescription = "Arrow Right",
-                colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.4f)),
-                modifier = Modifier.size(16.dp)
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFFA3A9BC),
+                modifier = Modifier.size((22 * k).dp)
             )
         }
-    }
-}
-
-@Composable
-private fun SubscriptionSettingsButton(
-    isPremium: Boolean,
-    onClick: () -> Unit
-) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Bold)
-    )
-    val labelFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal)
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.premium),
-            contentDescription = null,
-            modifier = Modifier.size(28.dp)
-        )
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Text(
-            text = "Subscription",
-            style = LocalTextStyle.current.merge(
-                TextStyle(
-                    lineHeight = 1.5.em,
-                    platformStyle = PlatformTextStyle(
-                        includeFontPadding = false
-                    ),
-                    lineHeightStyle = LineHeightStyle(
-                        alignment = LineHeightStyle.Alignment.Center,
-                        trim = LineHeightStyle.Trim.None
-                    )
-                )
-            ),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Normal,
-            fontFamily = labelFont,
-            modifier = Modifier.weight(1f)
-        )
-
-        Box(
-            modifier = Modifier
-                .background(
-                    color = Color(0xFF22C55E),
-                    shape = RoundedCornerShape(999.dp)
-                )
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = if (isPremium) "PREMIUM" else "FREE",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = white,
-                fontFamily = alifbaFont
-            )
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Image(
-            painter = painterResource(id = R.drawable.rightarrowsettings),
-            contentDescription = "Arrow Right",
-            colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.4f)),
-            modifier = Modifier.size(16.dp)
-        )
     }
 }

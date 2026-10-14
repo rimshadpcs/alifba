@@ -1,38 +1,33 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment.commonLesson
 
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.content.Context
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.rememberImagePainter
+import com.alifba.alifba.R
+import com.alifba.alifba.data.models.LessonSegment
+import com.alifba.alifba.presenation.main.logScreenView
+import com.alifba.alifba.ui_components.widgets.*
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import coil.compose.rememberImagePainter
-import com.alifba.alifba.R
-import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
-import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText
-import com.alifba.alifba.data.models.LessonSegment
-import com.alifba.alifba.presenation.main.logScreenView
-import com.alifba.alifba.ui_components.theme.lightNavyBlue
-import com.alifba.alifba.ui_components.theme.navyBlue
-import com.alifba.alifba.ui_components.theme.white
 
 @Composable
 fun CommonLessonSegment(
@@ -44,17 +39,23 @@ fun CommonLessonSegment(
     LaunchedEffect(Unit) {
         logScreenView("lesson_screen")
     }
-// 🔥 Define startTime at the top level of LessonContent
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp > 600
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+    LessonPage(
+        bottom = {
+            // CONTINUE once the narration has finished; the speech animation while it plays.
+            // Both live in the same pinned bottom slot as CHECK on the question screens.
+            Box(
+                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    isAudioPlaying -> SpeechAnimation()
+                    showNextButton -> LessonPrimaryButton(title = "Continue", onClick = onNextClicked)
+                }
+            }
+        }
     ) {
-        // Image
+        // Image: 24 side margin (from LessonPage), radius 28
         Image(
             painter = rememberImagePainter(
                 data = segment.image,
@@ -67,49 +68,16 @@ fun CommonLessonSegment(
             contentDescription = "Image",
             modifier = Modifier
                 .fillMaxWidth()
-                // Instead of forcing half the screen:
-                // .fillMaxHeight(0.5f)
-                .padding(if (isTablet) 12.dp else 8.dp)
-                .align(Alignment.CenterHorizontally)
-                .clip(shape = RoundedCornerShape(if (isTablet) 80.dp else 64.dp)),
+                .clip(RoundedCornerShape(LessonTheme.imageRadius)),
             contentScale = ContentScale.FillWidth
         )
-
-        // Explanation text
-        CommonExplanationText(
+        Spacer(Modifier.height(24.dp))
+        // Story text: 24/500 in ink
+        Text(
             text = segment.description,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            style = LessonTheme.story(),
+            modifier = Modifier.fillMaxWidth()
         )
-
-        // This spacer absorbs any remaining space. If there is not enough
-        // space, everything remains scrollable.
-        Spacer(modifier = Modifier.weight(1f))
-        
-        // Show speech animation while audio is playing, or continue button when finished
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                isAudioPlaying -> {
-                    // Show Lottie speech animation while audio is playing
-                    SpeechAnimation()
-                }
-                showNextButton -> {
-                    // Show continue button when audio is finished
-                    CommonButton(
-                        onClick = onNextClicked,
-                        buttonText = "Continue",
-                        mainColor = lightNavyBlue,
-                        shadowColor = navyBlue,
-                        textColor = white,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -118,12 +86,9 @@ fun SpeechAnimation() {
     val composition by rememberLottieComposition(
         LottieCompositionSpec.RawRes(R.raw.speechanimation)
     )
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp > 600
-    
     LottieAnimation(
         composition = composition,
         iterations = LottieConstants.IterateForever,
-        modifier = Modifier.size(if (isTablet) 160.dp else 120.dp)
+        modifier = Modifier.size(width = 120.dp, height = 66.dp)
     )
 }

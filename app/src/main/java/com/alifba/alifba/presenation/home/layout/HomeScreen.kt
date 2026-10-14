@@ -98,19 +98,8 @@ import com.alifba.alifba.utils.ReviewPromptManager
 // for every usage; there are three (this file + HomeScreenWithNavigation.kt).
 @Composable
 fun HomeScreenBackground(modifier: Modifier = Modifier) {
-    val grassV1 = ImageBitmap.imageResource(id = R.drawable.grass_tile)
-    val grassPaintV1 = remember(grassV1) {
-        Paint().apply {
-            asFrameworkPaint().shader =
-                BitmapShader(grassV1.asAndroidBitmap(), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
-        }
-    }
-    Canvas(modifier = modifier) {
-        drawContext.canvas.nativeCanvas.drawRect(
-            0f, 0f, size.width, size.height,
-            grassPaintV1.asFrameworkPaint()
-        )
-    }
+    // Same meadow grass as the chapter path (chaptersList.kt), for the loading/empty states
+    com.alifba.alifba.presenation.chapters.layout.MeadowGrass(modifier = modifier)
 }
 
 const val DEV_DISABLE_PAYWALL_AND_GATE = false
@@ -349,9 +338,9 @@ fun HomeScreen(
         HomeScreenBackground(modifier = Modifier.fillMaxSize())
 
         Column {
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Content area - Display chapters directly
+            // Content area - Display chapters directly. No top spacer: the chapter path runs
+            // edge to edge and clears the status bar inside its own scroll content, so its
+            // bottom-anchored meadow never meets this static grass at a visible seam.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -435,16 +424,25 @@ fun LoadingAnimation() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(60.dp),
-                color = black
+            // Same as iOS: the Moon mascot thinking while the lessons load
+            DotLottieView(
+                name = "moon_thinking",
+                modifier = Modifier.size(120.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Loading lessons...",
-                color = black,
+                color = white,
+                // faint shadow keeps white text readable on the light-green grass
+                style = androidx.compose.ui.text.TextStyle(
+                    shadow = androidx.compose.ui.graphics.Shadow(
+                        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.25f),
+                        offset = androidx.compose.ui.geometry.Offset(0f, 2f),
+                        blurRadius = 2f
+                    )
+                ),
                 fontSize = 20.sp,
                 fontFamily = FontFamily(
                     Font(R.font.vag_round, FontWeight.Normal),
@@ -687,7 +685,13 @@ fun ChapterDownloadBottomSheetContent(
             }
 
             DownloadState.Downloading -> {
-                CircularProgressIndicator()
+                // Same as iOS: a plain "Downloading..." label, no spinner
+                Text(
+                    text = "Downloading...",
+                    color = navyBlue,
+                    fontSize = if (isTablet) 20.sp else 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
             DownloadState.Cached -> {

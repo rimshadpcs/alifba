@@ -1,9 +1,5 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment.cloudExercise
 
-import android.content.Context
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -18,6 +14,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -208,21 +205,7 @@ fun CloudTappingExercise(
                                     clouds[i] = cloud.copy(isActive = false)
                                 } else {
                                     // Vibrate device for incorrect tap
-                                    coroutineScope.launch {
-                                        val vibrator =
-                                            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                            vibrator.vibrate(
-                                                VibrationEffect.createOneShot(
-                                                    100,
-                                                    VibrationEffect.DEFAULT_AMPLITUDE
-                                                )
-                                            )
-                                        } else {
-                                            @Suppress("DEPRECATION")
-                                            vibrator.vibrate(100)
-                                        }
-                                    }
+                                    SoundEffectManager.wrongAnswerHaptic()
                                 }
                                 // Break after first found cloud
                                 break

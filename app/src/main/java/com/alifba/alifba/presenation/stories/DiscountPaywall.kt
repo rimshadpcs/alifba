@@ -1,5 +1,20 @@
 package com.alifba.alifba.presenation.stories
 
+import com.alifba.alifba.utils.PremiumAccess
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.alifba.alifba.features.authentication.dataStore
+import kotlinx.coroutines.flow.firstOrNull
+import com.alifba.alifba.ui_components.widgets.AuthTheme
+import com.alifba.alifba.ui_components.widgets.BadgeEarnedBackground
+import com.alifba.alifba.ui_components.widgets.LessonButtonKind
+import com.alifba.alifba.ui_components.widgets.LessonPrimaryButton
+import com.alifba.alifba.ui_components.widgets.LessonTheme
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearEasing
@@ -231,7 +246,7 @@ fun DiscountPaywall(
             // the main paywall) that this screen's own state doesn't know about yet.
             Purchases.sharedInstance.getCustomerInfo(object : ReceiveCustomerInfoCallback {
                 override fun onReceived(info: CustomerInfo) {
-                    if (info.entitlements.active.containsKey("Alifba Pro")) {
+                    if (PremiumAccess.isPremium(info)) {
                         finishPurchaseAttempt()
                         subscriptionViewModel.setPremium(true)
                         SubscriptionTrialReminderReceiver.cancelDiscountReminder(context)
@@ -244,7 +259,7 @@ fun DiscountPaywall(
                         object : PurchaseCallback {
                             override fun onCompleted(tx: StoreTransaction, info: CustomerInfo) {
                                 finishPurchaseAttempt()
-                                if (info.entitlements.active.containsKey("Alifba Pro")) {
+                                if (PremiumAccess.isPremium(info)) {
                                     subscriptionViewModel.setPremium(true)
                                     SubscriptionTrialReminderReceiver.cancelDiscountReminder(context)
                                     onSuccess()
@@ -290,29 +305,27 @@ fun DiscountPaywall(
         onClose()
     }
 
-    if (isTablet) {
-        DiscountPaywallContentTablet(
-            timeRemaining = timeRemaining,
-            selectedPackage = selectedPackage,
-            originalPrice = originalPrice,
-            monthlyPrice = monthlyPrice,
-            showIgnore = showIgnore,
-            isPurchasing = isPurchasing,
-            onClose = onCloseAction,
-            onClaimClick = onClaimClickAction
-        )
-    } else {
-        DiscountPaywallContent(
-            timeRemaining = timeRemaining,
-            selectedPackage = selectedPackage,
-            originalPrice = originalPrice,
-            monthlyPrice = monthlyPrice,
-            showIgnore = showIgnore,
-            isPurchasing = isPurchasing,
-            onClose = onCloseAction,
-            onClaimClick = onClaimClickAction
-        )
+    // Captured at onboarding (same key the main paywall reads); "your family" when unset
+    var childName by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        childName = context.dataStore.data.firstOrNull()
+            ?.get(stringPreferencesKey("onboarding_child_name"))
+            ?.takeIf { it.isNotBlank() }
+        // A signed-in parent sees the current child's name
+        loadPaywallChildName(context)?.let { childName = it }
     }
+
+    DiscountPaywallContent(
+        timeRemaining = timeRemaining,
+        selectedPackage = selectedPackage,
+        originalPrice = originalPrice,
+        monthlyPrice = monthlyPrice,
+        showIgnore = showIgnore,
+        isPurchasing = isPurchasing,
+        onClose = onCloseAction,
+        onClaimClick = onClaimClickAction,
+        childName = childName
+    )
 }
 
 @Composable
@@ -324,101 +337,230 @@ fun DiscountPaywallContent(
     showIgnore: Boolean,
     isPurchasing: Boolean,
     onClose: () -> Unit,
-    onClaimClick: () -> Unit
+    onClaimClick: () -> Unit,
+    childName: String? = null
 ) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
+    val k = LessonTheme.scale()
+    val context = LocalContext.current
+    val discountedPrice = selectedPackage?.product?.price?.formatted ?: "$39.99"
+    val monthlyEquivalent = selectedPackage?.let {
+        val amount = it.product.price.amountMicros.toDouble() / 1_000_000.0 / 12.0
+        val formatter = java.text.NumberFormat.getCurrencyInstance().apply { currency = java.util.Currency.getInstance(it.product.price.currencyCode) }
+        formatter.format(amount)
+    } ?: "$3.33"
+    // The offer has always promised 7 days free; use the store's trial length when it has one
+    val trialDays = selectedPackage?.let { annualTrialDays(it) } ?: 7
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(animation = tween(1200), repeatMode = RepeatMode.Reverse),
-        label = "pulseScale"
-    )
+    // Hours and minutes, or minutes and seconds in the last hour
+    val hours = timeRemaining / 3600
+    val minutes = (timeRemaining % 3600) / 60
+    val seconds = timeRemaining % 60
+    val tiles = if (hours >= 1) {
+        listOf(String.format("%02d", hours) to "hours", String.format("%02d", minutes) to "min")
+    } else {
+        listOf(String.format("%02d", minutes) to "min", String.format("%02d", seconds) to "sec")
+    }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                if (showIgnore) {
-                    Text(text = "ignore offer", color = Color.Black.copy(alpha = 0.6f), fontFamily = alifbaFont, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(enabled = !isPurchasing) { onClose() })
-                } else {
-                    Spacer(modifier = Modifier.width(1.dp))
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0xFFF6F8FD))) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Hero on the badge-earned sunburst, rounded at the bottom, up under the status bar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(bottomStart = 44.dp, bottomEnd = 44.dp))
+                ) {
+                    BadgeEarnedBackground(modifier = Modifier.matchParentSize())
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(bottom = 58.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // No thanks appears after a few seconds but keeps its place
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .heightIn(min = 48.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "No thanks",
+                                style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.ink.copy(alpha = 0.75f)),
+                                modifier = Modifier
+                                    .alpha(if (showIgnore) 1f else 0f)
+                                    .clickable(enabled = showIgnore && !isPurchasing) { onClose() }
+                            )
+                            // Unchanged: this screen's Restore has never been wired up on Android
+                            Text(
+                                text = "Restore",
+                                style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.primaryEdge),
+                                modifier = Modifier.clickable(enabled = !isPurchasing) { }
+                            )
+                        }
+
+                        GiftIllustration(modifier = Modifier
+                            .padding(top = 2.dp)
+                            .size((64 * k).dp))
+
+                        Text(
+                            text = "A gift for ${childName?.let { "$it’s" } ?: "your"} family",
+                            style = LessonTheme.answer().copy(fontSize = (18 * k).sp, color = Color(0xFF8A5A00)),
+                            modifier = Modifier.padding(top = 10.dp)
+                        )
+                        Text(
+                            text = "20% off",
+                            style = LessonTheme.question().copy(fontSize = (58 * k).sp, lineHeight = (64 * k).sp)
+                        )
+                        Text(
+                            text = "Alifba Premium, for a whole year",
+                            style = LessonTheme.answer().copy(fontSize = (18 * k).sp, fontWeight = FontWeight.Normal)
+                        )
+                        Text(
+                            text = "GIFT ENDS IN",
+                            style = LessonTheme.answer().copy(fontSize = (14 * k).sp, color = Color(0xFF8A6300), letterSpacing = 1.2.sp),
+                            modifier = Modifier.padding(top = 18.dp)
+                        )
+                        Row(
+                            modifier = Modifier.padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            tiles.forEach { (value, label) ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(modifier = Modifier.padding(bottom = 4.dp)) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size((66 * k).dp, (54 * k).dp)
+                                                .offset(y = 4.dp)
+                                                .background(LessonTheme.lineEdge, RoundedCornerShape(16.dp))
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .size((66 * k).dp, (54 * k).dp)
+                                                .background(Color.White, RoundedCornerShape(16.dp)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(text = value, style = LessonTheme.question().copy(fontSize = (28 * k).sp))
+                                        }
+                                    }
+                                    Text(
+                                        text = label,
+                                        style = LessonTheme.answer().copy(fontSize = (14 * k).sp, color = LessonTheme.ink.copy(alpha = 0.8f)),
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
-                Text(text = "Restore", color = Color.Black.copy(alpha = 0.6f), fontFamily = alifbaFont, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(enabled = !isPurchasing) { })
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(text = "Wait, We have a special offer for you", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = Color.Black, textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().graphicsLayer { scaleX = pulseScale; scaleY = pulseScale }) {
-                Image(painter = painterResource(id = R.drawable.limitedoffer), contentDescription = "Special Offer", modifier = Modifier.size(140.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "20%", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = 72.sp, color = Color(0xFFf29c1f), textAlign = TextAlign.Center, lineHeight = 72.sp)
-                    Text(text = "OFF", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = 38.sp, color = Color(0xFFf29c1f), textAlign = TextAlign.Center)
+                // The plan card overlaps the hero's rounded bottom
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 560.dp)
+                        .fillMaxWidth()
+                        .offset(y = (-34).dp)
+                        .padding(horizontal = LessonTheme.margin)
+                ) {
+                    DiscountPlanCard(
+                        originalPrice = originalPrice,
+                        discountedPrice = discountedPrice,
+                        monthlyEquivalent = monthlyEquivalent,
+                        monthlyPrice = monthlyPrice
+                    )
+                    PaywallTrialRow(
+                        title = "$trialDays days free, no payment now",
+                        steps = listOf(
+                            Triple("Today", "Full access, free", TimelineMarker.CHECK),
+                            Triple("Day ${maxOf(1, trialDays - 2)}", "We remind you", TimelineMarker.BELL),
+                            Triple("Day $trialDays", "Plan starts", TimelineMarker.SUBSCRIPTION)
+                        ),
+                        modifier = Modifier.padding(top = 22.dp)
+                    )
+                    PaywallTestimonials(modifier = Modifier.padding(top = 20.dp))
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "offer ends in", fontFamily = alifbaFont, fontSize = 14.sp, color = Color.Black.copy(alpha = 0.6f), textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val hours = timeRemaining / 3600
-                val minutes = (timeRemaining % 3600) / 60
-                val seconds = timeRemaining % 60
-                if (hours > 0) {
-                    TimerBox(time = String.format("%02d", hours), label = "hrs", alifbaFont)
-                    Text(" : ", color = Color.Black, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            // Pinned claim panel
+            val panelShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(12.dp, panelShape, ambientColor = Color.Black.copy(alpha = 0.06f), spotColor = Color.Black.copy(alpha = 0.06f))
+                    .background(Color.White, panelShape)
+                    .border(1.5.dp, LessonTheme.line, panelShape),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 600.dp)
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = LessonTheme.margin)
+                        .padding(top = 16.dp, bottom = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val enabled = selectedPackage != null && !isPurchasing
+                    LessonPrimaryButton(
+                        kind = if (enabled) LessonButtonKind.Primary else LessonButtonKind.Disabled,
+                        height = (64 * k).dp,
+                        onClick = { if (enabled) onClaimClick() }
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (isPurchasing) "Processing..." else "Claim my 20% gift",
+                                style = LessonTheme.button().copy(fontSize = (21 * k).sp, color = Color.White),
+                                maxLines = 1
+                            )
+                            if (!isPurchasing) {
+                                Text(
+                                    text = "$trialDays days free, then $discountedPrice/year",
+                                    style = LessonTheme.answer().copy(
+                                        fontSize = (14 * k).sp,
+                                        fontWeight = FontWeight.Normal,
+                                        color = Color.White.copy(alpha = 0.9f)
+                                    ),
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+
+                    val footStyle = LessonTheme.answer().copy(
+                        fontSize = (13 * k).sp,
+                        fontWeight = FontWeight.Normal,
+                        color = AuthTheme.secondaryText
+                    )
+                    val linkStyle = footStyle.copy(color = LessonTheme.primaryEdge, textDecoration = TextDecoration.Underline)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "Secured by Google Play · Cancel anytime ·", style = footStyle, maxLines = 1)
+                        Text(
+                            text = "Terms",
+                            style = linkStyle,
+                            modifier = Modifier.clickable { openDiscountUrl(context, "https://alifba.xyz/terms-of-service") }
+                        )
+                        Text(text = "·", style = footStyle)
+                        Text(
+                            text = "Privacy",
+                            style = linkStyle,
+                            modifier = Modifier.clickable { openDiscountUrl(context, "https://alifba.xyz/privacy-policy") }
+                        )
+                    }
                 }
-                TimerBox(time = String.format("%02d", minutes), label = "min", alifbaFont)
-                Text(" : ", color = Color.Black, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                TimerBox(time = String.format("%02d", seconds), label = "sec", alifbaFont)
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            val discountedPrice = selectedPackage?.product?.price?.formatted ?: "$39.99"
-            val monthlyEquivalent = selectedPackage?.let {
-                val amount = it.product.price.amountMicros.toDouble() / 1_000_000.0 / 12.0
-                val formatter = java.text.NumberFormat.getCurrencyInstance().apply { currency = java.util.Currency.getInstance(it.product.price.currencyCode) }
-                formatter.format(amount)
-            } ?: "$3.33"
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = originalPrice, fontFamily = alifbaFont, fontSize = 20.sp, color = Color.Black.copy(alpha = 0.4f), textDecoration = TextDecoration.LineThrough)
-                Text(text = " → ", color = Color.Black, fontSize = 20.sp)
-                Text(text = "$discountedPrice/year", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = 24.sp, color = Color.Black)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Just $monthlyEquivalent/mo with this deal", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = lightCandyGreen)
-            Text(text = "(Standard price is $monthlyPrice/mo)", fontFamily = alifbaFont, fontSize = 14.sp, color = Color.Black.copy(alpha = 0.5f))
-
-            Spacer(modifier = Modifier.height(10.dp))
-            TrialTimelineVertical(alifbaFont)
-
-            Spacer(modifier = Modifier.height(16.dp))
-            PaywallTestimonialCarousel(fontFamily = alifbaFont)
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            RainbowClaimOfferButton(
-                text = if (isPurchasing) "Processing..." else "Claim Offer",
-                onClick = onClaimClick,
-                enabled = !isPurchasing,
-                fontFamily = alifbaFont,
-                height = 56.dp,
-                fontSize = 18.sp,
-                cornerRadius = 16.dp,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "Secured by Google Play. Cancel anytime.", color = Color.Black.copy(alpha = 0.4f), fontSize = 12.sp, fontFamily = alifbaFont)
         }
 
         if (isPurchasing) {
@@ -427,272 +569,107 @@ fun DiscountPaywallContent(
     }
 }
 
+/** The discounted annual plan: was / now, per month, and the regular monthly price */
 @Composable
-fun DiscountPaywallContentTablet(
-    timeRemaining: Long,
-    selectedPackage: Package?,
-    originalPrice: String,
-    monthlyPrice: String,
-    showIgnore: Boolean,
-    isPurchasing: Boolean,
-    onClose: () -> Unit,
-    onClaimClick: () -> Unit
-) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-
-    val infiniteTransition = rememberInfiniteTransition(label = "pulseTablet")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(animation = tween(1200), repeatMode = RepeatMode.Reverse),
-        label = "pulseScaleTablet"
-    )
-
-    val scale = 1.5f
-    val maxWidth = 850.dp
-
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            if (showIgnore) {
-                Text(text = "ignore offer", color = Color.Black.copy(alpha = 0.6f), fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = scaledSp(14, scale), modifier = Modifier.clickable(enabled = !isPurchasing) { onClose() })
-            } else {
-                Spacer(modifier = Modifier.width(1.dp))
-            }
-            Text(text = "Restore", color = Color.Black.copy(alpha = 0.6f), fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = scaledSp(14, scale), modifier = Modifier.clickable(enabled = !isPurchasing) { })
-        }
-
-        Column(
-            modifier = Modifier.widthIn(max = maxWidth).fillMaxSize().align(Alignment.TopCenter).padding(horizontal = 80.dp, vertical = 24.dp).padding(top = 40.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(scaledDp(20, scale)))
-            Text(text = "Wait, We have a special offer for you", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = scaledSp(24, scale), color = Color.Black, textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(scaledDp(10, scale)))
-
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().graphicsLayer { scaleX = pulseScale; scaleY = pulseScale }) {
-                Image(painter = painterResource(id = R.drawable.limitedoffer), contentDescription = "Special Offer", modifier = Modifier.size(scaledDp(160, scale)))
-                Spacer(modifier = Modifier.width(scaledDp(8, scale)))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "20%", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = scaledSp(80, scale), color = Color(0xFFf29c1f), textAlign = TextAlign.Center, lineHeight = scaledSp(80, scale))
-                    Text(text = "OFF", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = scaledSp(42, scale), color = Color(0xFFf29c1f), textAlign = TextAlign.Center)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(scaledDp(20, scale)))
-            Text(text = "offer ends in", fontFamily = alifbaFont, fontSize = scaledSp(16, scale), color = Color.Black.copy(alpha = 0.6f), textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(scaledDp(10, scale)))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val hours = timeRemaining / 3600
-                val minutes = (timeRemaining % 3600) / 60
-                val seconds = timeRemaining % 60
-                if (hours > 0) {
-                    TimerBox(time = String.format("%02d", hours), label = "hrs", fontFamily = alifbaFont, scale = scale)
-                    Text(" : ", color = Color.Black, fontSize = scaledSp(24, scale), fontWeight = FontWeight.Bold)
-                }
-                TimerBox(time = String.format("%02d", minutes), label = "min", fontFamily = alifbaFont, scale = scale)
-                Text(" : ", color = Color.Black, fontSize = scaledSp(24, scale), fontWeight = FontWeight.Bold)
-                TimerBox(time = String.format("%02d", seconds), label = "sec", fontFamily = alifbaFont, scale = scale)
-            }
-
-            Spacer(modifier = Modifier.height(scaledDp(40, scale)))
-            val discountedPrice = selectedPackage?.product?.price?.formatted ?: "$39.99"
-            val monthlyEquivalent = selectedPackage?.let {
-                val amount = it.product.price.amountMicros.toDouble() / 1_000_000.0 / 12.0
-                val formatter = java.text.NumberFormat.getCurrencyInstance().apply { currency = java.util.Currency.getInstance(it.product.price.currencyCode) }
-                formatter.format(amount)
-            } ?: "$3.33"
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = originalPrice, fontFamily = alifbaFont, fontSize = scaledSp(22, scale), color = Color.Black.copy(alpha = 0.4f), textDecoration = TextDecoration.LineThrough)
-                Text(text = " → ", color = Color.Black, fontSize = scaledSp(22, scale))
-                Text(text = "$discountedPrice/year", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = scaledSp(28, scale), color = Color.Black)
-            }
-            Spacer(modifier = Modifier.height(scaledDp(10, scale)))
-            Text(text = "Just $monthlyEquivalent/mo with this deal", fontFamily = alifbaFont, fontWeight = FontWeight.Bold, fontSize = scaledSp(18, scale), color = lightCandyGreen)
-            Text(text = "(Standard price is $monthlyPrice/mo)", fontFamily = alifbaFont, fontSize = scaledSp(16, scale), color = Color.Black.copy(alpha = 0.5f))
-
-            Spacer(modifier = Modifier.height(scaledDp(20, scale)))
-            TrialTimelineVertical(alifbaFont, scale)
-
-            Spacer(modifier = Modifier.height(scaledDp(20, scale)))
-            PaywallTestimonialCarousel(fontFamily = alifbaFont, scale = scale)
-
-            Spacer(modifier = Modifier.height(scaledDp(30, scale)))
-
-            RainbowClaimOfferButton(
-                text = if (isPurchasing) "Processing..." else "Claim Offer",
-                onClick = onClaimClick,
-                enabled = !isPurchasing,
-                fontFamily = alifbaFont,
-                height = scaledDp(64, scale),
-                fontSize = scaledSp(20, scale),
-                cornerRadius = 16.dp,
-                modifier = Modifier.fillMaxWidth()
+private fun DiscountPlanCard(originalPrice: String, discountedPrice: String, monthlyEquivalent: String, monthlyPrice: String) {
+    val k = LessonTheme.scale()
+    val shape = RoundedCornerShape(24.dp)
+    val edge = 6.dp
+    Box(modifier = Modifier.padding(bottom = edge)) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .offset(y = edge)
+                    .background(Color(0xFFF3DE9E), shape)
             )
-            Spacer(modifier = Modifier.height(scaledDp(14, scale)))
-            Text(text = "Secured by Google Play. Cancel anytime.", color = Color.Black.copy(alpha = 0.4f), fontSize = scaledSp(13, scale), fontFamily = alifbaFont)
-            Spacer(modifier = Modifier.height(scaledDp(20, scale)))
-        }
-
-        if (isPurchasing) {
-            PurchaseProcessingOverlay()
-        }
-    }
-}
-
-@Composable
-fun TimerBox(time: String, label: String, fontFamily: FontFamily, scale: Float = 1f) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(modifier = Modifier.size(scaledDp(60, scale)).background(navyBlue.copy(alpha = 0.08f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-            Text(text = time, color = Color.Black, fontSize = scaledSp(28, scale), fontWeight = FontWeight.Bold, fontFamily = fontFamily)
-        }
-        Text(text = label, color = Color.Black.copy(alpha = 0.5f), fontSize = scaledSp(12, scale), fontFamily = fontFamily)
-    }
-}
-
-private enum class DiscountTimelineMarker { CHECK, BELL, SUBSCRIPTION }
-
-@Composable
-fun TrialTimelineVertical(fontFamily: FontFamily, scale: Float = 1f) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-        Text(text = "No Payment needed now", fontFamily = fontFamily, fontWeight = FontWeight.Bold, fontSize = scaledSp(20, scale), color = lightCandyGreen, modifier = Modifier.padding(bottom = scaledDp(24, scale)).align(Alignment.CenterHorizontally))
-        TimelineRow(marker = DiscountTimelineMarker.CHECK, title = "Today", subtitle = "Start your full access to Alifba Premium", isLast = false, fontFamily = fontFamily, scale = scale)
-        TimelineRow(marker = DiscountTimelineMarker.BELL, title = "Day 5", subtitle = "Get a reminder about when your trial will end", isLast = false, fontFamily = fontFamily, scale = scale)
-        TimelineRow(marker = DiscountTimelineMarker.SUBSCRIPTION, title = "Day 7", subtitle = "You'll be charged today, cancel anytime before", isLast = true, fontFamily = fontFamily, scale = scale)
-    }
-}
-
-@Composable
-private fun TimelineRow(marker: DiscountTimelineMarker, title: String, subtitle: String, isLast: Boolean, fontFamily: FontFamily, scale: Float = 1f) {
-    Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = Modifier.size(scaledDp(24, scale)).background(Color.White, CircleShape).border(1.dp, Color.Black, CircleShape), contentAlignment = Alignment.Center) {
-                when (marker) {
-                    DiscountTimelineMarker.CHECK -> Icon(Icons.Filled.Check, null, tint = Color.Black, modifier = Modifier.size(scaledDp(14, scale)))
-                    DiscountTimelineMarker.BELL -> Icon(Icons.Filled.Notifications, null, tint = Color.Black, modifier = Modifier.size(scaledDp(14, scale)))
-                    DiscountTimelineMarker.SUBSCRIPTION -> Image(painterResource(id = R.drawable.crown), null, modifier = Modifier.size(scaledDp(14, scale)))
-                }
-            }
-            if (!isLast) Box(modifier = Modifier.width(scaledDp(1, scale)).fillMaxHeight().background(Color.Black.copy(alpha = 0.15f)))
-        }
-        Spacer(modifier = Modifier.width(scaledDp(16, scale)))
-        Column(modifier = Modifier.padding(bottom = scaledDp(24, scale))) {
-            Text(text = title, fontFamily = fontFamily, fontWeight = FontWeight.Bold, fontSize = scaledSp(16, scale), color = Color.Black)
-            Text(text = subtitle, fontFamily = fontFamily, fontSize = scaledSp(14, scale), color = Color.Black.copy(alpha = 0.6f))
-        }
-    }
-}
-
-// Same copy and visual language as RevenueCatPaywall's testimonialsSection/TestimonialCard —
-// kept as an independent copy here (not shared code) per this file's separation from the
-// main paywall, but using the same already-approved review content for consistency.
-private val paywallTestimonials = listOf(
-    Triple(
-        "Premium is worth for our family",
-        "Aisha M.",
-        "The quizzes are actually fun? Like, my daughter doesn't even realize she's being tested. She just wants to earn the next badge."
-    ),
-    Triple(
-        "We chose Premium and love it",
-        "Yusra",
-        "The gamification is spot on. My son was so proud when he unlocked his first collectible badge. Great motivation system!"
-    ),
-    Triple(
-        "The premium is a good deal to learn more",
-        "Amana",
-        "We use it for car rides instead of just watching videos. The audio quality is amazing, and the stories are perfect for keeping them quiet and engaged."
-    )
-)
-
-@Composable
-private fun PaywallTestimonialCarousel(fontFamily: FontFamily, scale: Float = 1f) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = scaledDp(4, scale))
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(scaledDp(12, scale))
-    ) {
-        paywallTestimonials.forEach { (title, name, quote) ->
-            PaywallTestimonialCard(title = title, name = name, quote = quote, fontFamily = fontFamily, scale = scale)
-        }
-    }
-}
-
-@Composable
-private fun PaywallTestimonialCard(title: String, name: String, quote: String, fontFamily: FontFamily, scale: Float = 1f) {
-    Column(
-        modifier = Modifier
-            .width(scaledDp(240, scale))
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp))
-            .background(Color.White, RoundedCornerShape(12.dp))
-            .padding(horizontal = scaledDp(12, scale), vertical = scaledDp(6, scale)),
-        verticalArrangement = Arrangement.Top
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            repeat(5) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    tint = Color(0xFFFD8300),
-                    modifier = Modifier.width(scaledDp(12, scale)).height(scaledDp(12, scale))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape)
+                    .border(2.5.dp, Color(0xFFFFC93C), shape)
+                    .padding(vertical = 16.dp, horizontal = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "ANNUAL PLAN",
+                    style = LessonTheme.answer().copy(fontSize = (13 * k).sp, color = Color(0xFF5B3A00), letterSpacing = 0.8.sp),
+                    modifier = Modifier
+                        .background(Color(0xFFFFC93C), CircleShape)
+                        .padding(horizontal = 14.dp, vertical = 5.dp)
                 )
-                Spacer(modifier = Modifier.width(scaledDp(2, scale)))
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = originalPrice,
+                        style = LessonTheme.answer().copy(
+                            fontSize = (20 * k).sp,
+                            color = AuthTheme.secondaryText,
+                            textDecoration = TextDecoration.LineThrough
+                        ),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    Text(text = discountedPrice, style = LessonTheme.question().copy(fontSize = (38 * k).sp))
+                    Text(
+                        text = "/year",
+                        style = LessonTheme.answer().copy(fontSize = (18 * k).sp, color = AuthTheme.secondaryText),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                }
+                Text(
+                    text = "Just $monthlyEquivalent a month",
+                    style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.primaryEdge)
+                )
+                Text(
+                    text = "The monthly plan is $monthlyPrice/month",
+                    style = LessonTheme.answer().copy(
+                        fontSize = (14 * k).sp,
+                        fontWeight = FontWeight.Normal,
+                        color = AuthTheme.secondaryText
+                    )
+                )
             }
         }
-
-        Spacer(modifier = Modifier.height(scaledDp(4, scale)))
-
-        Text(
-            text = title,
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = scaledSp(12, scale),
-            color = darkBlue,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(scaledDp(4, scale)))
-        Text(
-            text = quote,
-            fontFamily = fontFamily,
-            fontSize = scaledSp(11, scale),
-            color = darkBlue.copy(alpha = 0.75f),
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(scaledDp(3, scale)))
-        Text(
-            text = name,
-            fontFamily = fontFamily,
-            fontSize = scaledSp(10, scale),
-            color = darkBlue.copy(alpha = 0.6f),
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.End
-        )
     }
 }
 
-private fun scaledDp(base: Int, scale: Float) = (base * scale).dp
-private fun scaledSp(base: Int, scale: Float) = (base * scale).sp
+/** Red present with a gold ribbon and bow (also the home map's gift button) */
+@Composable
+internal fun GiftIllustration(modifier: Modifier = Modifier) {
+    val red = Color(0xFFF2545B)
+    val redEdge = Color(0xFFC93A41)
+    val gold = Color(0xFFFFC93C)
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val outline = Stroke(width = w * 0.035f)
+        // Bow: two loops above the lid
+        drawOval(gold, Offset(w * 0.22f, h * 0.06f), Size(w * 0.3f, h * 0.22f))
+        drawOval(gold, Offset(w * 0.48f, h * 0.06f), Size(w * 0.3f, h * 0.22f))
+        // Box body and lid
+        drawRoundRect(red, Offset(w * 0.14f, h * 0.38f), Size(w * 0.72f, h * 0.56f), CornerRadius(w * 0.05f))
+        drawRoundRect(redEdge, Offset(w * 0.14f, h * 0.38f), Size(w * 0.72f, h * 0.56f), CornerRadius(w * 0.05f), style = outline)
+        drawRoundRect(red, Offset(w * 0.08f, h * 0.24f), Size(w * 0.84f, h * 0.18f), CornerRadius(w * 0.05f))
+        drawRoundRect(redEdge, Offset(w * 0.08f, h * 0.24f), Size(w * 0.84f, h * 0.18f), CornerRadius(w * 0.05f), style = outline)
+        // Ribbon down the middle
+        drawRect(gold, Offset(w * 0.44f, h * 0.24f), Size(w * 0.12f, h * 0.7f))
+    }
+}
 
-@Preview(showBackground = true, widthDp = 1000, heightDp = 1300)
+private fun openDiscountUrl(context: android.content.Context, url: String) {
+    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+}
+
+@Preview(showBackground = true, widthDp = 834, heightDp = 1194)
 @Composable
 fun DiscountPaywallTabletPreview() {
-    DiscountPaywallContentTablet(timeRemaining = 599L, selectedPackage = null, originalPrice = "$49.99", monthlyPrice = "$4.99", showIgnore = true, isPurchasing = false, onClose = {}, onClaimClick = {})
+    DiscountPaywallContent(timeRemaining = 85_000L, selectedPackage = null, originalPrice = "$49.99", monthlyPrice = "$4.99", showIgnore = true, isPurchasing = false, onClose = {}, onClaimClick = {}, childName = "Rim")
 }
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 800)
+@Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 fun DiscountPaywallMobilePreview() {
-    DiscountPaywallContent(timeRemaining = 599L, selectedPackage = null, originalPrice = "$49.99", monthlyPrice = "$4.99", showIgnore = true, isPurchasing = false, onClose = {}, onClaimClick = {})
+    DiscountPaywallContent(timeRemaining = 599L, selectedPackage = null, originalPrice = "$49.99", monthlyPrice = "$4.99", showIgnore = true, isPurchasing = false, onClose = {}, onClaimClick = {}, childName = "Rim")
 }
 
 // Independent copy of the same blocking overlay used in AnnualDiscount35Paywall.kt and

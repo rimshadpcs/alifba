@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
@@ -33,7 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, shadowColor: Color, isTablet: Boolean = false) {
+fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, shadowColor: Color, isTablet: Boolean = false, cornerRadius: Dp? = null) {
     val configuration = LocalConfiguration.current
     val actualIsTablet = isTablet || (configuration.screenWidthDp > 600)
     
@@ -55,7 +56,9 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, s
             .fillMaxWidth()
             .padding(if (actualIsTablet) 12.dp else 8.dp)
             .height(if (actualIsTablet) 100.dp else 72.dp) // Total height including the shadow
-            .clip(RoundedCornerShape(if (actualIsTablet) 12.dp else 8.dp)),
+            // cornerRadius = null keeps the original 8/12dp corners (the onboarding quiz uses this
+            // button too); the Text MCQ lesson passes a rounder one.
+            .clip(RoundedCornerShape(cornerRadius ?: (if (actualIsTablet) 12.dp else 8.dp))),
         contentAlignment = Alignment.TopCenter,
 
         ) {
@@ -72,7 +75,7 @@ fun MCQChoiceButton(onClick: () -> Unit, buttonText: String, mainColor: Color, s
             modifier = Modifier
                 .matchParentSize()
                 .padding(bottom = offsetY) // Apply the offset for the press effect
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(cornerRadius ?: 8.dp))
                 .background(mainColor) // Button face color
                 .clickable(
                     onClick = {

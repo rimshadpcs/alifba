@@ -1,125 +1,109 @@
 package com.alifba.alifba.presenation.stories
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.draw.blur
-import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import kotlin.math.sin
-import kotlin.math.PI
-import coil.compose.AsyncImage
-import com.alifba.alifba.R
-import coil.compose.AsyncImagePainter
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.CachePolicy
-import com.alifba.alifba.data.models.Story
-import com.alifba.alifba.ui_components.theme.*
-import kotlinx.coroutines.delay
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import android.util.Log
-import kotlinx.coroutines.launch
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import androidx.palette.graphics.Palette
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Icon
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.alifba.alifba.data.models.Story
+import com.alifba.alifba.ui_components.widgets.AuthTheme
+import com.alifba.alifba.ui_components.widgets.LessonTheme
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
+import java.util.Calendar
+import kotlin.math.PI
+import kotlin.math.sin
 
-// Play button accent — warm amber/gold instead of purple, consistent with the rest of the
-// screen's warm palette (matches the amber already used for completed lesson-path nodes).
-private val audioPlayerAmber = Color(0xFFC79A22)
+/**
+ * Day / night look of the player. Follows the time of day (night from 7pm to 6am); the switch on
+ * the player overrides it until the app is closed.
+ */
+object PlayerAppearance {
+    var override by mutableStateOf<Boolean?>(null)
 
-// Bottom band background fallback — used until (or unless) Palette extraction from the story's
-// own artwork succeeds; also the permanent value when extraction fails (e.g. image not loaded).
-private val audioPlayerBand = Color(0xFF4A2E12)
-
-// Scales a color's RGB down towards black, keeping alpha — used to darken whatever Palette
-// swatch we extract so the band stays dark enough for white text regardless of how light the
-// source artwork's dominant/muted color happens to be.
-private fun darkenColor(color: Color, factor: Float): Color = Color(
-    red = color.red * factor,
-    green = color.green * factor,
-    blue = color.blue * factor,
-    alpha = color.alpha
-)
-
-// Extracts a dominant/muted swatch from the bitmap at [imageUrl] via the Palette API and returns
-// a darkened Color, or null if extraction fails for any reason (image not loaded yet, decode
-// error, no usable swatch, etc.) — callers fall back to [audioPlayerBand] on null.
-private suspend fun extractDarkenedBandColor(context: android.content.Context, imageUrl: String): Color? {
-    if (imageUrl.isBlank()) return null
-    return try {
-        withContext(Dispatchers.IO) {
-            val request = ImageRequest.Builder(context)
-                .data(imageUrl)
-                // Palette needs to read pixels directly — hardware bitmaps can't be read on the
-                // CPU, so force a software-backed bitmap for this decode.
-                .allowHardware(false)
-                .build()
-            val result = context.imageLoader.execute(request)
-            val bitmap = (result.drawable as? BitmapDrawable)?.bitmap ?: return@withContext null
-
-            val palette = Palette.from(bitmap).generate()
-            val swatch = palette.darkMutedSwatch
-                ?: palette.dominantSwatch
-                ?: palette.mutedSwatch
-                ?: palette.lightMutedSwatch
-                ?: return@withContext null
-
-            darkenColor(Color(swatch.rgb), factor = 0.55f)
-        }
-    } catch (e: Exception) {
-        Log.w("AudioPlayerScreen", "Palette extraction failed for $imageUrl: ${e.message}")
-        null
+    fun isNightByClock(): Boolean {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        return hour >= 19 || hour < 6
     }
+}
+
+private object PlayerPalette {
+    val dayBackground = Color(0xFFFDF3DE)
+    val dayEdge = Color(0xFFEBE4C4)
+    val dayTrack = Color(0xFFE9E1C8)
+    val nightBackground = Color(0xFF212B58)
+    val nightFrame = Color(0xFF383E66)
+    val nightMuted = Color(0xFFB8BDF0)
+    val nightTrack = Color(0xFF4A5078)
+    val amber = Color(0xFFFFC83D)
+    val amberEdge = Color(0xFFE0A800)
+    val amberInk = Color(0xFF3B2F00)
 }
 
 @Composable
@@ -129,587 +113,446 @@ fun AudioPlayerScreen(
     onMinimize: () -> Unit = {},
     onCancel: () -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: AudioPlayerViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
-    storiesViewModel: StoriesViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    viewModel: AudioPlayerViewModel = hiltViewModel(),
+    storiesViewModel: StoriesViewModel = hiltViewModel()
 ) {
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp > 600
-    
-    // Collect states from ViewModel
+    val k = LessonTheme.scale()
     val isPlaying by viewModel.isPlaying.collectAsState()
     val currentPosition by viewModel.currentPosition.collectAsState()
     val duration by viewModel.duration.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    
-    // Controls visibility state
-    var showControls by remember { mutableStateOf(true) }
+    val isFavorite by storiesViewModel
+        .isFavorite(story.documentId, story.category.ifBlank { "stories" })
+        .collectAsState()
 
-    // Bottom band color — extracted per story from its own background artwork via the Palette
-    // API, darkened for text contrast. Resets to the neutral fallback immediately when the story
-    // changes (rather than holding the previous story's color) and is replaced once extraction
-    // for the new artwork finishes; stays on the fallback if extraction fails or never resolves.
-    val context = LocalContext.current
-    var bandColor by remember(story.documentId) { mutableStateOf(audioPlayerBand) }
-    LaunchedEffect(story.documentId, story.background) {
-        val extracted = extractDarkenedBandColor(context, story.background)
-        if (extracted != null) {
-            bandColor = extracted
-        }
-    }
+    val night = PlayerAppearance.override ?: remember { PlayerAppearance.isNightByClock() }
+    val isReady = duration > 0 && !isLoading
 
-    // Auto-hide controls logic
-    LaunchedEffect(isPlaying, showControls) {
-        if (isPlaying && showControls && !isLoading) {
-            delay(3000) // Wait 3 seconds
-            showControls = false
-        }
-    }
-    
+    val primaryText = if (night) Color.White else LessonTheme.ink
+    val secondaryText = if (night) PlayerPalette.nightMuted else AuthTheme.secondaryText
+    val background by animateColorAsState(
+        if (night) PlayerPalette.nightBackground else PlayerPalette.dayBackground,
+        label = "playerBackground"
+    )
+
     // Load story when screen opens
     LaunchedEffect(story) {
         viewModel.loadStory(story)
     }
-    
-    // Background panning animation - slow left to right and right to left
-    val infiniteTransition = rememberInfiniteTransition(label = "background_pan")
-    val panOffset by infiniteTransition.animateFloat(
-        initialValue = -0.1f,
-        targetValue = 0.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 8000),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pan_offset"
-    )
-    
+
+    val screenWidth = LocalConfiguration.current.screenWidthDp
+    val coverSize = minOf((screenWidth - 56).dp, (400 * k).dp)
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null // No ripple effect
-            ) {
-                showControls = true
-            }
+            .background(background)
     ) {
-        // Background image with panning animation
+        if (night) NightStars()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column(
+                modifier = Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Top bar: minimise, title, heart, stop
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    PlayerRoundButton(
+                        icon = Icons.Filled.KeyboardArrowDown,
+                        description = "Minimize",
+                        tint = if (night) Color.White else LessonTheme.primary,
+                        night = night,
+                        onClick = onMinimize
+                    )
+                    Text(
+                        text = "Now playing",
+                        style = LessonTheme.answer().copy(fontSize = (18 * k).sp, color = secondaryText),
+                        modifier = Modifier.weight(1f)
+                    )
+                    PlayerRoundButton(
+                        icon = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        description = if (isFavorite) "Remove from favourites" else "Add to favourites",
+                        tint = if (isFavorite) LessonTheme.wrong else if (night) Color.White else Color(0xFFA3A9BC),
+                        night = night,
+                        onClick = {
+                            storiesViewModel.toggleFavorite(story.documentId, story.category.ifBlank { "stories" })
+                        }
+                    )
+                    PlayerRoundButton(
+                        icon = Icons.Filled.Close,
+                        description = "Stop playing",
+                        tint = if (night) Color.White else LessonTheme.primary,
+                        night = night,
+                        onClick = onCancel
+                    )
+                }
+
+                // Cover
+                Box(modifier = Modifier.padding(top = 22.dp)) {
+                    Cover(story = story, size = coverSize, night = night)
+                }
+
+                Text(
+                    text = story.name,
+                    style = LessonTheme.question().copy(fontSize = (30 * k).sp, color = primaryText),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 26.dp)
+                )
+
+                val kind = if (story.isBedtime) "Bedtime story" else "Story"
+                val totalMs = if (duration > 0) duration else story.durationSeconds * 1000L
+                Text(
+                    text = if (totalMs > 0) "$kind · ${storyTimeText(totalMs)}" else kind,
+                    style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = secondaryText),
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+
+                if (error != null && !isPlaying && duration == 0L) {
+                    Text(
+                        text = "Audio unavailable",
+                        style = LessonTheme.answer().copy(
+                            fontSize = (15 * k).sp,
+                            color = if (night) Color(0xFFFF9A9F) else LessonTheme.wrongEdge
+                        ),
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                // Wavy progress + time labels
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp, end = 32.dp, top = 26.dp)
+                ) {
+                    WavyProgress(
+                        progress = if (duration > 0) (currentPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f) else 0f,
+                        enabled = isReady,
+                        activeColor = if (night) PlayerPalette.amber else LessonTheme.primary,
+                        trackColor = if (night) PlayerPalette.nightTrack else PlayerPalette.dayTrack,
+                        thumbColor = if (night) Color.White else LessonTheme.primaryEdge,
+                        onSeek = { fraction -> viewModel.seekTo((fraction * duration).toLong()) }
+                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            text = storyTimeText(currentPosition),
+                            style = LessonTheme.answer().copy(fontSize = (15 * k).sp, color = secondaryText)
+                        )
+                        Text(
+                            text = "-" + storyTimeText((duration - currentPosition).coerceAtLeast(0L)),
+                            style = LessonTheme.answer().copy(fontSize = (15 * k).sp, color = secondaryText)
+                        )
+                    }
+                }
+
+                // Controls
+                Row(
+                    modifier = Modifier.padding(top = 22.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy((34 * k).dp)
+                ) {
+                    PlayerRoundButton(
+                        icon = Icons.Filled.Replay10,
+                        description = "Back 10 seconds",
+                        tint = if (night) Color.White else LessonTheme.primary,
+                        night = night,
+                        size = (64 * k).dp,
+                        enabled = isReady,
+                        onClick = { viewModel.skipBackward() }
+                    )
+                    PlayPauseButton(
+                        night = night,
+                        isPlaying = isPlaying,
+                        isLoading = isLoading,
+                        enabled = isReady,
+                        onClick = { viewModel.togglePlayPause() }
+                    )
+                    PlayerRoundButton(
+                        icon = Icons.Filled.Forward10,
+                        description = "Forward 10 seconds",
+                        tint = if (night) Color.White else LessonTheme.primary,
+                        night = night,
+                        size = (64 * k).dp,
+                        enabled = isReady,
+                        onClick = { viewModel.skipForward() }
+                    )
+                }
+
+                NightToggle(
+                    night = night,
+                    modifier = Modifier.padding(top = 30.dp, bottom = 24.dp),
+                    onChange = { PlayerAppearance.override = it }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Cover(story: Story, size: Dp, night: Boolean) {
+    val shape = RoundedCornerShape(32.dp)
+    val edge = if (night) 0.dp else 10.dp
+    Box(modifier = Modifier.padding(bottom = edge)) {
+        if (!night) {
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .offset(y = edge)
+                    .background(PlayerPalette.dayEdge, shape)
+            )
+        }
         AsyncImage(
             model = story.background,
-            contentDescription = "Background",
+            contentDescription = story.name,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    // Apply horizontal panning only when audio is playing
-                    if (isPlaying) {
-                        translationX = size.width * panOffset
-                        scaleX = 1.2f // Scale up slightly to avoid edges showing during pan
-                        scaleY = 1.2f
-                    }
-                },
-            contentScale = ContentScale.Crop
+                .size(size)
+                .then(if (night) Modifier.shadow(18.dp, shape) else Modifier)
+                .clip(shape)
+                .background(if (night) PlayerPalette.nightFrame else PlayerPalette.dayTrack)
+                .then(if (night) Modifier.border(6.dp, PlayerPalette.nightFrame, shape) else Modifier)
         )
-        
-        // Dark overlay for better text readability
+    }
+}
+
+/** Round control: raised white in the day, a soft translucent disc at night */
+@Composable
+private fun PlayerRoundButton(
+    icon: ImageVector,
+    description: String,
+    tint: Color,
+    night: Boolean,
+    onClick: () -> Unit,
+    size: Dp = (46 * LessonTheme.scale()).dp,
+    enabled: Boolean = true
+) {
+    val edge = 3.dp
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val lift by animateDpAsState(if (pressed && !night) edge else 0.dp, label = "roundLift")
+
+    Box(
+        modifier = Modifier
+            .alpha(if (enabled) 1f else 0.5f)
+            .padding(bottom = if (night) 0.dp else edge)
+            .size(size)
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled) {
+                SoundEffectManager.playClickSound()
+                onClick()
+            }
+    ) {
+        if (!night) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .offset(y = edge)
+                    .background(PlayerPalette.dayEdge, CircleShape)
+            )
+        }
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-        )
-        
-        // Title, "Story" label, scrubber, and controls all moved into the solid bottom band
-        // below (inside the AnimatedVisibility block) — no more text floating directly on the
-        // illustration, so contrast no longer depends on what's in the artwork underneath.
-
-        // Animated Controls Overlay
-        AnimatedVisibility(
-            visible = showControls || !isPlaying || isLoading,
-            enter = fadeIn(),
-            exit = fadeOut()
+                .matchParentSize()
+                .offset(y = lift)
+                .background(if (night) Color.White.copy(alpha = if (pressed) 0.22f else 0.14f) else Color.White, CircleShape)
+                .then(if (night) Modifier else Modifier.border(1.5.dp, LessonTheme.line, CircleShape)),
+            contentAlignment = Alignment.Center
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Top Bar with Controls
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(if (isTablet) 24.dp else 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Left: Minimize (Drop Arrow)
-                    IconButton(
-                        onClick = onMinimize,
-                        modifier = Modifier
-                            .size(if (isTablet) 56.dp else 40.dp)
-                            .background(
-                                color = Color.White.copy(alpha = 0.2f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Minimize",
-                            tint = Color.White,
-                            modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
-                        )
-                    }
+            Icon(
+                imageVector = icon,
+                contentDescription = description,
+                tint = tint,
+                modifier = Modifier.size(size * 0.5f)
+            )
+        }
+    }
+}
 
-                    // Center: Title
-                    Text(
-                        text = "Now Playing",
-                        color = Color.White,
-                        fontSize = if (isTablet) 24.sp else 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+@Composable
+private fun PlayPauseButton(
+    night: Boolean,
+    isPlaying: Boolean,
+    isLoading: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val k = LessonTheme.scale()
+    val face = if (night) PlayerPalette.amber else LessonTheme.primary
+    val edge = if (night) PlayerPalette.amberEdge else LessonTheme.primaryEdge
+    val ink = if (night) PlayerPalette.amberInk else Color.White
+    val lip = 6.dp
+    val size = (88 * k).dp
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val lift by animateDpAsState(if (pressed) lip else 0.dp, label = "playLift")
 
-                    // Right: Favorite & Cancel buttons
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Favorite button — same chunky pressable 3D effect as the story cards
-                        // (static shadow disc behind, main disc on top that compresses onto it
-                        // on press), replacing the old flat translucent circle.
-                        val isFavorite by storiesViewModel
-                            .isFavorite(story.documentId, story.category.ifBlank { "stories" })
-                            .collectAsState()
-                        val heartScale = remember { Animatable(1f) }
-                        val coroutineScope = rememberCoroutineScope()
-                        val heartInteractionSource = remember { MutableInteractionSource() }
-                        val isHeartPressed by heartInteractionSource.collectIsPressedAsState()
-                        val heartOffsetY by animateDpAsState(
-                            targetValue = if (isHeartPressed) 0.dp else 3.dp,
-                            label = "HeartOffsetY"
-                        )
-                        val heartButtonSize = if (isTablet) 56.dp else 40.dp
-
-                        Box(
-                            modifier = Modifier
-                                .size(heartButtonSize)
-                                .graphicsLayer {
-                                    scaleX = heartScale.value
-                                    scaleY = heartScale.value
-                                }
-                        ) {
-                            // Static shadow disc.
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clip(CircleShape)
-                                    .background(Color.Black.copy(alpha = 0.3f))
-                            )
-                            // Main disc — compresses onto the shadow layer on press.
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .padding(bottom = heartOffsetY)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.25f))
-                                    .clickable(
-                                        interactionSource = heartInteractionSource,
-                                        indication = null
-                                    ) {
-                                        // Bounce animation
-                                        coroutineScope.launch {
-                                            heartScale.animateTo(0.7f, animationSpec = tween(100))
-                                            heartScale.animateTo(1.3f, animationSpec = tween(100))
-                                            heartScale.animateTo(1f, animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessLow
-                                            ))
-                                        }
-                                        storiesViewModel.toggleFavorite(
-                                            story.documentId,
-                                            story.category.ifBlank { "stories" }
-                                        )
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                    tint = if (isFavorite) Color.Red else Color.White,
-                                    modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
-                                )
-                            }
-                        }
-
-                        // Cancel/Stop button
-                        IconButton(
-                            onClick = onCancel,
-                            modifier = Modifier
-                                .size(if (isTablet) 56.dp else 40.dp)
-                                .background(
-                                    color = Color.White.copy(alpha = 0.2f),
-                                    shape = CircleShape
-                                )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Stop Playing",
-                                tint = Color.White,
-                                modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
-                            )
-                        }
-                    }
+    Box(
+        modifier = Modifier
+            .alpha(if (enabled) 1f else 0.6f)
+            .padding(bottom = lip)
+            .size(size)
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled) {
+                SoundEffectManager.playClickSound()
+                onClick()
+            }
+    ) {
+        Box(modifier = Modifier.matchParentSize().offset(y = lip).background(edge, CircleShape))
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .offset(y = lift)
+                .background(face, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            when {
+                isLoading -> CircularProgressIndicator(
+                    color = ink,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size((36 * k).dp)
+                )
+                isPlaying -> Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Box(Modifier.width((9 * k).dp).height((32 * k).dp).background(ink, RoundedCornerShape(3.dp)))
+                    Box(Modifier.width((9 * k).dp).height((32 * k).dp).background(ink, RoundedCornerShape(3.dp)))
                 }
-                
-                Spacer(modifier = Modifier.weight(1f))
+                else -> Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = "Play",
+                    tint = ink,
+                    modifier = Modifier.size((46 * k).dp)
+                )
+            }
+        }
+    }
+}
 
-                // Solid bottom band — title, "Story" label, scrubber, and controls all live
-                // here now instead of floating directly on the illustration, so their contrast
-                // is guaranteed regardless of the artwork underneath.
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(bandColor, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = if (isTablet) 28.dp else 20.dp, bottom = if (isTablet) 40.dp else 28.dp)
-                ) {
-                    Text(
-                        text = story.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = if (isTablet) 48.dp else 32.dp),
-                        color = Color.White,
-                        fontSize = if (isTablet) 32.sp else 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
+@Composable
+private fun NightToggle(night: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+    val k = LessonTheme.scale()
+    Row(
+        modifier = modifier
+            .background(if (night) Color.White.copy(alpha = 0.08f) else Color.White, CircleShape)
+            .border(2.dp, if (night) PlayerPalette.amber else PlayerPalette.dayEdge, CircleShape)
+            .padding(start = 22.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Bedtime,
+            contentDescription = null,
+            tint = PlayerPalette.amber,
+            modifier = Modifier.size((22 * k).dp)
+        )
+        Text(
+            text = "Night mode",
+            style = LessonTheme.answer().copy(
+                fontSize = (20 * k).sp,
+                color = if (night) Color.White else LessonTheme.ink
+            )
+        )
+        Switch(
+            checked = night,
+            onCheckedChange = { SoundEffectManager.playClickSound(); onChange(it) },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = PlayerPalette.amber,
+                checkedBorderColor = PlayerPalette.amber,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color(0xFFD9DEEA),
+                uncheckedBorderColor = Color(0xFFD9DEEA)
+            )
+        )
+    }
+}
 
-                    Spacer(modifier = Modifier.height(if (isTablet) 8.dp else 4.dp))
+@Composable
+private fun NightStars() {
+    val stars = listOf(
+        Triple(0.92f, 0.11f, 5f), Triple(0.07f, 0.17f, 4f), Triple(0.96f, 0.42f, 5f), Triple(0.04f, 0.50f, 4f),
+        Triple(0.18f, 0.64f, 4f), Triple(0.90f, 0.82f, 5f), Triple(0.30f, 0.93f, 4f), Triple(0.76f, 0.95f, 4f)
+    )
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        stars.forEach { (x, y, r) ->
+            drawCircle(
+                color = PlayerPalette.nightMuted.copy(alpha = 0.5f),
+                radius = r.dp.toPx() / 2f,
+                center = Offset(size.width * x, size.height * y)
+            )
+        }
+    }
+}
 
-                    Text(
-                        text = if (story.isBedtime) "Bedtime Story" else "Story",
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = if (isTablet) 48.dp else 32.dp),
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = if (isTablet) 20.sp else 14.sp,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(if (isTablet) 20.dp else 12.dp))
-
-                // Show loading or error state
-                when {
-                    isLoading -> {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 32.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(if (isTablet) 36.dp else 24.dp),
-                                color = Color.White.copy(alpha = 0.8f),
-                                strokeWidth = if (isTablet) 3.dp else 2.dp
-                            )
-                            Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 8.dp))
-                            Text(
-                                text = "Loading audio...",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = if (isTablet) 20.sp else 14.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(if (isTablet) 48.dp else 32.dp))
-                    }
-                    error != null && !isPlaying && duration == 0L -> {
-                        Text(
-                            text = "Audio unavailable",
-                            color = Color.Red.copy(alpha = 0.8f),
-                            fontSize = if (isTablet) 20.sp else 14.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = if (isTablet) 48.dp else 32.dp)
-                        )
-                        Spacer(modifier = Modifier.height(if (isTablet) 48.dp else 32.dp))
-                    }
-                }
-                
-                // Wavy Seeker/Progress Bar
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = if (isTablet) 48.dp else 32.dp)
-                ) {
-                    // Wavy progress bar
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(if (isTablet) 80.dp else 60.dp)
-                    ) {
-                        val progress = if (duration > 0) (currentPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f) else 0f
-
-                        // Draw wavy progress
-                        Canvas(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(if (isTablet) 60.dp else 40.dp)
-                                .align(Alignment.Center)
-                        ) {
-                            val width = size.width
-                            val height = size.height
-                            val centerY = height / 2
-                            val amplitude = if (isTablet) 12f else 8f // Wave height (slightly reduced)
-                            val wavelength = if (isTablet) 200f else 150f // Distance between wave peaks (increased = fewer waves)
-                            val strokeWidth = if (isTablet) 8f else 6f
-
-                            // Draw inactive wavy track (full width, white)
-                            val inactivePath = Path()
-                            var x = 0f
-                            inactivePath.moveTo(0f, centerY)
-
-                            while (x <= width) {
-                                val y = centerY + amplitude * sin((x / wavelength) * 2 * PI).toFloat()
-                                inactivePath.lineTo(x, y)
-                                x += 2f
-                            }
-
-                            drawPath(
-                                path = inactivePath,
-                                color = Color.White.copy(alpha = 0.3f),
-                                style = Stroke(
-                                    width = strokeWidth,
-                                    cap = StrokeCap.Round
-                                )
-                            )
-
-                            // Draw active wavy track (progress width, gradient)
-                            if (progress > 0f) {
-                                val activePath = Path()
-                                x = 0f
-                                val progressWidth = width * progress
-                                activePath.moveTo(0f, centerY)
-
-                                while (x <= progressWidth) {
-                                    val y = centerY + amplitude * sin((x / wavelength) * 2 * PI).toFloat()
-                                    activePath.lineTo(x, y)
-                                    x += 2f
-                                }
-
-                                // Draw with gradient effect (using multiple colors)
-                                drawPath(
-                                    path = activePath,
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(
-                                            lightPurple,
-                                            mediumpurple,
-                                            darkPurple
-                                        ),
-                                        startX = 0f,
-                                        endX = progressWidth
-                                    ),
-                                    style = Stroke(
-                                        width = strokeWidth + 2f,
-                                        cap = StrokeCap.Round
-                                    )
-                                )
-
-                                // Add glow effect
-                                drawPath(
-                                    path = activePath,
-                                    color = lightPurple.copy(alpha = 0.4f),
-                                    style = Stroke(
-                                        width = strokeWidth + 8f,
-                                        cap = StrokeCap.Round
-                                    )
-                                )
-                            }
-                        }
-
-                        // Interactive slider overlay (invisible but captures touch)
-                        Slider(
-                            value = if (duration > 0) currentPosition.toFloat() else 0f,
-                            onValueChange = { newPosition ->
-                                viewModel.seekTo(newPosition.toLong())
-                            },
-                            valueRange = 0f..duration.toFloat(),
-                            modifier = Modifier.fillMaxWidth().align(Alignment.Center),
-                            enabled = duration > 0 && !isLoading,
-                            colors = SliderDefaults.colors(
-                                thumbColor = Color.White.copy(alpha = 0.9f),
-                                activeTrackColor = Color.Transparent,
-                                inactiveTrackColor = Color.Transparent,
-                                activeTickColor = Color.Transparent,
-                                inactiveTickColor = Color.Transparent
-                            )
-                        )
-                    }
-                    
-                    // Time Display
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = viewModel.formatTime(currentPosition),
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = if (isTablet) 18.sp else 12.sp
-                        )
-                        Text(
-                            text = viewModel.formatTime(duration),
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = if (isTablet) 18.sp else 12.sp
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                // Media Control Buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = if (isTablet) 48.dp else 32.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Bounce animation for skip back button
-                    val skipBackScale = remember { Animatable(1f) }
-                    val coroutineScope = rememberCoroutineScope()
-
-                    // 10 seconds back
-                    IconButton(
-                        onClick = {
-                            viewModel.skipBackward()
-                            // Trigger bounce animation
-                            coroutineScope.launch {
-                                skipBackScale.animateTo(0.85f, animationSpec = tween(50))
-                                skipBackScale.animateTo(1.1f, animationSpec = tween(100))
-                                skipBackScale.animateTo(1f, animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessLow
-                                ))
-                            }
-                        },
-                        enabled = duration > 0 && !isLoading,
-                        modifier = Modifier
-                            .size(if (isTablet) 80.dp else 56.dp)
-                            .graphicsLayer {
-                                scaleX = skipBackScale.value
-                                scaleY = skipBackScale.value
-                            }
-                            .background(
-                                color = Color.White.copy(alpha = if (duration > 0 && !isLoading) 0.2f else 0.1f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.tensecbackward),
-                            contentDescription = "Skip 10 seconds back",
-                            tint = Color.White.copy(alpha = if (duration > 0 && !isLoading) 1f else 0.5f),
-                            modifier = Modifier.size(if (isTablet) 36.dp else 24.dp)
-                        )
-                    }
-
-                    // Pulse animation for play button when playing
-                    val playButtonScale by animateFloatAsState(
-                        targetValue = if (isPlaying && !isLoading) 1.08f else 1f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1000),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "play_pulse"
-                    )
-
-                    // Play/Pause Button
-                    IconButton(
-                        onClick = { viewModel.togglePlayPause() },
-                        enabled = duration > 0 && !isLoading,
-                        modifier = Modifier
-                            .size(if (isTablet) 100.dp else 72.dp)
-                            .graphicsLayer {
-                                scaleX = playButtonScale
-                                scaleY = playButtonScale
-                            }
-                            .background(
-                                color = if (duration > 0 && !isLoading) Color.White else Color.White.copy(alpha = 0.5f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        when {
-                            isLoading -> {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(if (isTablet) 48.dp else 32.dp),
-                                    color = audioPlayerAmber,
-                                    strokeWidth = if (isTablet) 4.dp else 3.dp
-                                )
-                            }
-                            isPlaying -> {
-                                // Custom pause icon using two vertical bars
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(if (isTablet) 8.dp else 6.dp)
-                                            .height(if (isTablet) 36.dp else 24.dp)
-                                            .background(audioPlayerAmber, RoundedCornerShape(if (isTablet) 3.dp else 2.dp))
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .width(if (isTablet) 8.dp else 6.dp)
-                                            .height(if (isTablet) 36.dp else 24.dp)
-                                            .background(audioPlayerAmber, RoundedCornerShape(if (isTablet) 3.dp else 2.dp))
-                                    )
-                                }
-                            }
-                            else -> {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = "Play",
-                                    tint = audioPlayerAmber,
-                                    modifier = Modifier.size(if (isTablet) 48.dp else 32.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // Bounce animation for skip forward button
-                    val skipForwardScale = remember { Animatable(1f) }
-
-                    // 10 seconds forward
-                    IconButton(
-                        onClick = {
-                            viewModel.skipForward()
-                            // Trigger bounce animation
-                            coroutineScope.launch {
-                                skipForwardScale.animateTo(0.85f, animationSpec = tween(50))
-                                skipForwardScale.animateTo(1.1f, animationSpec = tween(100))
-                                skipForwardScale.animateTo(1f, animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessLow
-                                ))
-                            }
-                        },
-                        enabled = duration > 0 && !isLoading,
-                        modifier = Modifier
-                            .size(if (isTablet) 80.dp else 56.dp)
-                            .graphicsLayer {
-                                scaleX = skipForwardScale.value
-                                scaleY = skipForwardScale.value
-                            }
-                            .background(
-                                color = Color.White.copy(alpha = if (duration > 0 && !isLoading) 0.2f else 0.1f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.tensecforward),
-                            contentDescription = "Skip 10 seconds forward",
-                            tint = Color.White.copy(alpha = if (duration > 0 && !isLoading) 1f else 0.5f),
-                            modifier = Modifier.size(if (isTablet) 36.dp else 24.dp)
-                        )
-                    }
-                }
-                }
+/** Wavy track with a vertical pill thumb; tap or drag to seek */
+@Composable
+private fun WavyProgress(
+    progress: Float,
+    enabled: Boolean,
+    activeColor: Color,
+    trackColor: Color,
+    thumbColor: Color,
+    onSeek: (Float) -> Unit
+) {
+    val k = LessonTheme.scale()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height((44 * k).dp)
+            .pointerInput(enabled) {
+                if (enabled) {
+                    detectTapGestures { offset -> onSeek((offset.x / size.width).coerceIn(0f, 1f)) }
                 }
             }
+            .pointerInput(enabled) {
+                if (enabled) {
+                    detectHorizontalDragGestures { change, _ ->
+                        onSeek((change.position.x / size.width).coerceIn(0f, 1f))
+                    }
+                }
+            }
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val centerY = size.height / 2f
+            val amplitude = 3.dp.toPx()
+            val wavelength = width / 8f
+            val strokeWidth = 6.dp.toPx()
+
+            fun wave(upTo: Float): Path {
+                val path = Path()
+                path.moveTo(0f, centerY)
+                var x = 0f
+                while (x <= upTo) {
+                    path.lineTo(x, centerY + amplitude * sin((x / wavelength) * 2 * PI).toFloat())
+                    x += 2f
+                }
+                return path
+            }
+
+            drawPath(wave(width), trackColor, style = Stroke(width = strokeWidth, cap = StrokeCap.Round))
+            val progressX = width * progress
+            if (progress > 0f) {
+                drawPath(wave(progressX), activeColor, style = Stroke(width = strokeWidth, cap = StrokeCap.Round))
+            }
+            val thumbW = 5.dp.toPx()
+            val thumbH = 34.dp.toPx()
+            drawRoundRect(
+                color = thumbColor,
+                topLeft = Offset(progressX - thumbW / 2f, centerY - thumbH / 2f),
+                size = Size(thumbW, thumbH),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(thumbW / 2f)
+            )
         }
     }
 }

@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -129,3 +133,105 @@ fun PictureButton(
 //fun PreviewPictureButton() {
 //    PictureButton(onClick = {}, buttonImage = R.drawable.flower, buttonText = "Flowers")
 //}
+
+
+/**
+ * Picture choice card for the picture MCQ lesson (PictureButton above is kept as-is for the
+ * onboarding quiz): white face with a thick light-gray border and a gray "lip" underneath (the
+ * raised-button look), the picture filling most of the card and the label under it. Pressing
+ * sinks the face onto the lip and tints it brand blue for a moment.
+ */
+@Composable
+fun PictureChoiceCard(
+    onClick: () -> Unit,
+    buttonImage: String,
+    buttonText: String,
+    size: Dp,
+    isTablet: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val coroutineScope = rememberCoroutineScope()
+    val lip = if (isTablet) 8.dp else 6.dp
+    val faceOffset by animateDpAsState(
+        targetValue = if (isPressed) lip else 0.dp,
+        animationSpec = spring(), label = ""
+    )
+    val radius = if (isTablet) 28.dp else 22.dp
+    val borderWidth = 4.dp
+    val faceColor = if (isPressed) Color(0xFFEAF0FF) else Color.White
+    val borderColor = if (isPressed) Color(0xFF7C93F8) else Color(0xFFE5E5E5)
+    val lipColor = if (isPressed) Color(0xFF526FF6) else Color(0xFFD9D9D9)
+    val labelColor = if (isPressed) Color(0xFF526FF6) else Color(0xFF33333A)
+    val alifbaFont = FontFamily(
+        Font(R.font.vag_round, FontWeight.Normal),
+        Font(R.font.vag_round_boldd, FontWeight.Bold)
+    )
+
+    Box(
+        modifier = modifier
+            .width(size)
+            .height(size + lip)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    coroutineScope.launch {
+                        delay(100)
+                        onClick()
+                    }
+                }
+            )
+    ) {
+        // Lip (the gray edge under the card)
+        Box(
+            modifier = Modifier
+                .offset(y = lip)
+                .size(size)
+                .clip(RoundedCornerShape(radius))
+                .background(lipColor)
+        )
+        // Face: border colour, then the face colour inset by the border width
+        Box(
+            modifier = Modifier
+                .offset(y = faceOffset)
+                .size(size)
+                .clip(RoundedCornerShape(radius))
+                .background(borderColor)
+                .padding(borderWidth)
+                .clip(RoundedCornerShape(radius - borderWidth))
+                .background(faceColor)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = if (buttonImage.startsWith("http")) {
+                        rememberImagePainter(buttonImage)
+                    } else {
+                        painterResource(id = buttonImage.toIntOrNull() ?: R.drawable.error)
+                    },
+                    contentDescription = buttonText,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(top = 14.dp, start = 12.dp, end = 12.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Fit
+                )
+                Text(
+                    text = buttonText,
+                    color = labelColor,
+                    fontFamily = alifbaFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = if (isTablet) 22.sp else 17.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp)
+                )
+            }
+        }
+    }
+}

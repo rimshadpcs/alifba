@@ -174,10 +174,12 @@ fun HomeScreenWithNavigation(
             currentDestination == BottomNavDestination.Home &&
             showBottomNav
         ) {
+            // Gift button in the top corner, over the map, clear of the path and the Moon
             Box(
                 modifier = Modifier
-                    .align(androidx.compose.ui.Alignment.TopCenter)
-                    .padding(top = 8.dp)
+                    .align(androidx.compose.ui.Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 8.dp, end = 16.dp)
             ) {
                 DiscountBanner(
                     expiryTimestamp = expiryTimestamp,

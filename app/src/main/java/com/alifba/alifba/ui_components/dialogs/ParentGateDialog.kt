@@ -1,53 +1,45 @@
 package com.alifba.alifba.ui_components.dialogs
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alifba.alifba.R
-import com.alifba.alifba.ui_components.theme.darkCandyGreen
-import com.alifba.alifba.ui_components.theme.lightNavyBlue
-import com.alifba.alifba.ui_components.theme.lightRed
-import com.alifba.alifba.ui_components.theme.navyBlue
-import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
+import com.alifba.alifba.ui_components.widgets.AnswerCard
+import com.alifba.alifba.ui_components.widgets.AnswerState
+import com.alifba.alifba.ui_components.widgets.LessonCircleButton
+import com.alifba.alifba.ui_components.widgets.LessonPrimaryButton
+import com.alifba.alifba.ui_components.widgets.LessonTheme
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 // A full-screen "prove you're a grown-up" gate shared by every screen that needs one
@@ -62,9 +54,8 @@ fun ParentGate(
     var question by remember { mutableStateOf(generateQuestion()) }
     var showError by remember { mutableStateOf(false) }
     var remainingSeconds by remember { mutableStateOf(10) }
-    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp > 600
+    val k = LessonTheme.scale()
+    val grey = Color(0xFF5A5F7A)
 
     LaunchedEffect(question) {
         remainingSeconds = 10
@@ -78,116 +69,105 @@ fun ParentGate(
         question = generateQuestion()
     }
 
-    // Add a white surface background
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .widthIn(max = 560.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Back button
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 12.dp)
             ) {
-                IconButton(onClick = onDismiss) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.goback),
-                        contentDescription = "Back",
-                        tint = navyBlue
-                    )
-                }
+                LessonCircleButton(
+                    iconRes = R.drawable.backarrow,
+                    contentDescription = "Back",
+                    onClick = onDismiss
+                )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Title
-            Text(
-                text = "Salaam, prove you are a grown up",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = if (isTablet) 32.sp else MaterialTheme.typography.headlineMedium.fontSize
-                ),
-                textAlign = TextAlign.Center,
-                color = Color(0xFF33333A),
-                fontFamily = alifbaFontBold
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Question
-            Text(
-                text = "Type these numbers:",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = if (isTablet) 20.sp else MaterialTheme.typography.bodyLarge.fontSize
-                ),
-                color = navyBlue,
-                fontFamily = alifbaFontBold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Time left: ${remainingSeconds}s",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = if (isTablet) 18.sp else MaterialTheme.typography.bodyMedium.fontSize
-                ),
-                color = lightRed,
-                fontFamily = alifbaFontBold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = question.words.joinToString(", "),
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = if (isTablet) 34.sp else 26.sp
-                ),
-                textAlign = TextAlign.Center,
-                color = darkCandyGreen,
-                fontFamily = alifbaFontBold,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Answer display - one dash per digit the child needs to type, in the order spoken
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = LessonTheme.margin),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                answer.padStart(question.digits.length, '_').forEach { char ->
-                    Text(
-                        text = if (char == '_') "_" else char.toString(),
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontSize = if (isTablet) 32.sp else MaterialTheme.typography.headlineMedium.fontSize
-                        ),
-                        color = if (char == '_') Color(0xFFCFCFCF) else navyBlue,
-                        fontFamily = alifbaFontBold
-                    )
-                }
-            }
-
-            if (showError) {
+                Spacer(modifier = Modifier.height(0.dp))
                 Text(
-                    text = "Incorrect answer. Try again!",
-                    color = lightRed,
-                    modifier = Modifier.padding(top = 8.dp),
-                    fontFamily = alifbaFontBold,
-                    fontSize = if (isTablet) 18.sp else 14.sp
+                    text = "Salaam! Prove you are a grown-up",
+                    style = LessonTheme.question().copy(fontSize = (28 * k).sp, textAlign = TextAlign.Center)
+                )
+                Text(
+                    text = "Type these numbers",
+                    style = LessonTheme.answer().copy(fontSize = (18 * k).sp, color = grey)
+                )
+
+                // The spoken digits
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(LessonTheme.sky, RoundedCornerShape(LessonTheme.radius))
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = question.words.joinToString(", "),
+                        style = LessonTheme.question().copy(fontSize = (30 * k).sp, textAlign = TextAlign.Center)
+                    )
+                }
+
+                // Countdown
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val timerColor = if (remainingSeconds <= 3) LessonTheme.wrongEdge else grey
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_stopwatch),
+                        contentDescription = null,
+                        tint = timerColor,
+                        modifier = Modifier.size((18 * k).dp)
+                    )
+                    Text(
+                        text = "${remainingSeconds}s left",
+                        style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = timerColor)
+                    )
+                }
+
+                // One box per digit, in the order spoken
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    repeat(question.digits.length) { index ->
+                        DigitBox(
+                            digit = answer.getOrNull(index)?.toString().orEmpty(),
+                            active = index == answer.length,
+                            error = showError
+                        )
+                    }
+                }
+
+                Text(
+                    text = if (showError) "Incorrect answer. Try again!" else "",
+                    style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.wrongEdge),
+                    modifier = Modifier.heightIn(min = (22 * k).dp)
                 )
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Number pad
             NumberPad(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = LessonTheme.margin, end = LessonTheme.margin, bottom = 12.dp),
                 onNumberClick = { num ->
                     if (answer.length < question.digits.length) {
                         answer += num
@@ -214,6 +194,25 @@ fun ParentGate(
     }
 }
 
+@Composable
+private fun DigitBox(digit: String, active: Boolean, error: Boolean) {
+    val k = LessonTheme.scale()
+    val shape = RoundedCornerShape(14.dp)
+    val border = when {
+        error -> LessonTheme.wrong
+        digit.isNotEmpty() || active -> LessonTheme.primary
+        else -> LessonTheme.line
+    }
+    Box(
+        modifier = Modifier
+            .size(width = (56 * k).dp, height = (66 * k).dp)
+            .background(if (error) LessonTheme.wrongTint else Color.White, shape)
+            .border(2.dp, border, shape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = digit, style = LessonTheme.question().copy(fontSize = (28 * k).sp))
+    }
+}
 
 private val parentGateNumberWords = listOf(
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"
@@ -236,191 +235,62 @@ private fun generateQuestion(): ParentGateQuestion {
 
 @Composable
 private fun NumberPad(
+    modifier: Modifier = Modifier,
     onNumberClick: (String) -> Unit,
     onDelete: () -> Unit,
     onSubmit: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    val k = LessonTheme.scale()
+    val keyHeight = (56 * k).dp
+
+    @Composable
+    fun RowScope.Key(digit: String) {
+        // The weight has to sit on the Row's direct child, so the card gets its own wrapper
+        Box(modifier = Modifier.weight(1f)) {
+            AnswerCard(
+                state = AnswerState.Normal,
+                modifier = Modifier.fillMaxWidth().height(keyHeight),
+                onClick = { onNumberClick(digit) }
+            ) { color ->
+                Text(text = digit, style = LessonTheme.question().copy(fontSize = (28 * k).sp, color = color))
+            }
+        }
+    }
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         (0..2).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                (1..3).forEach { col ->
-                    val number = row * 3 + col
-                    NumberButton(
-                        text = number.toString(),
-                        modifier = Modifier.weight(1f),
-                        mainColor = lightNavyBlue,
-                        shadowColor = navyBlue,
-                        onClick = { onNumberClick(number.toString()) }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                (1..3).forEach { col -> Key((row * 3 + col).toString()) }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.weight(1f)) {
+                AnswerCard(
+                    state = AnswerState.Normal,
+                    modifier = Modifier.fillMaxWidth().height(keyHeight),
+                    onClick = onDelete
+                ) { color ->
+                    Icon(
+                        painter = painterResource(id = R.drawable.backspace),
+                        contentDescription = "Delete",
+                        tint = color,
+                        modifier = Modifier.size((26 * k).dp)
                     )
                 }
             }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Zero button
-            NumberButton(
-                text = "0",
+            Key("0")
+            LessonPrimaryButton(
                 modifier = Modifier.weight(1f),
-                mainColor = lightNavyBlue,
-                shadowColor = navyBlue,
-                onClick = { onNumberClick("0") }
-            )
-
-            // Delete button
-            ActionButton(
-                modifier = Modifier.weight(1f),
-                mainColor = white,
-                shadowColor = lightRed,
-                onClick = onDelete
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.backspace),
-                    contentDescription = "Delete",
-                    tint = lightRed
-                )
-            }
-
-            // Submit button
-            ActionButton(
-                modifier = Modifier.weight(1f),
-                mainColor = white,
-                shadowColor = darkCandyGreen,
+                height = keyHeight - 1.dp,
                 onClick = onSubmit
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.check),
                     contentDescription = "Submit",
-                    tint = darkCandyGreen
-
+                    tint = Color.White,
+                    modifier = Modifier.size((26 * k).dp)
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun NumberButton(
-    text: String,
-    modifier: Modifier = Modifier,
-    mainColor: Color,
-    shadowColor: Color,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val coroutineScope = rememberCoroutineScope()
-
-    val offsetY by animateDpAsState(
-        targetValue = if (isPressed) 0.dp else 5.dp,
-        animationSpec = spring(),
-        label = "buttonOffset"
-    )
-
-    Box(
-        modifier = modifier
-            .height(64.dp)
-            .clip(RoundedCornerShape(16.dp)),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        // Shadow layer
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(shadowColor)
-        )
-
-        // Button face layer
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(bottom = offsetY)
-                .clip(RoundedCornerShape(16.dp))
-                .background(mainColor)
-                .clickable(
-                    onClick = {
-                        coroutineScope.launch {
-                            SoundEffectManager.playClickSound()
-                            delay(100)
-                            onClick()
-                        }
-                    },
-                    interactionSource = interactionSource,
-                    indication = null
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = text,
-                fontFamily = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold)),
-                color = Color.White,
-                fontSize = 24.sp
-
-            )
-        }
-    }
-}
-
-@Composable
-private fun ActionButton(
-    modifier: Modifier = Modifier,
-    mainColor: Color,
-    shadowColor: Color,
-    onClick: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val coroutineScope = rememberCoroutineScope()
-
-    val offsetY by animateDpAsState(
-        targetValue = if (isPressed) 0.dp else 5.dp,
-        animationSpec = spring(),
-        label = "actionButtonOffset"
-    )
-
-    Box(
-        modifier = modifier
-            .height(64.dp)
-            .clip(RoundedCornerShape(16.dp)),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        // Shadow layer
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(shadowColor)
-        )
-
-        // Button face layer
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(bottom = offsetY)
-                .clip(RoundedCornerShape(16.dp))
-                .background(mainColor)
-                .clickable(
-                    onClick = {
-                        coroutineScope.launch {
-                            SoundEffectManager.playClickSound()
-                            delay(100)
-                            onClick()
-                        }
-                    },
-                    interactionSource = interactionSource,
-                    indication = null
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            content()
         }
     }
 }

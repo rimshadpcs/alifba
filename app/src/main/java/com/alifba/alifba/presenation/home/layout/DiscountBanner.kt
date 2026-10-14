@@ -5,7 +5,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import com.alifba.alifba.ui_components.widgets.LessonTheme
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,11 +49,10 @@ fun DiscountBanner(
     }
 
     if (timeRemaining > 0) {
+        // "23h left", then "45m left" once it drops under an hour
         val totalSeconds = timeRemaining / 1000
-        val hours = (totalSeconds / 3600)
-        val minutes = (totalSeconds % 3600) / 60
-        val seconds = totalSeconds % 60
-        val countdownText = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+        val hours = totalSeconds / 3600
+        val countdownText = if (hours >= 1) "${hours}h left" else "${maxOf(1L, totalSeconds / 60)}m left"
 
         DiscountBannerContent(
             countdownText = countdownText,
@@ -55,103 +61,78 @@ fun DiscountBanner(
     }
 }
 
+/**
+ * Small gift in the home map's top corner: the discount on a red tag and the time left under it.
+ * It never covers the path or the Moon; tapping opens the grown-up check, then the offer.
+ */
 @Composable
 fun DiscountBannerContent(
     countdownText: String,
     onClick: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp >= 600
-    
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
+    val k = LessonTheme.scale()
+    val size = (56 * k).dp
+
+    val infiniteTransition = rememberInfiniteTransition(label = "giftWiggle")
+    val wiggle by infiniteTransition.animateFloat(
+        initialValue = -6f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(animation = tween(1200), repeatMode = RepeatMode.Reverse),
+        label = "wiggle"
     )
 
-    val infiniteTransition = rememberInfiniteTransition(label = "bannerPulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = if (isTablet) 32.dp else 16.dp, vertical = 8.dp)
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(Color(0xFF2C2C2C), Color(0xFF000000)) // Sleek black gradient
-                ),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
         ) {
-            // Same image as paywall
-            Image(
-                painter = painterResource(id = R.drawable.limitedoffer),
-                contentDescription = null,
+            SoundEffectManager.playClickSound()
+            onClick()
+        }
+    ) {
+        Box(modifier = Modifier.size(size)) {
+            Box(
                 modifier = Modifier
-                    .size(if (isTablet) 70.dp else 50.dp)
-                    .graphicsLayer {
-                        scaleX = pulseScale
-                        scaleY = pulseScale
-                    },
-                contentScale = ContentScale.Fit
-            )
-            
-            Spacer(modifier = Modifier.width(if (isTablet) 24.dp else 12.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Your 20% Gift is EXTENDED!",
-                    fontFamily = alifbaFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = if (isTablet) 18.sp else 14.sp,
-                    color = Color(0xFFf29c1f) // Matching gold/orange
-                )
-                Text(
-                    text = "Expires in $countdownText",
-                    fontFamily = alifbaFont,
-                    fontSize = if (isTablet) 15.sp else 12.sp,
-                    color = Color.White.copy(alpha = 0.9f)
+                    .matchParentSize()
+                    .shadow(6.dp, CircleShape)
+                    .background(Color.White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                // Same red present with a gold ribbon as the discount paywall
+                com.alifba.alifba.presenation.stories.GiftIllustration(
+                    modifier = Modifier
+                        .size((32 * k).dp)
+                        .rotate(wiggle)
                 )
             }
-            
             Text(
-                text = "CLAIM →",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) 16.sp else 13.sp,
-                color = Color.White
+                text = "20%",
+                style = LessonTheme.answer().copy(fontSize = (12 * k).sp, color = Color.White),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (10 * k).dp, y = (-6 * k).dp)
+                    .border(2.dp, Color.White, CircleShape)
+                    .background(Color(0xFFF2545B), CircleShape)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
             )
         }
+        Text(
+            text = countdownText,
+            style = LessonTheme.answer().copy(fontSize = (13 * k).sp),
+            modifier = Modifier
+                .offset(y = (-8 * k).dp)
+                .shadow(3.dp, CircleShape)
+                .background(Color.White, CircleShape)
+                .padding(horizontal = 8.dp, vertical = 3.dp)
+        )
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFF7F6EF)
+@Preview(showBackground = true, backgroundColor = 0xFF7CC77A)
 @Composable
 fun DiscountBannerMobilePreview() {
-    DiscountBannerContent(
-        countdownText = "23:59:59",
-        onClick = {}
-    )
-}
-
-@Preview(showBackground = true, widthDp = 800, backgroundColor = 0xFFF7F6EF)
-@Composable
-fun DiscountBannerTabletPreview() {
-    DiscountBannerContent(
-        countdownText = "23:59:59",
-        onClick = {}
-    )
+    Box(modifier = Modifier.padding(20.dp)) {
+        DiscountBannerContent(countdownText = "23h left", onClick = {})
+    }
 }

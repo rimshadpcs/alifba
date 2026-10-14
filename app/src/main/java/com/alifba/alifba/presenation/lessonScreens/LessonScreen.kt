@@ -70,7 +70,8 @@ import com.alifba.alifba.ui_components.theme.mediumRed
 import com.alifba.alifba.ui_components.theme.mediumpurple
 import com.alifba.alifba.ui_components.theme.navyBlue
 import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.StripedProgressIndicator
+import com.alifba.alifba.ui_components.widgets.LessonHeader
+import com.alifba.alifba.ui_components.widgets.LeaveLessonSheet
 import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import kotlinx.coroutines.delay
@@ -205,78 +206,19 @@ fun LessonContent(
             .background(Color.White)
     ) {
         Column {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = if (isTablet) 16.dp else 12.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back arrow button (show only if not on first segment)
-                if (currentSegmentIndex.value > 0) {
-                    IconButton(onClick = { 
-                        // Go back to previous segment
-                        if (currentSegmentIndex.value > 0) {
-                            viewModel.stopAudio()
-                            currentSegmentIndex.value--
-                        }
-                    }) {
-                        Card(
-                            modifier = Modifier.size(if (isTablet) 60.dp else 40.dp),
-                            shape = CircleShape,
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                width = 0.5.dp, 
-                                color = Color.Black.copy(alpha = 0.1f)
-                            )
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.backarrow),
-                                    contentDescription = "Previous Segment",
-                                    modifier = Modifier.size(if (isTablet) 30.dp else 20.dp)
-                                )
-                            }
-                        }
+            // Header: back (hidden, not removed, on step 1) · progress with moon · close
+            LessonHeader(
+                progress = progress,
+                showBack = currentSegmentIndex.value > 0,
+                onBack = {
+                    // Go back to previous segment
+                    if (currentSegmentIndex.value > 0) {
+                        viewModel.stopAudio()
+                        currentSegmentIndex.value--
                     }
-                }
-                
-                StripedProgressIndicator(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = if (isTablet) 16.dp else 12.dp),
-                    progress = progress,
-                    stripeColorSecondary = lightNavyBlue,
-                    backgroundColor = Color.LightGray,
-                    stripeColor = navyBlue
-                )
-                IconButton(onClick = { showCancelDialog.value = true }) {
-                    Card(
-                        modifier = Modifier.size(if (isTablet) 60.dp else 40.dp),
-                        shape = CircleShape,
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = 0.5.dp, 
-                            color = Color.Black.copy(alpha = 0.1f)
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.close),
-                                contentDescription = "Cancel Session",
-                                modifier = Modifier.size(if (isTablet) 30.dp else 20.dp)
-                            )
-                        }
-                    }
-                }
-            }
+                },
+                onClose = { showCancelDialog.value = true }
+            )
 
             // Force a fresh sub-composition whenever currentSegmentIndex changes
             key(currentSegmentIndex.value) {
@@ -601,18 +543,17 @@ fun LessonContent(
 
             // Cancel (Exit) dialog
             if (showCancelDialog.value) {
-                CustomCancelDialog(
-                    onConfirm = {
+                LeaveLessonSheet(
+                    onKeepLearning = {
                         SoundEffectManager.playClickSound()
+                        showCancelDialog.value = false
+                    },
+                    onLeave = {
                         showCancelDialog.value = false
                         navigateToChapterScreen()
                         navController.navigate("homeScreen") {
                             popUpTo("homeScreen") { inclusive = true }
                         }
-                    },
-                    onDismiss = {
-                        SoundEffectManager.playClickSound()
-                        showCancelDialog.value = false
                     }
                 )
             }
@@ -751,7 +692,7 @@ fun CustomCancelDialog(
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = alifbaFont,
-                    color = navyBlue,
+                    color = Color.Black,
                     textAlign = TextAlign.Center
                 )
                 

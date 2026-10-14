@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.MediaPlayer
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +42,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.presenation.chapters.ChaptersViewModel
+import com.alifba.alifba.ui_components.widgets.BadgeEarnedBackground
 import com.alifba.alifba.ui_components.widgets.DotLottieView
 import com.alifba.alifba.ui_components.theme.lightNavyBlue
 import com.alifba.alifba.ui_components.theme.navyBlue
@@ -123,66 +123,69 @@ private fun BadgeEarnedContent(
         showCelebration = false
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(white)
-            .padding(horizontal = horizontalPadding, vertical = verticalPadding)
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        BadgeEarnedBackground(isTablet = isTablet)
+
         Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
         ) {
-            val isPreview = LocalInspectionMode.current
-            if (showCelebration) {
-                if (isPreview) {
-                    Image(
-                        painter = painterResource(R.drawable.alifbaround),
-                        contentDescription = null,
-                        modifier = Modifier.size(lottieSize),
-                        contentScale = ContentScale.Fit
-                    )
-                } else {
-                    DotLottieView(
-                        name = "moon_excited_jump",
-                        repeatCount = 0,
-                        modifier = Modifier.size(lottieSize)
-                    )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val isPreview = LocalInspectionMode.current
+                if (showCelebration) {
+                    if (isPreview) {
+                        Image(
+                            painter = painterResource(R.drawable.alifbaround),
+                            contentDescription = null,
+                            modifier = Modifier.size(lottieSize),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        DotLottieView(
+                            name = "moon_excited_jump",
+                            repeatCount = 0,
+                            modifier = Modifier.size(lottieSize)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
                 }
 
-                Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
+                androidx.compose.material3.Text(
+                    text = "Mashallah, You have won badges",
+                    fontSize = if (isTablet) 36.sp else 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = titleFont,
+                    color = navyBlue,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(if (isTablet) 28.dp else 20.dp))
+
+                BadgeGrid(
+                    badges = badges,
+                    badgeSize = badgeSize,
+                    isTablet = isTablet
+                )
+
+                Spacer(modifier = Modifier.height(if (isTablet) 20.dp else 16.dp))
             }
 
-            androidx.compose.material3.Text(
-                text = "Mashallah, You have won badges",
-                fontSize = if (isTablet) 36.sp else 28.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = titleFont,
-                color = navyBlue,
-                textAlign = TextAlign.Center
+            CommonButton(
+                buttonText = "Complete",
+                mainColor = lightNavyBlue,
+                shadowColor = navyBlue,
+                textColor = white,
+                onClick = onComplete
             )
-
-            Spacer(modifier = Modifier.height(if (isTablet) 28.dp else 20.dp))
-
-            BadgeGrid(
-                badges = badges,
-                badgeSize = badgeSize,
-                isTablet = isTablet
-            )
-
-            Spacer(modifier = Modifier.height(if (isTablet) 20.dp else 16.dp))
         }
-
-        CommonButton(
-            buttonText = "Complete",
-            mainColor = lightNavyBlue,
-            shadowColor = navyBlue,
-            textColor = white,
-            onClick = onComplete
-        )
     }
 }
 

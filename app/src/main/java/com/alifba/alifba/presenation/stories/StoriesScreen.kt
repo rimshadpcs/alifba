@@ -1,82 +1,107 @@
 package com.alifba.alifba.presenation.stories
 
-import android.util.Log
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.alifba.alifba.ui_components.widgets.PullToRefreshLazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalConfiguration
-import com.alifba.alifba.R
-import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.theme.lightPurple
-import com.alifba.alifba.ui_components.theme.mediumpurple
-import com.alifba.alifba.ui_components.theme.darkPurple
-import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
-import com.alifba.alifba.data.models.Story
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import com.valentinilk.shimmer.shimmer
+import com.alifba.alifba.R
 import com.alifba.alifba.data.local.PlaybackProgressStore
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Icon
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.shape.CircleShape
-import kotlinx.coroutines.launch
+import com.alifba.alifba.data.models.Story
 import com.alifba.alifba.presenation.SubscriptionViewModel
-import kotlin.math.roundToInt
-import com.alifba.alifba.ui_components.theme.darkBlue
+import com.alifba.alifba.presenation.home.layout.settings.SettingsGroup
+import com.alifba.alifba.ui_components.widgets.AuthTheme
+import com.alifba.alifba.ui_components.widgets.LessonCircleButton
+import com.alifba.alifba.ui_components.widgets.LessonTheme
+import com.alifba.alifba.ui_components.widgets.PullToRefreshLazyColumn
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
+import kotlinx.coroutines.launch
 
-// Warm parchment replacing the old dark-purple starry-sky background image.
-private val storiesScreenCream = Color(0xFFFFF8ED)
+// Light blue-grey page, shared with Settings and Account.
+val StoriesPageBackground = Color(0xFFF6F8FD)
 
-// Cycled per section, in order, across the Stories screen (5 sections: Stories of prophets,
-// Life of Prophet Muhammad, Sahaba, Women and Mothers, Miracles). Not private — each section's
-// "View All" detail screen (AllStoriesScreen etc.) takes its matching tint as a parameter from
-// StoriesWithAudioPlayerScreen.kt, which reads this same list so there's one source of truth.
-val storySectionTints = listOf(
-    Color(0xFFDEF5FE),
-    Color(0xFFE5F5E7),
-    Color(0xFFFDEAF7),
-    Color(0xFFF4EDFE),
-    Color(0xFFFFF3DE)
-)
+/** m:ss, the way the player and the Continue listening card show time */
+fun storyTimeText(milliseconds: Long): String {
+    val total = (milliseconds / 1000L).coerceAtLeast(0L)
+    return "${total / 60}:${(total % 60).toString().padStart(2, '0')}"
+}
+
+private fun storyDedupKey(s: Story): String = when {
+    s.audio.isNotEmpty() -> "audio::${s.audio}"
+    s.documentId.isNotEmpty() -> "doc::${s.documentId}"
+    s.background.isNotEmpty() -> "bg::${s.background}"
+    else -> "name::${s.name}"
+}
+
+private fun uniqueStories(list: List<Story>): List<Story> = list.distinctBy { storyDedupKey(it) }
+
+/** Favourites are stored as "<category>:<documentId>"; this keeps the stories' own order. */
+private fun favoriteStoriesOf(allStories: List<Story>, favoriteKeys: Set<String>): List<Story> {
+    val normalized = favoriteKeys.map { key -> if (":" in key) key else "stories:$key" }.toSet()
+    return allStories.filter { story ->
+        (story.category.ifBlank { "stories" } + ":" + story.documentId) in normalized
+    }
+}
 
 @Composable
 fun StoriesScreen(
@@ -93,51 +118,36 @@ fun StoriesScreen(
     onMiraclesStoryClick: (Story) -> Unit = {},
     onMiraclesMoreClick: () -> Unit = {}
 ) {
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp > 600
-    
+    val k = LessonTheme.scale()
+    val isTablet = LessonTheme.isTablet()
+
     val favoriteIds by storiesViewModel.getFavoriteStories().collectAsState()
 
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-    
-    // Observe stories from ViewModel
     val stories by storiesViewModel.stories.collectAsState()
     val isLoading by storiesViewModel.isLoading.collectAsState()
     val error by storiesViewModel.error.collectAsState()
 
-    // Observe Prophet Muhammad stories from ViewModel
     val prophetMuhammadStories by storiesViewModel.prophetMuhammadStories.collectAsState()
     val isProphetMuhammadLoading by storiesViewModel.isProphetMuhammadLoading.collectAsState()
 
-    // Observe Sahaba stories from ViewModel
     val sahabaStories by storiesViewModel.sahabaStories.collectAsState()
     val isSahabaLoading by storiesViewModel.isSahabaLoading.collectAsState()
 
-    // Observe Women and Mothers stories from ViewModel
     val womenAndMothersStories by storiesViewModel.womenAndMothersStories.collectAsState()
     val isWomenAndMothersLoading by storiesViewModel.isWomenAndMothersLoading.collectAsState()
 
-    // Observe Miracles stories from ViewModel
     val miraclesStories by storiesViewModel.miraclesStories.collectAsState()
     val isMiraclesLoading by storiesViewModel.isMiraclesLoading.collectAsState()
-    
-    // Progress store for hero and per-card progress
-    val context = androidx.compose.ui.platform.LocalContext.current
+
+    // Progress store for the Continue listening card
+    val context = LocalContext.current
     val progressStore = remember { PlaybackProgressStore(context) }
-    
-    // Track refresh state for pull-to-refresh
+
     var isRefreshing by remember { mutableStateOf(false) }
-    
-    // Handle pull-to-refresh
     val handleRefresh = {
         isRefreshing = true
         storiesViewModel.forceRefreshAll()
     }
-    
-    // Reset refresh state when all loading states are false
     LaunchedEffect(isLoading, isProphetMuhammadLoading, isSahabaLoading, isWomenAndMothersLoading, isMiraclesLoading) {
         if (!isLoading && !isProphetMuhammadLoading && !isSahabaLoading && !isWomenAndMothersLoading && !isMiraclesLoading) {
             isRefreshing = false
@@ -145,22 +155,29 @@ fun StoriesScreen(
     }
 
     val listState = rememberLazyListState()
-
-    // Ensure we start at the top when entering this screen
-    LaunchedEffect(Unit) {
-        listState.scrollToItem(0)
-    }
-    // Also reset to top when data finishes loading to avoid mid-list starts
+    // Start at the top when entering, and again when data finishes loading (avoids mid-list starts)
+    LaunchedEffect(Unit) { listState.scrollToItem(0) }
     LaunchedEffect(isLoading, isProphetMuhammadLoading, isSahabaLoading, isWomenAndMothersLoading, isMiraclesLoading) {
         if (!isLoading && !isProphetMuhammadLoading && !isSahabaLoading && !isWomenAndMothersLoading && !isMiraclesLoading) {
             listState.scrollToItem(0)
         }
     }
 
+    val allStories = remember(stories, prophetMuhammadStories, sahabaStories, womenAndMothersStories, miraclesStories) {
+        buildList {
+            addAll(stories)
+            addAll(prophetMuhammadStories)
+            addAll(sahabaStories)
+            addAll(womenAndMothersStories)
+            addAll(miraclesStories)
+        }
+    }
+    val favoriteStories = remember(allStories, favoriteIds) { favoriteStoriesOf(allStories, favoriteIds) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(storiesScreenCream)
+            .background(StoriesPageBackground)
     ) {
         PullToRefreshLazyColumn(
             isRefreshing = isRefreshing,
@@ -171,242 +188,640 @@ fun StoriesScreen(
             state = listState,
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            // Hero Banner (resume/next)
             item {
-                val allStories = remember(stories, prophetMuhammadStories, sahabaStories, womenAndMothersStories, miraclesStories) {
-                    buildList {
-                        addAll(stories)
-                        addAll(prophetMuhammadStories)
-                        addAll(sahabaStories)
-                        addAll(womenAndMothersStories)
-                        addAll(miraclesStories)
-                    }
-                }
+                Text(
+                    text = "Stories",
+                    style = LessonTheme.question().copy(fontSize = (34 * k).sp, textAlign = TextAlign.Start),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 12.dp)
+                )
+            }
+
+            item {
                 HeroBanner(
                     stories = allStories,
                     onPlayClick = onStoryClick,
-                    progressStore = progressStore,
-                    isTablet = isTablet,
-                    alifbaFont = alifbaFont
+                    progressStore = progressStore
                 )
             }
 
-            // Favorites Section (shows if user has favorites)
-            item {
-                val allStories = remember(stories, prophetMuhammadStories, sahabaStories, womenAndMothersStories, miraclesStories) {
-                    buildList {
-                        addAll(stories)
-                        addAll(prophetMuhammadStories)
-                        addAll(sahabaStories)
-                        addAll(womenAndMothersStories)
-                        addAll(miraclesStories)
-                    }
-                }
-                if (favoriteIds.isNotEmpty()) {
-                    FavoritesSection(
-                        allStories = allStories,
-                        favoriteKeys = favoriteIds,
+            if (favoriteStories.isNotEmpty()) {
+                item {
+                    StorySection(
+                        title = "Your favourites",
+                        stories = favoriteStories.take(5),
+                        isLoading = false,
+                        loadingText = "",
+                        emptyText = "No favourites yet",
+                        keepDuplicates = true,
                         onStoryClick = onStoryClick,
                         onMoreClick = onFavoritesMoreClick,
-                        alifbaFont = alifbaFont,
-                        isTablet = isTablet,
-                        progressFractionFor = { story ->
-                            val p = progressStore.getProgress(story.documentId)
-                            if (p.duration > 0L) (p.position.toFloat() / p.duration.toFloat()).coerceIn(0f, 1f) else null
-                        }
+                        storiesViewModel = storiesViewModel
                     )
                 }
             }
 
-            // Title row with "Stories" and "View All >" — first of 5 sections, tint index 0.
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(storySectionTints[0])
-                        .padding(horizontal = if (isTablet) 32.dp else 24.dp, vertical = if (isTablet) 20.dp else 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Stories of prophets",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = if (isTablet) 32.sp else 24.sp,
-                        color = darkBlue
-                    )
-
-                    Text(
-                        text = "View All >",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Normal,
-                        fontSize = if (isTablet) 18.sp else 14.sp,
-                        color = darkBlue,
-                        modifier = Modifier.clickable {
-                            SoundEffectManager.playClickSound()
-                            onMoreClick()
-                        }
-                    )
-                }
+                StorySection(
+                    title = "Stories of the Prophets",
+                    stories = stories,
+                    isLoading = isLoading,
+                    loadingText = "Loading stories...",
+                    emptyText = "No stories found",
+                    error = error,
+                    onRetry = { storiesViewModel.forceRefreshStories() },
+                    onStoryClick = onStoryClick,
+                    onMoreClick = onMoreClick,
+                    storiesViewModel = storiesViewModel
+                )
             }
 
-            // Stories horizontal list (max 5) — same tint as the title row above so the two
-            // items (LazyColumn packs them with no gap) read as one contiguous section block.
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(storySectionTints[0])
-                ) {
-                when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Loading stories from Firebase...", fontFamily = alifbaFont, color = darkBlue)
-                        }
-                    }
-                    error != null -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Error: $error", fontFamily = alifbaFont, color = Color.Red)
-                                Text("Retry",
-                                    fontFamily = alifbaFont,
-                                    color = lightPurple,
-                                    modifier = Modifier.clickable { storiesViewModel.forceRefreshStories() }
-                                )
-                            }
-                        }
-                    }
-                    stories.isEmpty() && !isLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("No stories found", fontFamily = alifbaFont, color = darkBlue)
-                                Text("Retry",
-                                    fontFamily = alifbaFont,
-                                    color = lightPurple,
-                                    modifier = Modifier.clickable { storiesViewModel.forceRefreshStories() }
-                                )
-                            }
-                        }
-                    }
-                    else -> {
-                        val displayedStories = stories.take(5)
-                        val itemWidth = if (isTablet) 260.dp else 180.dp
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = if (isTablet) 24.dp else 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
-                        ) {
-                            items(displayedStories.size) { idx ->
-                                val s = displayedStories[idx]
-                                val isFav by storiesViewModel
-                                    .isFavorite(s.documentId, s.category.ifBlank { "stories" })
-                                    .collectAsState()
-                                val progress = remember(s.documentId) {
-                                    val p = progressStore.getProgress(s.documentId)
-                                    if (p.duration > 0L) (p.position.toFloat() / p.duration.toFloat()).coerceIn(0f, 1f) else 0f
-                                }
-                                Box(modifier = Modifier.width(itemWidth)) {
-                                    StoryCard(
-                                        story = s,
-                                        onClick = {
-                                            SoundEffectManager.playClickSound()
-                                            onStoryClick(s)
-                                        },
-                                        alifbaFont = alifbaFont,
-                                        isTablet = isTablet,
-                                        progressFraction = progress.takeIf { it > 0f && it < 1f },
-                                        isFavorite = isFav,
-                                        onFavoriteClick = {
-                                            storiesViewModel.toggleFavorite(
-                                                s.documentId,
-                                                s.category.ifBlank { "stories" }
-                                            )
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                }
-            }
-
-            // Prophet Muhammad Stories Section
-            item {
-                ProphetMuhammadStoriesSection(
+                StorySection(
+                    title = "Life of Prophet Muhammad ﷺ",
                     stories = prophetMuhammadStories,
                     isLoading = isProphetMuhammadLoading,
+                    loadingText = "Loading...",
+                    emptyText = "No stories available",
                     onStoryClick = onProphetMuhammadStoryClick,
                     onMoreClick = onProphetMuhammadMoreClick,
-                    alifbaFont = alifbaFont,
-                    isTablet = isTablet,
-                    progressFractionFor = { story ->
-                        val p = progressStore.getProgress(story.documentId)
-                        if (p.duration > 0L) (p.position.toFloat() / p.duration.toFloat()).coerceIn(0f, 1f) else null
-                    }
+                    storiesViewModel = storiesViewModel
                 )
             }
-            
-            // Sahaba Stories Section (Below Prophet Muhammad stories)
+
             item {
-                SahabaStoriesSection(
+                StorySection(
+                    title = "Sahaba Stories",
                     stories = sahabaStories,
                     isLoading = isSahabaLoading,
+                    loadingText = "Loading Sahaba stories...",
+                    emptyText = "No Sahaba stories found",
                     onStoryClick = onSahabaStoryClick,
                     onMoreClick = onSahabaMoreClick,
-                    alifbaFont = alifbaFont,
-                    isTablet = isTablet,
-                    progressFractionFor = { story ->
-                        val p = progressStore.getProgress(story.documentId)
-                        if (p.duration > 0L) (p.position.toFloat() / p.duration.toFloat()).coerceIn(0f, 1f) else null
-                    }
+                    storiesViewModel = storiesViewModel
                 )
             }
 
-            // Women and Mothers Stories Section
             item {
-                WomenAndMothersStoriesSection(
+                StorySection(
+                    title = "Women and Mothers of Islam",
                     stories = womenAndMothersStories,
                     isLoading = isWomenAndMothersLoading,
+                    loadingText = "Loading...",
+                    emptyText = "No stories available",
                     onStoryClick = onWomenAndMothersStoryClick,
                     onMoreClick = onWomenAndMothersMoreClick,
-                    alifbaFont = alifbaFont,
-                    isTablet = isTablet,
-                    progressFractionFor = { story ->
-                        val p = progressStore.getProgress(story.documentId)
-                        if (p.duration > 0L) (p.position.toFloat() / p.duration.toFloat()).coerceIn(0f, 1f) else null
-                    }
+                    storiesViewModel = storiesViewModel
                 )
             }
 
-            // Miracles Stories Section
             item {
-                MiraclesStoriesSection(
+                StorySection(
+                    title = "Miracles in Quran",
                     stories = miraclesStories,
                     isLoading = isMiraclesLoading,
+                    loadingText = "Loading...",
+                    emptyText = "No stories available",
                     onStoryClick = onMiraclesStoryClick,
                     onMoreClick = onMiraclesMoreClick,
-                    alifbaFont = alifbaFont,
-                    isTablet = isTablet,
-                    progressFractionFor = { story ->
-                        val p = progressStore.getProgress(story.documentId)
-                        if (p.duration > 0L) (p.position.toFloat() / p.duration.toFloat()).coerceIn(0f, 1f) else null
-                    }
+                    storiesViewModel = storiesViewModel
                 )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Section: title + "See all" + a row of cards
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+fun StorySection(
+    title: String,
+    stories: List<Story>,
+    isLoading: Boolean,
+    loadingText: String,
+    emptyText: String,
+    onStoryClick: (Story) -> Unit,
+    onMoreClick: () -> Unit,
+    storiesViewModel: StoriesViewModel,
+    keepDuplicates: Boolean = false,
+    error: String? = null,
+    onRetry: () -> Unit = {}
+) {
+    val k = LessonTheme.scale()
+    val isTablet = LessonTheme.isTablet()
+    val subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
+    val isPremium by subscriptionViewModel.isPremium.collectAsState()
+
+    Column(modifier = Modifier.padding(top = 28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = LessonTheme.question().copy(fontSize = (24 * k).sp, textAlign = TextAlign.Start),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Row(
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        SoundEffectManager.playClickSound()
+                        onMoreClick()
+                    },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "See all",
+                    style = LessonTheme.answer().copy(fontSize = (18 * k).sp, color = LessonTheme.primaryEdge)
+                )
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = LessonTheme.primaryEdge,
+                    modifier = Modifier.size((22 * k).dp)
+                )
+            }
+        }
+
+        when {
+            isLoading -> StoryStateText(loadingText)
+            error != null && stories.isEmpty() -> Column(
+                modifier = Modifier.fillMaxWidth().height(200.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Couldn't load stories.",
+                    style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.wrongText)
+                )
+                Text(
+                    text = "Try again",
+                    style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.primaryEdge),
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .clickable { onRetry() }
+                )
+            }
+            stories.isEmpty() -> StoryStateText(emptyText)
+            else -> {
+                val shown = (if (keepDuplicates) stories else uniqueStories(stories)).take(5)
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(shown, key = { it.category + "|" + it.documentId }) { story ->
+                        val isFav by storiesViewModel
+                            .isFavorite(story.documentId, story.category.ifBlank { "stories" })
+                            .collectAsState()
+                        StoryCard(
+                            story = story,
+                            modifier = Modifier.width(if (isTablet) 200.dp else 144.dp),
+                            showFreeBadge = !isPremium,
+                            isFavorite = isFav,
+                            onFavoriteClick = {
+                                storiesViewModel.toggleFavorite(story.documentId, story.category.ifBlank { "stories" })
+                            },
+                            onClick = {
+                                SoundEffectManager.playClickSound()
+                                onStoryClick(story)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoryStateText(text: String) {
+    val k = LessonTheme.scale()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = AuthTheme.secondaryText)
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Story card: square cover on a raised edge, title underneath
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+fun StoryCard(
+    story: Story,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showFreeBadge: Boolean = false,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {}
+) {
+    val k = LessonTheme.scale()
+    val shape = RoundedCornerShape(20.dp)
+    val edge = LessonTheme.answerEdge
+    val imageUrl = remember(story.thumbnail, story.background) {
+        story.thumbnail.ifBlank { story.background }
+    }
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().padding(bottom = edge)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .offset(y = edge)
+                    .background(LessonTheme.lineEdge, shape)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(shape)
+                    .background(LessonTheme.track)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onClick
+                    )
+            ) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = story.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                if (story.isLocked) {
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+                    Box(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .align(Alignment.TopStart)
+                            .size((32 * k).dp)
+                            .background(LessonTheme.ink.copy(alpha = 0.55f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.padlock),
+                            contentDescription = "Locked",
+                            modifier = Modifier.size((16 * k).dp),
+                            colorFilter = ColorFilter.tint(Color.White)
+                        )
+                    }
+                }
+
+                // FREE pill (bottom-right) — hidden for premium users
+                if (showFreeBadge && story.status == "free") {
+                    Text(
+                        text = "FREE",
+                        style = LessonTheme.answer().copy(
+                            fontSize = (12 * k).sp,
+                            color = Color.White,
+                            letterSpacing = 0.5.sp
+                        ),
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .align(Alignment.BottomEnd)
+                            .background(LessonTheme.correct, CircleShape)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            StoryHeart(
+                isFavorite = isFavorite,
+                onClick = onFavoriteClick,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+            )
+        }
+
+        Text(
+            text = story.name,
+            style = LessonTheme.answer().copy(fontSize = (18 * k).sp, textAlign = TextAlign.Start),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 2.dp)
+        )
+    }
+}
+
+/** Small white disc that sinks onto its edge when pressed, with a little bounce on toggle */
+@Composable
+private fun StoryHeart(isFavorite: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val k = LessonTheme.scale()
+    val scale = remember { Animatable(1f) }
+    val scope = rememberCoroutineScope()
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val lift by animateDpAsState(if (pressed) 0.dp else 3.dp, label = "heartLift")
+
+    Box(
+        modifier = modifier
+            .size((34 * k).dp)
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            }
+    ) {
+        Box(modifier = Modifier.matchParentSize().background(LessonTheme.lineEdge, CircleShape))
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(bottom = lift)
+                .background(Color.White, CircleShape)
+                .clickable(interactionSource = interaction, indication = null) {
+                    scope.launch {
+                        scale.animateTo(0.8f, animationSpec = tween(80))
+                        scale.animateTo(1.2f, animationSpec = tween(100))
+                        scale.animateTo(
+                            1f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        )
+                    }
+                    onClick()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = if (isFavorite) "Remove from favourites" else "Add to favourites",
+                tint = if (isFavorite) LessonTheme.wrong else Color(0xFFA3A9BC),
+                modifier = Modifier.size((18 * k).dp)
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Continue listening / Up next card
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+private fun HeroBanner(
+    stories: List<Story>,
+    onPlayClick: (Story) -> Unit,
+    progressStore: PlaybackProgressStore
+) {
+    if (stories.isEmpty()) return
+    val k = LessonTheme.scale()
+
+    val lastPlayedId = remember(stories) { progressStore.getLastPlayed() }
+    val lastPlayed = remember(lastPlayedId, stories) { stories.find { it.documentId == lastPlayedId } }
+    val lastProgress = remember(lastPlayedId) { lastPlayedId?.let { progressStore.getProgress(it) } }
+    val showResume = lastPlayed != null && lastProgress != null && lastProgress.duration > 0 &&
+        lastProgress.position < (lastProgress.duration * 0.98f)
+    val target = when {
+        showResume -> lastPlayed
+        else -> stories.firstOrNull { !progressStore.getProgress(it.documentId).completed } ?: stories.first()
+    } ?: return
+
+    val progress = remember(target.documentId) { progressStore.getProgress(target.documentId) }
+    val fraction = if (progress.duration > 0L) (progress.position.toFloat() / progress.duration.toFloat()).coerceIn(0f, 1f) else 0f
+    val inProgress = fraction > 0f && fraction < 1f
+
+    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+        SettingsGroup {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        SoundEffectManager.playClickSound()
+                        onPlayClick(target)
+                    }
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                AsyncImage(
+                    model = target.thumbnail.ifBlank { target.background },
+                    contentDescription = target.name,
+                    modifier = Modifier
+                        .size((88 * k).dp)
+                        .clip(RoundedCornerShape(18.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = (if (showResume) "Continue listening" else "Up next").uppercase(),
+                        style = LessonTheme.answer().copy(
+                            fontSize = (13 * k).sp,
+                            letterSpacing = 1.2.sp,
+                            color = AuthTheme.secondaryText,
+                            textAlign = TextAlign.Start
+                        )
+                    )
+                    Text(
+                        text = target.name,
+                        style = LessonTheme.answer().copy(
+                            fontSize = (21 * k).sp,
+                            textAlign = TextAlign.Start,
+                            lineHeight = 1.2.em
+                        ),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (inProgress) {
+                        Row(
+                            modifier = Modifier.padding(top = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(7.dp)
+                                    .clip(CircleShape)
+                                    .background(LessonTheme.track)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction.coerceAtLeast(0.04f))
+                                        .height(7.dp)
+                                        .background(LessonTheme.primary, CircleShape)
+                                )
+                            }
+                            Text(
+                                text = "${storyTimeText(progress.duration - progress.position)} left",
+                                style = LessonTheme.answer().copy(
+                                    fontSize = (15 * k).sp,
+                                    color = AuthTheme.secondaryText
+                                )
+                            )
+                        }
+                    } else if (target.durationSeconds > 0) {
+                        Text(
+                            text = storyTimeText(target.durationSeconds * 1000L),
+                            style = LessonTheme.answer().copy(
+                                fontSize = (15 * k).sp,
+                                color = AuthTheme.secondaryText,
+                                textAlign = TextAlign.Start
+                            ),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+
+                // Raised round play button
+                Box(modifier = Modifier.padding(bottom = 4.dp).size((54 * k).dp)) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .offset(y = 4.dp)
+                            .background(LessonTheme.primaryEdge, CircleShape)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(LessonTheme.primary, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "Play",
+                            tint = Color.White,
+                            modifier = Modifier.size((30 * k).dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// See all
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+private fun StoryGridScreen(
+    title: String,
+    stories: List<Story>,
+    isLoading: Boolean,
+    emptyText: String,
+    error: String?,
+    keepDuplicates: Boolean,
+    onStoryClick: (Story) -> Unit,
+    onBackClick: () -> Unit,
+    onRetry: () -> Unit,
+    storiesViewModel: StoriesViewModel
+) {
+    val k = LessonTheme.scale()
+    val subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
+    val isPremium by subscriptionViewModel.isPremium.collectAsState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(StoriesPageBackground)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Round back button, then the title
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                LessonCircleButton(
+                    iconRes = R.drawable.backarrow,
+                    contentDescription = "Back",
+                    onClick = onBackClick
+                )
+                Text(
+                    text = title,
+                    style = LessonTheme.question().copy(fontSize = (26 * k).sp, textAlign = TextAlign.Start),
+                    maxLines = 2,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            when {
+                isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "Loading stories...",
+                        style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = AuthTheme.secondaryText)
+                    )
+                }
+                error != null && stories.isEmpty() -> Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Couldn't load stories.",
+                        style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.wrongText)
+                    )
+                    Text(
+                        text = "Try again",
+                        style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.primaryEdge),
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .clickable { onRetry() }
+                    )
+                }
+                stories.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = emptyText,
+                        style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = AuthTheme.secondaryText)
+                    )
+                }
+                else -> {
+                    val shown = if (keepDuplicates) stories else uniqueStories(stories)
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 40.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(shown, key = { it.category + "|" + it.documentId }) { story ->
+                            val isFav by storiesViewModel
+                                .isFavorite(story.documentId, story.category.ifBlank { "stories" })
+                                .collectAsState()
+                            StoryCard(
+                                story = story,
+                                showFreeBadge = !isPremium,
+                                isFavorite = isFav,
+                                onFavoriteClick = {
+                                    storiesViewModel.toggleFavorite(story.documentId, story.category.ifBlank { "stories" })
+                                },
+                                onClick = {
+                                    SoundEffectManager.playClickSound()
+                                    onStoryClick(story)
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -416,1743 +831,119 @@ fun StoriesScreen(
 fun AllStoriesScreen(
     storiesViewModel: StoriesViewModel = hiltViewModel(),
     onStoryClick: (Story) -> Unit = {},
-    onBackClick: () -> Unit = {},
-    backgroundTint: Color = storySectionTints[0]
+    onBackClick: () -> Unit = {}
 ) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-
-    // Observe stories from ViewModel
     val stories by storiesViewModel.stories.collectAsState()
     val isLoading by storiesViewModel.isLoading.collectAsState()
     val error by storiesViewModel.error.collectAsState()
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundTint)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 24.dp)
-        ) {
-            // Header with back button and title
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back button
-                Image(
-                    painter = painterResource(id = R.drawable.back),
-                    contentDescription = "Back",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable {
-                            SoundEffectManager.playClickSound()
-                            onBackClick()
-                        },
-                    colorFilter = ColorFilter.tint(darkBlue)
-                )
-
-                // Centered title
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Stories of prophets",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = darkBlue
-                    )
-                }
-            }
-
-            // Stories grid
-            when {
-                isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Loading stories from Firebase...", fontFamily = alifbaFont, color = darkBlue)
-                    }
-                }
-                error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Error: $error", fontFamily = alifbaFont, color = Color.Red)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshStories() }
-                            )
-                        }
-                    }
-                }
-                stories.isEmpty() && !isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No stories found", fontFamily = alifbaFont, color = darkBlue)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshStories() }
-                            )
-                        }
-                    }
-                }
-                else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(stories.size) { index ->
-                            val story = stories[index]
-                            val isFav by storiesViewModel
-                                .isFavorite(story.documentId, story.category.ifBlank { "stories" })
-                                .collectAsState()
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesViewModel.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "stories" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    StoryGridScreen(
+        title = "Stories of the Prophets",
+        stories = stories,
+        isLoading = isLoading,
+        emptyText = "No stories found",
+        error = error,
+        keepDuplicates = false,
+        onStoryClick = onStoryClick,
+        onBackClick = onBackClick,
+        onRetry = { storiesViewModel.forceRefreshStories() },
+        storiesViewModel = storiesViewModel
+    )
 }
 
 @Composable
 fun AllProphetMuhammadStoriesScreen(
     storiesViewModel: StoriesViewModel = hiltViewModel(),
     onStoryClick: (Story) -> Unit = {},
-    onBackClick: () -> Unit = {},
-    backgroundTint: Color = storySectionTints[1]
+    onBackClick: () -> Unit = {}
 ) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-
-    // Observe Prophet Muhammad stories from ViewModel
     val stories by storiesViewModel.prophetMuhammadStories.collectAsState()
     val isLoading by storiesViewModel.isProphetMuhammadLoading.collectAsState()
-    val error by storiesViewModel.error.collectAsState()
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundTint)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 24.dp)
-        ) {
-            // Header with back button and title
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back button
-                Image(
-                    painter = painterResource(id = R.drawable.back),
-                    contentDescription = "Back",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable {
-                            SoundEffectManager.playClickSound()
-                            onBackClick()
-                        },
-                    colorFilter = ColorFilter.tint(darkBlue)
-                )
-
-                // Centered title
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Life of Prophet Muhammad",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = darkBlue
-                    )
-                }
-            }
-
-            // Stories grid
-            when {
-                isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Loading Prophet Muhammad stories...", fontFamily = alifbaFont, color = darkBlue)
-                    }
-                }
-                error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Error: $error", fontFamily = alifbaFont, color = Color.Red)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshProphetMuhammadStories() }
-                            )
-                        }
-                    }
-                }
-                stories.isEmpty() && !isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No Prophet Muhammad stories found", fontFamily = alifbaFont, color = darkBlue)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshProphetMuhammadStories() }
-                            )
-                        }
-                    }
-                }
-                else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(stories.size) { index ->
-                            val story = stories[index]
-                            val isFav by storiesViewModel
-                                .isFavorite(story.documentId, story.category.ifBlank { "stories" })
-                                .collectAsState()
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesViewModel.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "stories" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    StoryGridScreen(
+        title = "Life of Prophet Muhammad ﷺ",
+        stories = stories,
+        isLoading = isLoading,
+        emptyText = "No stories available",
+        error = null,
+        keepDuplicates = false,
+        onStoryClick = onStoryClick,
+        onBackClick = onBackClick,
+        onRetry = { storiesViewModel.forceRefreshProphetMuhammadStories() },
+        storiesViewModel = storiesViewModel
+    )
 }
 
 @Composable
 fun AllSahabaStoriesScreen(
     storiesViewModel: StoriesViewModel = hiltViewModel(),
     onStoryClick: (Story) -> Unit = {},
-    onBackClick: () -> Unit = {},
-    backgroundTint: Color = storySectionTints[2]
+    onBackClick: () -> Unit = {}
 ) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-
-    // Observe Sahaba stories from ViewModel
     val stories by storiesViewModel.sahabaStories.collectAsState()
     val isLoading by storiesViewModel.isSahabaLoading.collectAsState()
-    val error by storiesViewModel.error.collectAsState()
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundTint)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 24.dp)
-        ) {
-            // Header with back button and title
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back button
-                Image(
-                    painter = painterResource(id = R.drawable.back),
-                    contentDescription = "Back",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable {
-                            SoundEffectManager.playClickSound()
-                            onBackClick()
-                        },
-                    colorFilter = ColorFilter.tint(darkBlue)
-                )
-
-                // Centered title
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Sahaba Stories",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = darkBlue
-                    )
-                }
-            }
-
-            // Stories grid
-            when {
-                isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Loading Sahaba stories...", fontFamily = alifbaFont, color = darkBlue)
-                    }
-                }
-                error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Error: $error", fontFamily = alifbaFont, color = Color.Red)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshSahabaStories() }
-                            )
-                        }
-                    }
-                }
-                stories.isEmpty() && !isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No Sahaba stories found", fontFamily = alifbaFont, color = darkBlue)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshSahabaStories() }
-                            )
-                        }
-                    }
-                }
-                else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(stories.size) { index ->
-                            val story = stories[index]
-                            val isFav by storiesViewModel
-                                .isFavorite(story.documentId, story.category.ifBlank { "stories" })
-                                .collectAsState()
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesViewModel.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "stories" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    StoryGridScreen(
+        title = "Sahaba Stories",
+        stories = stories,
+        isLoading = isLoading,
+        emptyText = "No Sahaba stories found",
+        error = null,
+        keepDuplicates = false,
+        onStoryClick = onStoryClick,
+        onBackClick = onBackClick,
+        onRetry = { storiesViewModel.forceRefreshSahabaStories() },
+        storiesViewModel = storiesViewModel
+    )
 }
 
 @Composable
 fun AllWomenAndMothersStoriesScreen(
     storiesViewModel: StoriesViewModel = hiltViewModel(),
     onStoryClick: (Story) -> Unit = {},
-    onBackClick: () -> Unit = {},
-    backgroundTint: Color = storySectionTints[3]
+    onBackClick: () -> Unit = {}
 ) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-
-    // Observe Women and Mothers stories from ViewModel
     val stories by storiesViewModel.womenAndMothersStories.collectAsState()
     val isLoading by storiesViewModel.isWomenAndMothersLoading.collectAsState()
-    val error by storiesViewModel.error.collectAsState()
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundTint)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 24.dp)
-        ) {
-            // Header with back button and title
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back button
-                Image(
-                    painter = painterResource(id = R.drawable.back),
-                    contentDescription = "Back",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable {
-                            SoundEffectManager.playClickSound()
-                            onBackClick()
-                        },
-                    colorFilter = ColorFilter.tint(darkBlue)
-                )
-
-                // Centered title
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Women and Mothers of Islam",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = darkBlue
-                    )
-                }
-            }
-
-            // Stories grid
-            when {
-                isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Loading Women and Mothers of Islam stories...", fontFamily = alifbaFont, color = darkBlue)
-                    }
-                }
-                error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Error: $error", fontFamily = alifbaFont, color = Color.Red)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshWomenAndMothersStories() }
-                            )
-                        }
-                    }
-                }
-                stories.isEmpty() && !isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No Women and Mothers of Islam stories found", fontFamily = alifbaFont, color = darkBlue)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshWomenAndMothersStories() }
-                            )
-                        }
-                    }
-                }
-                else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(stories.size) { index ->
-                            val story = stories[index]
-                            val isFav by storiesViewModel
-                                .isFavorite(story.documentId, story.category.ifBlank { "stories" })
-                                .collectAsState()
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesViewModel.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "stories" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    StoryGridScreen(
+        title = "Women and Mothers of Islam",
+        stories = stories,
+        isLoading = isLoading,
+        emptyText = "No stories available",
+        error = null,
+        keepDuplicates = false,
+        onStoryClick = onStoryClick,
+        onBackClick = onBackClick,
+        onRetry = { storiesViewModel.forceRefreshWomenAndMothersStories() },
+        storiesViewModel = storiesViewModel
+    )
 }
 
 @Composable
 fun AllMiraclesStoriesScreen(
     storiesViewModel: StoriesViewModel = hiltViewModel(),
     onStoryClick: (Story) -> Unit = {},
-    onBackClick: () -> Unit = {},
-    backgroundTint: Color = storySectionTints[4]
+    onBackClick: () -> Unit = {}
 ) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-
-    // Observe Miracles stories from ViewModel
     val stories by storiesViewModel.miraclesStories.collectAsState()
     val isLoading by storiesViewModel.isMiraclesLoading.collectAsState()
-    val error by storiesViewModel.error.collectAsState()
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundTint)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 24.dp)
-        ) {
-            // Header with back button and title
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back button
-                Image(
-                    painter = painterResource(id = R.drawable.back),
-                    contentDescription = "Back",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable {
-                            SoundEffectManager.playClickSound()
-                            onBackClick()
-                        },
-                    colorFilter = ColorFilter.tint(darkBlue)
-                )
-
-                // Centered title
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Miracles in Quran",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = darkBlue
-                    )
-                }
-            }
-
-            // Stories grid
-            when {
-                isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Loading Miracles in Quran stories...", fontFamily = alifbaFont, color = darkBlue)
-                    }
-                }
-                error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Error: $error", fontFamily = alifbaFont, color = Color.Red)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshMiraclesStories() }
-                            )
-                        }
-                    }
-                }
-                stories.isEmpty() && !isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No Miracles in Quran stories found", fontFamily = alifbaFont, color = darkBlue)
-                            Text("Retry",
-                                fontFamily = alifbaFont,
-                                color = lightPurple,
-                                modifier = Modifier.clickable { storiesViewModel.forceRefreshMiraclesStories() }
-                            )
-                        }
-                    }
-                }
-                else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(stories.size) { index ->
-                            val story = stories[index]
-                            val isFav by storiesViewModel
-                                .isFavorite(story.documentId, story.category.ifBlank { "stories" })
-                                .collectAsState()
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesViewModel.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "stories" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CarouselStoryCard(
-    story: Story,
-    onClick: () -> Unit,
-    alifbaFont: FontFamily,
-    isCenter: Boolean = false,
-    isTablet: Boolean = false
-) {
-    var imageState by remember { mutableStateOf<AsyncImagePainter.State?>(null) }
-    val imageUrl = remember(story.thumbnail, story.background) {
-        story.thumbnail.ifBlank { story.background }
-    }
-    
-    // Animate card size transitions for smooth scaling
-    val animatedCardWidth by animateDpAsState(
-        targetValue = if (isTablet) {
-            if (isCenter) 400.dp else 280.dp
-        } else {
-            if (isCenter) 280.dp else 200.dp
-        },
-        animationSpec = tween(durationMillis = 300),
-        label = "cardWidth"
+    StoryGridScreen(
+        title = "Miracles in Quran",
+        stories = stories,
+        isLoading = isLoading,
+        emptyText = "No stories available",
+        error = null,
+        keepDuplicates = false,
+        onStoryClick = onStoryClick,
+        onBackClick = onBackClick,
+        onRetry = { storiesViewModel.forceRefreshMiraclesStories() },
+        storiesViewModel = storiesViewModel
     )
-    val animatedCardHeight by animateDpAsState(
-        targetValue = if (isTablet) {
-            if (isCenter) 260.dp else 200.dp
-        } else {
-            if (isCenter) 180.dp else 140.dp
-        },
-        animationSpec = tween(durationMillis = 300),
-        label = "cardHeight"
-    )
-    
-    Box(
-        modifier = Modifier
-            .width(animatedCardWidth)
-            .height(animatedCardHeight)
-            .padding(horizontal = 4.dp) // Reduced padding for tighter spacing
-            .clickable { onClick() }
-    ) {
-        // Main story image
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            // Shimmer background for loading state
-            if (imageState == null || imageState is AsyncImagePainter.State.Loading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(20.dp))
-                        .shimmer()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    lightPurple.copy(alpha = 0.3f),
-                                    mediumpurple.copy(alpha = 0.3f),
-                                    darkPurple.copy(alpha = 0.3f)
-                                )
-                            )
-                        )
-                )
-            }
-            
-            // Use AsyncImage for loading Firebase images
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = story.name,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(20.dp)),
-                contentScale = ContentScale.Crop,
-                onState = { state ->
-                    imageState = state
-                }
-            )
-            
-            // Lock overlay for locked stories
-            if (story.isLocked && imageState != null && imageState !is AsyncImagePainter.State.Loading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Color.Black.copy(alpha = 0.5f),
-                            RoundedCornerShape(20.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.padlock),
-                        contentDescription = "Locked",
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-            
-            // Free overlay for free stories (top left corner)
-            if (story.status == "free" && imageState != null && imageState !is AsyncImagePainter.State.Loading) {
-                Box(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .align(Alignment.TopStart)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.free),
-                        contentDescription = "Free",
-                        modifier = Modifier.size(32.dp) // Full 64dp visible size
-                    )
-                }
-            }
-        }
-        
-        // White background text area at the bottom
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(if (isTablet) 70.dp else 50.dp)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Color.White,
-                    RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = story.name,
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) {
-                    if (isCenter) 20.sp else 16.sp
-                } else {
-                    if (isCenter) 14.sp else 12.sp
-                },
-                color = Color.Black,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                modifier = Modifier.padding(
-                    horizontal = if (isTablet) 12.dp else 8.dp, 
-                    vertical = if (isTablet) 8.dp else 4.dp
-                )
-            )
-        }
-    }
 }
 
-@Composable
-fun FavoritesSection(
-    allStories: List<Story>,
-    favoriteKeys: Set<String>,
-    onStoryClick: (Story) -> Unit,
-    onMoreClick: () -> Unit,
-    alifbaFont: FontFamily,
-    isTablet: Boolean = false,
-    progressFractionFor: (Story) -> Float? = { null }
-) {
-    val storiesViewModel: StoriesViewModel = hiltViewModel()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp)
-    ) {
-        // Title row with "Your Favorites" and "View All >"
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = null,
-                    tint = Color.Red,
-                    modifier = Modifier.size(if (isTablet) 28.dp else 20.dp)
-                )
-                Spacer(modifier = Modifier.width(if (isTablet) 8.dp else 6.dp))
-                Text(
-                    text = "Your Favorites",
-                    fontFamily = alifbaFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = if (isTablet) 28.sp else 20.sp,
-                    color = darkBlue
-                )
-            }
-            Text(
-                text = "View All >",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = if (isTablet) 18.sp else 14.sp,
-                color = darkBlue,
-                modifier = Modifier.clickable {
-                    SoundEffectManager.playClickSound()
-                    onMoreClick()
-                }
-            )
-        }
-
-        // Build a favorites list by scanning allStories to preserve a stable order
-        val favoritePairs = remember(allStories, favoriteKeys) {
-            val normalized = favoriteKeys.map { key ->
-                if (":" in key) key else "stories:$key"
-            }.toSet()
-            allStories.filter { story ->
-                val key = (story.category.ifBlank { "stories" }) + ":" + story.documentId
-                key in normalized
-            }
-        }
-
-        if (favoritePairs.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No favorites yet", fontFamily = alifbaFont, color = darkBlue)
-            }
-        } else {
-            val displayedStories = favoritePairs.take(5)
-            val itemWidth = if (isTablet) 260.dp else 180.dp
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = if (isTablet) 24.dp else 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
-            ) {
-                items(displayedStories.size) { idx ->
-                    val story = displayedStories[idx]
-                    val isFav by storiesViewModel
-                        .isFavorite(story.documentId, story.category.ifBlank { "stories" })
-                        .collectAsState()
-                    val progress = progressFractionFor(story)
-                    Box(modifier = Modifier.width(itemWidth)) {
-                        StoryCard(
-                            story = story,
-                            onClick = {
-                                SoundEffectManager.playClickSound()
-                                onStoryClick(story)
-                            },
-                            alifbaFont = alifbaFont,
-                            isTablet = isTablet,
-                            progressFraction = progress?.takeIf { it > 0f && it < 1f },
-                            isFavorite = isFav,
-                            onFavoriteClick = {
-                                storiesViewModel.toggleFavorite(
-                                    story.documentId,
-                                    story.category.ifBlank { "stories" }
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ProphetMuhammadStoriesSection(
-    stories: List<Story>,
-    isLoading: Boolean,
-    onStoryClick: (Story) -> Unit,
-    onMoreClick: () -> Unit,
-    alifbaFont: FontFamily,
-    isTablet: Boolean = false,
-    progressFractionFor: (Story) -> Float? = { null }
-) {
-    val storiesVM: StoriesViewModel = hiltViewModel()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(storySectionTints[1])
-            .padding(vertical = 16.dp)
-    ) {
-        // Title row with "Stories of Prophet Muhammad" and "View All"
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Life of Prophet Muhammad",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) 28.sp else 20.sp,
-                color = darkBlue
-            )
-            Text(
-                text = "View All >",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = if (isTablet) 18.sp else 14.sp,
-                color = darkBlue,
-                modifier = Modifier.clickable {
-                    SoundEffectManager.playClickSound()
-                    onMoreClick()
-                }
-            )
-        }
-
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Loading Prophet Muhammad stories...", fontFamily = alifbaFont, color = darkBlue)
-                }
-            }
-            stories.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No Prophet Muhammad stories found", fontFamily = alifbaFont, color = darkBlue)
-                }
-            }
-            else -> {
-                val displayedStories = stories.take(5)
-                val itemWidth = if (isTablet) 260.dp else 180.dp
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = if (isTablet) 24.dp else 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
-                ) {
-                    items(displayedStories.size) { idx ->
-                        val story = displayedStories[idx]
-                        val isFav by storiesVM
-                            .isFavorite(story.documentId, story.category.ifBlank { "prophet_muhammad" })
-                            .collectAsState()
-                        val progress = progressFractionFor(story)
-                        Box(modifier = Modifier.width(itemWidth)) {
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isTablet = isTablet,
-                                progressFraction = progress?.takeIf { it > 0f && it < 1f },
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesVM.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "prophet_muhammad" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SahabaStoriesSection(
-    stories: List<Story>,
-    isLoading: Boolean,
-    onStoryClick: (Story) -> Unit,
-    onMoreClick: () -> Unit,
-    alifbaFont: FontFamily,
-    isTablet: Boolean = false,
-    progressFractionFor: (Story) -> Float? = { null }
-) {
-    val storiesVM: StoriesViewModel = hiltViewModel()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(storySectionTints[2])
-            .padding(vertical = 16.dp)
-    ) {
-        // Title row with "Sahaba Stories" and "More >"
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Sahaba Stories",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) 28.sp else 20.sp,
-                color = darkBlue
-            )
-
-            Text(
-                text = "View All >",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = if (isTablet) 18.sp else 14.sp,
-                color = darkBlue,
-                modifier = Modifier.clickable {
-                    SoundEffectManager.playClickSound()
-                    onMoreClick()
-                }
-            )
-        }
-
-        // Horizontal list
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Loading Sahaba stories...", fontFamily = alifbaFont, color = darkBlue)
-                }
-            }
-            stories.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No Sahaba stories found", fontFamily = alifbaFont, color = darkBlue)
-                }
-            }
-            else -> {
-                val displayedStories = stories.take(5)
-                val itemWidth = if (isTablet) 260.dp else 180.dp
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = if (isTablet) 24.dp else 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
-                ) {
-                    items(displayedStories.size) { idx ->
-                        val story = displayedStories[idx]
-                        val isFav by storiesVM
-                            .isFavorite(story.documentId, story.category.ifBlank { "sahaba" })
-                            .collectAsState()
-                        val progress = progressFractionFor(story)
-                        Box(modifier = Modifier.width(itemWidth)) {
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isTablet = isTablet,
-                                progressFraction = progress?.takeIf { it > 0f && it < 1f },
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesVM.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "sahaba" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun WomenAndMothersStoriesSection(
-    stories: List<Story>,
-    isLoading: Boolean,
-    onStoryClick: (Story) -> Unit,
-    onMoreClick: () -> Unit,
-    alifbaFont: FontFamily,
-    isTablet: Boolean = false,
-    progressFractionFor: (Story) -> Float? = { null }
-) {
-    val storiesVM: StoriesViewModel = hiltViewModel()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(storySectionTints[3])
-            .padding(vertical = 16.dp)
-    ) {
-        // Title row with "Women and Mothers of Islam" and "View All >"
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Women and Mothers of Islam",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) 28.sp else 20.sp,
-                color = darkBlue
-            )
-
-            Text(
-                text = "View All >",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = if (isTablet) 18.sp else 14.sp,
-                color = darkBlue,
-                modifier = Modifier.clickable {
-                    SoundEffectManager.playClickSound()
-                    onMoreClick()
-                }
-            )
-        }
-
-        // Horizontal list
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Loading Women and Mothers of Islam stories...", fontFamily = alifbaFont, color = darkBlue)
-                }
-            }
-            stories.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No Women and Mothers of Islam stories found", fontFamily = alifbaFont, color = darkBlue)
-                }
-            }
-            else -> {
-                val displayedStories = stories.take(5)
-                val itemWidth = if (isTablet) 260.dp else 180.dp
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = if (isTablet) 24.dp else 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
-                ) {
-                    items(displayedStories.size) { idx ->
-                        val story = displayedStories[idx]
-                        val isFav by storiesVM
-                            .isFavorite(story.documentId, story.category.ifBlank { "women_and_mothers" })
-                            .collectAsState()
-                        val progress = progressFractionFor(story)
-                        Box(modifier = Modifier.width(itemWidth)) {
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isTablet = isTablet,
-                                progressFraction = progress?.takeIf { it > 0f && it < 1f },
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesVM.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "women_and_mothers" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun MiraclesStoriesSection(
-    stories: List<Story>,
-    isLoading: Boolean,
-    onStoryClick: (Story) -> Unit,
-    onMoreClick: () -> Unit,
-    alifbaFont: FontFamily,
-    isTablet: Boolean = false,
-    progressFractionFor: (Story) -> Float? = { null }
-) {
-    val storiesVM: StoriesViewModel = hiltViewModel()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(storySectionTints[4])
-            .padding(vertical = 16.dp)
-    ) {
-        // Title row with "Miracles in Quran" and "View All >"
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Miracles in Quran",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) 28.sp else 20.sp,
-                color = darkBlue
-            )
-
-            Text(
-                text = "View All >",
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = if (isTablet) 22.sp else 16.sp,
-                color = darkBlue,
-                modifier = Modifier.clickable {
-                    SoundEffectManager.playClickSound()
-                    onMoreClick()
-                }
-            )
-        }
-
-        // Horizontal list
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Loading Miracles in Quran stories...", fontFamily = alifbaFont, color = darkBlue)
-                }
-            }
-            stories.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No Miracles in Quran stories found", fontFamily = alifbaFont, color = darkBlue)
-                }
-            }
-            else -> {
-                val displayedStories = stories.take(5)
-                val itemWidth = if (isTablet) 260.dp else 180.dp
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = if (isTablet) 24.dp else 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
-                ) {
-                    items(displayedStories.size) { idx ->
-                        val story = displayedStories[idx]
-                        val isFav by storiesVM
-                            .isFavorite(story.documentId, story.category.ifBlank { "miracles" })
-                            .collectAsState()
-                        val progress = progressFractionFor(story)
-                        Box(modifier = Modifier.width(itemWidth)) {
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isTablet = isTablet,
-                                progressFraction = progress?.takeIf { it > 0f && it < 1f },
-                                isFavorite = isFav,
-                                onFavoriteClick = { 
-                                    storiesVM.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "miracles" }
-                                    ) 
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun StoryCard(
-    story: Story,
-    onClick: () -> Unit,
-    alifbaFont: FontFamily,
-    isTablet: Boolean = false,
-    progressFraction: Float? = null,
-    isFavorite: Boolean = false,
-    onFavoriteClick: () -> Unit = {}
-) {
-    val subscriptionViewModel: SubscriptionViewModel = hiltViewModel()
-    val isPremium by subscriptionViewModel.isPremium.collectAsState()
-    var imageState by remember { mutableStateOf<AsyncImagePainter.State?>(null) }
-    val imageUrl = remember(story.thumbnail, story.background) {
-        story.thumbnail.ifBlank { story.background }
-    }
-    
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Just the image - no card background
-        Box(
-            modifier = Modifier
-                .aspectRatio(1f)
-                .clickable { onClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            // Shimmer background for loading state — top corners only, matching the image
-            // below, since the title footer strip (added below the image) supplies its own
-            // bottom-rounded background now instead of the image rounding all 4 corners.
-            if (imageState == null || imageState is AsyncImagePainter.State.Loading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(topStart = if (isTablet) 24.dp else 16.dp, topEnd = if (isTablet) 24.dp else 16.dp))
-                        .shimmer()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    lightPurple.copy(alpha = 0.3f),
-                                    mediumpurple.copy(alpha = 0.3f),
-                                    darkPurple.copy(alpha = 0.3f)
-                                )
-                            )
-                        )
-                )
-            }
-
-            // Use AsyncImage for loading Firebase images — top corners only (see shimmer note).
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = story.name,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(topStart = if (isTablet) 24.dp else 16.dp, topEnd = if (isTablet) 24.dp else 16.dp)),
-                contentScale = ContentScale.Crop,
-                onState = { state ->
-                    imageState = state
-                }
-            )
-            
-            
-            // Locked badge (top-left, plain icon, no circular background) — the heart occupies
-            // top-right, so this takes the corner it doesn't.
-            if (story.isLocked && imageState != null && imageState !is AsyncImagePainter.State.Loading) {
-                Image(
-                    painter = painterResource(id = R.drawable.padlock),
-                    contentDescription = "Locked",
-                    modifier = Modifier
-                        .padding(if (isTablet) 12.dp else 8.dp)
-                        .align(Alignment.TopStart)
-                        .size(if (isTablet) 28.dp else 22.dp),
-                    colorFilter = ColorFilter.tint(Color.White)
-                )
-            }
-
-            // FREE pill (bottom-right, sage background, white text, no diagonal fold) — hide
-            // for premium users. Bottom-right avoids the duration pill (bottom-left) and the
-            // heart/padlock up top.
-            if (!isPremium && story.status == "free" && imageState != null && imageState !is AsyncImagePainter.State.Loading) {
-                Box(
-                    modifier = Modifier
-                        .padding(if (isTablet) 12.dp else 8.dp)
-                        .align(Alignment.BottomEnd)
-                        .clip(RoundedCornerShape(50))
-                        .background(Color(0xFF00BF63))
-                        .padding(horizontal = if (isTablet) 12.dp else 8.dp, vertical = if (isTablet) 6.dp else 4.dp)
-                ) {
-                    Text(
-                        text = "FREE",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = if (isTablet) 13.sp else 11.sp,
-                        color = Color.White
-                    )
-                }
-            }
-
-            // Duration pill (bottom-left, dark translucent) — just the rounded-minute value,
-            // no content-type label since every card here is a story.
-            if (story.durationSeconds > 0 && imageState != null && imageState !is AsyncImagePainter.State.Loading) {
-                val minutes = (story.durationSeconds / 60f).roundToInt()
-                Box(
-                    modifier = Modifier
-                        .padding(if (isTablet) 12.dp else 8.dp)
-                        .align(Alignment.BottomStart)
-                        .clip(RoundedCornerShape(50))
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .padding(horizontal = if (isTablet) 12.dp else 8.dp, vertical = if (isTablet) 6.dp else 4.dp)
-                ) {
-                    Text(
-                        text = "${minutes}m",
-                        fontFamily = alifbaFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = if (isTablet) 13.sp else 11.sp,
-                        color = Color.White
-                    )
-                }
-            }
-
-            // Favorite heart icon (top right corner) — same chunky pressable 3D effect as
-            // CommonButton/the lesson nodes (static shadow disc behind, main disc on top whose
-            // bottom padding animates on press so it compresses onto the shadow layer), instead
-            // of the old flat white circle. The existing bounce-on-toggle animation is kept as a
-            // separate flourish on top of the new press-down mechanic.
-            if (imageState != null && imageState !is AsyncImagePainter.State.Loading) {
-                val heartScale = remember { Animatable(1f) }
-                val coroutineScope = rememberCoroutineScope()
-                val heartInteractionSource = remember { MutableInteractionSource() }
-                val isHeartPressed by heartInteractionSource.collectIsPressedAsState()
-                val heartOffsetY by animateDpAsState(
-                    targetValue = if (isHeartPressed) 0.dp else 3.dp,
-                    label = "HeartOffsetY"
-                )
-                val heartSize = if (isTablet) 40.dp else 32.dp
-
-                Box(
-                    modifier = Modifier
-                        .padding(if (isTablet) 12.dp else 8.dp)
-                        .align(Alignment.TopEnd)
-                        .size(heartSize)
-                        .graphicsLayer {
-                            scaleX = heartScale.value
-                            scaleY = heartScale.value
-                        }
-                ) {
-                    // Static shadow disc.
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clip(CircleShape)
-                            .background(Color(0xFFD6D2C4))
-                    )
-                    // Main disc — compresses onto the shadow layer on press.
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .padding(bottom = heartOffsetY)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .clickable(
-                                interactionSource = heartInteractionSource,
-                                indication = null
-                            ) {
-                                // Bounce animation
-                                coroutineScope.launch {
-                                    heartScale.animateTo(0.7f, animationSpec = tween(100))
-                                    heartScale.animateTo(1.2f, animationSpec = tween(100))
-                                    heartScale.animateTo(1f, animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessLow
-                                    ))
-                                }
-                                onFavoriteClick()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                            tint = if (isFavorite) Color.Red else Color.Gray,
-                            modifier = Modifier.size(if (isTablet) 24.dp else 20.dp)
-                        )
-                    }
-                }
-            }
-
-            // Progress overlay bar at the bottom of the IMAGE (not the whole card anymore —
-            // square corners here now, since the title footer strip sits flush below it).
-            progressFraction?.let { frac ->
-                if (frac in 0f..1f) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .background(Color.White.copy(alpha = 0.4f))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .height(6.dp)
-                            .fillMaxWidth(frac)
-                            .background(darkPurple)
-                    )
-                }
-            }
-        }
-        
-        // Title footer strip — solid cream background flush against the image's bottom edge,
-        // dark navy text (same color as the section headers). Titles used to sit in white text
-        // directly on the surrounding pastel section tint, which had almost no contrast; putting
-        // them on their own opaque strip instead guarantees contrast no matter what tint
-        // surrounds the card.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    storiesScreenCream,
-                    RoundedCornerShape(bottomStart = if (isTablet) 24.dp else 16.dp, bottomEnd = if (isTablet) 24.dp else 16.dp)
-                )
-        ) {
-            Text(
-                text = story.name,
-                fontFamily = alifbaFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isTablet) 20.sp else 14.sp,
-                color = darkBlue,
-                textAlign = TextAlign.Start,
-                maxLines = 2,
-                modifier = Modifier
-                    .padding(
-                        horizontal = if (isTablet) 8.dp else 4.dp,
-                        vertical = if (isTablet) 12.dp else 8.dp
-                    )
-                    .fillMaxWidth()
-            )
-        }
-    }
-}
-
-@Composable
-private fun HeroBanner(
-    stories: List<Story>,
-    onPlayClick: (Story) -> Unit,
-    progressStore: com.alifba.alifba.data.local.PlaybackProgressStore,
-    isTablet: Boolean,
-    alifbaFont: FontFamily
-) {
-    if (stories.isEmpty()) return
-
-    val lastPlayedId = remember(stories) { progressStore.getLastPlayed() }
-    val lastPlayed = remember(lastPlayedId, stories) { stories.find { it.documentId == lastPlayedId } }
-    val lastProgress = remember(lastPlayedId) {
-        lastPlayedId?.let { progressStore.getProgress(it) }
-    }
-    val showResume = lastPlayed != null && lastProgress != null && lastProgress.duration > 0 && lastProgress.position < (lastProgress.duration * 0.98f)
-    val targetStory = when {
-        showResume -> lastPlayed
-        else -> stories.firstOrNull { !progressStore.getProgress(it.documentId).completed } ?: stories.first()
-    }
-    if (targetStory == null) return
-
-    val progressFraction = remember(targetStory.documentId) {
-        val p = progressStore.getProgress(targetStory.documentId)
-        if (p.duration > 0L) (p.position.toFloat() / p.duration.toFloat()).coerceIn(0f, 1f) else 0f
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = if (isTablet) 24.dp else 16.dp)
-            .padding(top = if (isTablet) 16.dp else 12.dp, bottom = if (isTablet) 8.dp else 4.dp)
-    ) {
-        // Banner card — rounded and inset like the section cards below, instead of a full-bleed
-        // edge-to-edge dark hero.
-        val cardCorner = if (isTablet) 24.dp else 16.dp
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(if (isTablet) 260.dp else 170.dp)
-                .clip(RoundedCornerShape(cardCorner))
-                .clickable { onPlayClick(targetStory) }
-        ) {
-            AsyncImage(
-                model = targetStory.background,
-                contentDescription = targetStory.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            // Gradient overlay bottom — cream wash (matching the section-card footer style)
-            // instead of a dark scrim, so the dark-navy title/label text underneath stays
-            // readable against it.
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, storiesScreenCream.copy(alpha = 0.94f))
-                        )
-                    )
-            )
-            // Play button overlay (icon only, no background)
-            Image(
-                painter = painterResource(id = R.drawable.playthumb),
-                contentDescription = "Play",
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(if (isTablet) 84.dp else 64.dp)
-            )
-            // Title + CTA
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(if (isTablet) 16.dp else 12.dp)
-            ) {
-                Text(
-                    text = if (showResume) "Resume" else "Up Next",
-                    fontFamily = alifbaFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = if (isTablet) 18.sp else 14.sp,
-                    color = darkBlue
-                )
-                Text(
-                    text = targetStory.name,
-                    fontFamily = alifbaFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = if (isTablet) 22.sp else 16.sp,
-                    color = darkBlue
-                )
-            }
-            // Progress bar across bottom
-            if (progressFraction in 0f..1f && progressFraction > 0f && progressFraction < 1f) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .background(Color.White.copy(alpha = 0.4f))
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .height(6.dp)
-                        .fillMaxWidth(progressFraction)
-                        .background(darkPurple)
-                )
-            }
-        }
-    }
-}
 @Composable
 fun AllFavoritesScreen(
     storiesViewModel: StoriesViewModel = hiltViewModel(),
     onStoryClick: (Story) -> Unit = {},
     onBackClick: () -> Unit = {}
 ) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-
-    // Collect all story lists and favorites
     val stories by storiesViewModel.stories.collectAsState()
     val prophetStories by storiesViewModel.prophetMuhammadStories.collectAsState()
     val sahabaStories by storiesViewModel.sahabaStories.collectAsState()
@@ -2169,118 +960,18 @@ fun AllFavoritesScreen(
             addAll(miraclesStories)
         }
     }
+    val favoriteStories = remember(allStories, favoriteKeys) { favoriteStoriesOf(allStories, favoriteKeys) }
 
-    // Filter stories by favorite keys preserving order
-    val favoriteStories = remember(allStories, favoriteKeys) {
-        val normalized = favoriteKeys.map { key ->
-            if (":" in key) key else "stories:$key"
-        }.toSet()
-        allStories.filter { s ->
-            val k = (s.category.ifBlank { "stories" }) + ":" + s.documentId
-            k in normalized
-        }
-    }
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Background image
-        Image(
-            painter = painterResource(id = R.drawable.storiesbackground),
-            contentDescription = "Stories Background",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 24.dp)
-        ) {
-            // Header with back button and title
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back button
-                Image(
-                    painter = painterResource(id = R.drawable.back),
-                    contentDescription = "Back",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable {
-                            SoundEffectManager.playClickSound()
-                            onBackClick()
-                        }
-                )
-
-                // Centered title
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.Favorite,
-                            contentDescription = null,
-                            tint = Color.Red,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Your Favorites",
-                            fontFamily = alifbaFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
-
-            when {
-                favoriteStories.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No favorites yet", fontFamily = alifbaFont, color = Color.White)
-                    }
-                }
-                else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(favoriteStories.size) { index ->
-                            val story = favoriteStories[index]
-                            val isFav by storiesViewModel
-                                .isFavorite(story.documentId, story.category.ifBlank { "stories" })
-                                .collectAsState()
-                            StoryCard(
-                                story = story,
-                                onClick = {
-                                    SoundEffectManager.playClickSound()
-                                    onStoryClick(story)
-                                },
-                                alifbaFont = alifbaFont,
-                                isFavorite = isFav,
-                                onFavoriteClick = {
-                                    storiesViewModel.toggleFavorite(
-                                        story.documentId,
-                                        story.category.ifBlank { "stories" }
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    StoryGridScreen(
+        title = "Your favourites",
+        stories = favoriteStories,
+        isLoading = false,
+        emptyText = "No favourites yet",
+        error = null,
+        keepDuplicates = true,
+        onStoryClick = onStoryClick,
+        onBackClick = onBackClick,
+        onRetry = {},
+        storiesViewModel = storiesViewModel
+    )
 }

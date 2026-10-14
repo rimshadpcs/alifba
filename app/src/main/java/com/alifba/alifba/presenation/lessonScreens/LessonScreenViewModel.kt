@@ -98,7 +98,9 @@ class LessonScreenViewModel  @Inject constructor(
         // 2) Proceed with setDataSource, prepareAsync, etc.
         if (applicationContext != null && audioUrl.isNotBlank()) {
             configureMediaPlayer {
-                mediaPlayer?.setDataSource(applicationContext!!, Uri.parse(audioUrl))
+                // Prefer the copy saved by "Download lesson"; fall back to streaming
+                val local = com.alifba.alifba.utils.LessonMediaCache.cachedAudio(applicationContext!!, audioUrl)
+                mediaPlayer?.setDataSource(applicationContext!!, local?.let { Uri.fromFile(it) } ?: Uri.parse(audioUrl))
             }
         }
     }

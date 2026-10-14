@@ -1,6 +1,17 @@
 package com.alifba.alifba.presenation.profile
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.alifba.alifba.ui_components.widgets.LessonTheme
+import androidx.compose.ui.draw.drawBehind
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -22,6 +34,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
@@ -95,7 +108,8 @@ fun ProfileSelectionScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         // Background Image
         Image(
-            painter = painterResource(id = R.drawable.chooseprofile),
+            // Seaside illustration: a phone cut and a tablet cut
+            painter = painterResource(id = if (isTablet) R.drawable.seaside_tablet else R.drawable.seaside_phone),
             contentDescription = "Choose Profile Background",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
@@ -105,109 +119,123 @@ fun ProfileSelectionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(60.dp))
+            // Edit / Done pill, top right
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = LessonTheme.margin, end = LessonTheme.margin, top = 8.dp)
+            ) {
+                Spacer(Modifier.weight(1f))
+                EditProfileButton(
+                    isEditMode = isEditMode,
+                    isTablet = isTablet,
+                    onClick = {
+                        if (isEditMode) {
+                            isEditMode = false
+                        } else {
+                            showParentGate = true
+                        }
+                    }
+                )
+            }
 
             // Title
             Text(
-                text = if (isEditMode) "Edit Profiles" else "Choose Your Profile",
+                text = if (isEditMode) "Edit profiles" else "Who\u2019s learning today?",
                 fontFamily = alifbaFontBold,
-                fontSize = if (isTablet) 48.sp else 32.sp,
+                fontSize = if (isTablet) 40.sp else 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = darkBlue,
-                textAlign = TextAlign.Center
-            )
-            
-            Text(
-                text = "Select which child will be learning today",
-                fontSize = if (isTablet) 24.sp else 18.sp,
-                color = darkBlue,
+                color = LessonTheme.ink,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = if (isTablet) 12.dp else 8.dp)
+                modifier = Modifier.padding(top = if (isTablet) 40.dp else 28.dp, start = 24.dp, end = 24.dp)
+            )
+            Text(
+                text = if (isEditMode) "Tap \u00D7 to remove a profile" else "Tap your picture to start",
+                fontFamily = alifbaFontBold,
+                fontSize = if (isTablet) 24.sp else 20.sp,
+                color = LessonTheme.ink,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp, bottom = if (isTablet) 40.dp else 24.dp)
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Profile Grid
+            // Profile grid: raised cards, two per row; the dashed "Add profile" tile is the last
+            // tile while there are fewer than 3 profiles. A lone last tile is centred.
             parentAccountState?.let { parentAccount ->
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    verticalArrangement = Arrangement.spacedBy(if (isTablet) 32.dp else 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(if (isTablet) 32.dp else 24.dp),
-                    contentPadding = PaddingValues(horizontal = if (isTablet) 40.dp else 32.dp)
+                val tiles: List<ProfileTile> = buildList {
+                    parentAccount.profiles.withIndex().forEach { add(ProfileTile.Profile(it.index, it.value)) }
+                    if (parentAccount.profiles.size < 3) add(ProfileTile.Add)
+                }
+                val gap = if (isTablet) 24.dp else 16.dp
+
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = if (isTablet) 60.dp else LessonTheme.margin)
                 ) {
-                    // Profile Cards
-                    itemsIndexed(parentAccount.profiles) { index, profile ->
-                        ProfileCard(
-                            profile = profile,
-                            isSelected = false,
-                            isEditMode = isEditMode,
-                            canRemove = true,
-                            isTablet = isTablet,
-                            onClick = {
-                                if (!isEditMode) {
-                                    // Gate extra profiles for non-premium users
-                                    if (isPremium || index == 0) {
-                                        authViewModel.switchToChildProfile(index)
-                                        
-                                        navController.navigate("homeScreen") {
-                                            popUpTo("profileSelection") { inclusive = true }
-                                        }
-                                    } else {
-                                        // Show premium unlock when tapping extra profiles
-                                        showPremiumUpgrade = true
-                                    }
-                                }
-                            },
-                            onRemove = {
-                                profileToDelete = index
-                                showDeleteDialog = true
-                            }
-                        )
-                    }
+                    val tileSize = minOf((maxWidth - gap) / 2, if (isTablet) 260.dp else 190.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(vertical = 8.dp), // room for the cards' lip
+                        verticalArrangement = Arrangement.spacedBy(gap - LessonTheme.answerEdge),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        tiles.chunked(2).forEach { rowTiles ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                                rowTiles.forEach { tile ->
+                                    when (tile) {
+                                        is ProfileTile.Profile -> ProfileCard(
+                                            profile = tile.profile,
+                                            isSelected = false,
+                                            isEditMode = isEditMode,
+                                            canRemove = true,
+                                            isTablet = isTablet,
+                                            size = tileSize,
+                                            onClick = {
+                                                if (!isEditMode) {
+                                                    // Gate extra profiles for non-premium users
+                                                    if (isPremium || tile.index == 0) {
+                                                        authViewModel.switchToChildProfile(tile.index)
 
-                    // Add New Profile Card (only show if less than 3 profiles)
-                    if (parentAccount.profiles.size < 3) {
-                        item {
-                            AddProfileCard(
-                                isTablet = isTablet,
-                                onClick = {
-                                    // Free users: allow only 1 profile. Premium: allow up to 3.
-                                    val canAdd = if (isPremium) parentAccount.profiles.size < 3 else parentAccount.profiles.isEmpty()
-                                    if (canAdd) {
-                                        navController.navigate("addProfile")
-                                    } else {
-                                        showPremiumUpgrade = true
+                                                        navController.navigate("homeScreen") {
+                                                            popUpTo("profileSelection") { inclusive = true }
+                                                        }
+                                                    } else {
+                                                        // Show premium unlock when tapping extra profiles
+                                                        showPremiumUpgrade = true
+                                                    }
+                                                }
+                                            },
+                                            onRemove = {
+                                                profileToDelete = tile.index
+                                                showDeleteDialog = true
+                                            }
+                                        )
+                                        ProfileTile.Add -> AddProfileCard(
+                                            isTablet = isTablet,
+                                            size = tileSize,
+                                            onClick = {
+                                                // Free users: allow only 1 profile. Premium: allow up to 3.
+                                                val canAdd = if (isPremium) parentAccount.profiles.size < 3 else parentAccount.profiles.isEmpty()
+                                                if (canAdd) {
+                                                    navController.navigate("addProfile")
+                                                } else {
+                                                    showPremiumUpgrade = true
+                                                }
+                                            }
+                                        )
                                     }
                                 }
-                            )
+                            }
                         }
-                    }
-
-                    // Edit Profile Card (always show)
-                    item {
-                        EditProfileCard(
-                            isEditMode = isEditMode,
-                            isTablet = isTablet,
-                            onClick = {
-                                println("EDIT BUTTON CLICKED - isEditMode: $isEditMode")
-                                if (isEditMode) {
-                                    println("SETTING EDIT MODE TO FALSE")
-                                    isEditMode = false
-                                } else {
-                                    println("SETTING PARENT GATE TO TRUE")
-                                    showParentGate = true
-                                }
-                                println("NEW STATE - isEditMode: $isEditMode, showParentGate: $showParentGate")
-                            }
-                        )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 
@@ -240,6 +268,85 @@ fun ProfileSelectionScreen(
     }
 }
 
+private sealed class ProfileTile {
+    data class Profile(val index: Int, val profile: ChildProfile) : ProfileTile()
+    object Add : ProfileTile()
+}
+
+/**
+ * Raised card chrome (same look as the picture-MCQ cards): white face with a thick light-gray
+ * border and a gray "lip" underneath. Pressing sinks the face onto the lip and tints it brand
+ * blue for a moment before the tap is delivered. [content] gets the label colour for the
+ * current press state.
+ */
+@Composable
+private fun ProfileChrome(
+    width: Dp,
+    height: Dp,
+    radius: Dp,
+    lip: Dp,
+    onClick: () -> Unit,
+    overlay: @Composable BoxScope.() -> Unit = {},
+    content: @Composable BoxScope.(labelColor: Color) -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val coroutineScope = rememberCoroutineScope()
+    val faceOffset by animateDpAsState(
+        targetValue = if (isPressed) lip else 0.dp,
+        animationSpec = spring(), label = ""
+    )
+    val borderWidth = 4.dp
+    val faceColor = if (isPressed) LessonTheme.sky else Color.White
+    val borderColor = if (isPressed) LessonTheme.primary else LessonTheme.line
+    val lipColor = if (isPressed) LessonTheme.primaryEdge else LessonTheme.lineEdge
+    val labelColor = if (isPressed) LessonTheme.skyText else LessonTheme.ink
+
+    Box(
+        modifier = Modifier
+            .width(width)
+            .height(height + lip)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    coroutineScope.launch {
+                        delay(100)
+                        onClick()
+                    }
+                }
+            )
+    ) {
+        // Lip (the gray edge under the card)
+        Box(
+            modifier = Modifier
+                .offset(y = lip)
+                .size(width, height)
+                .clip(RoundedCornerShape(radius))
+                .background(lipColor)
+        )
+        // Face: border colour, then the face colour inset by the border width
+        Box(
+            modifier = Modifier
+                .offset(y = faceOffset)
+                .size(width, height)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(radius))
+                    .background(borderColor)
+                    .padding(borderWidth)
+                    .clip(RoundedCornerShape(radius - borderWidth))
+                    .background(faceColor)
+            ) {
+                content(labelColor)
+            }
+            overlay()
+        }
+    }
+}
+
 @Composable
 fun ProfileCard(
     profile: ChildProfile,
@@ -247,45 +354,25 @@ fun ProfileCard(
     isEditMode: Boolean,
     canRemove: Boolean,
     isTablet: Boolean,
+    size: Dp,
     onClick: () -> Unit,
     onRemove: () -> Unit
 ) {
-    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
-    val alifbaFontBold= FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
+    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
 
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        // Headshot Avatar with X button
-        Box(
-            modifier = Modifier
-                .size(if (isTablet) 240.dp else 156.dp)  // Larger size for tablets
-                .padding(if (isTablet) 12.dp else 8.dp)  // More padding for tablets
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(white)
-            ) {
-                Image(
-                    painter = painterResource(id = getAvatarDrawable(profile.avatar)),
-                    contentDescription = profile.avatar,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                    contentScale = ContentScale.Fit
-                )
-                
-            }
-
+    ProfileChrome(
+        width = size,
+        height = size,
+        radius = if (isTablet) 28.dp else 22.dp,
+        lip = if (isTablet) 8.dp else 6.dp,
+        onClick = onClick,
+        overlay = {
             // X button in edit mode
             if (isEditMode && canRemove) {
                 Box(
                     modifier = Modifier
-                        .size(if (isTablet) 52.dp else 32.dp)
+                        .padding(8.dp)
+                        .size(if (isTablet) 44.dp else 32.dp)
                         .align(Alignment.TopEnd)
                         .clip(CircleShape)
                         .background(lightRed)
@@ -301,107 +388,135 @@ fun ProfileCard(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(if (isTablet) 16.dp else 12.dp))
-
-        // Name
-        Text(
-            text = profile.childName,
-            fontFamily = alifbaFontBold,
-            fontSize = if (isTablet) 30.sp else 20.sp,
-            color = darkBlue,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-fun AddProfileCard(isTablet: Boolean, onClick: () -> Unit) {
-    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        // Add Profile Square
-        Box(
-            modifier = Modifier
-                .size(if (isTablet) 240.dp else 156.dp)
-                .padding(if (isTablet) 12.dp else 8.dp)
-                .clip(RoundedCornerShape(if (isTablet) 20.dp else 16.dp))
-                .background(Color.White),
-            contentAlignment = Alignment.Center
+    ) { labelColor ->
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Avatar
             Image(
-                painter = painterResource(id = R.drawable.add),
-                contentDescription = "Add Profile",
-                modifier = Modifier.size(if (isTablet) 80.dp else 60.dp)
+                painter = painterResource(id = getAvatarDrawable(profile.avatar)),
+                contentDescription = profile.avatar,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(top = 14.dp, start = 14.dp, end = 14.dp)
+                    .scale(0.8f), // 20% smaller than filling the card
+                contentScale = ContentScale.Fit
+            )
+            // Name (inside the card, so it never sits on the busy background)
+            Text(
+                text = profile.childName,
+                fontFamily = alifbaFontBold,
+                fontWeight = FontWeight.Bold,
+                fontSize = if (isTablet) 28.sp else 22.sp,
+                color = labelColor,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp)
             )
         }
-
-        Spacer(modifier = Modifier.height(if (isTablet) 16.dp else 12.dp))
-
-        Text(
-            text = "Add Profile",
-            fontFamily = alifbaFontBold,
-            fontSize = if (isTablet) 30.sp else 20.sp,
-            color = darkBlue,
-            textAlign = TextAlign.Center
-        )
     }
 }
 
+/** Add profile tile: dashed blue outline on a sky tint, a primary round "+" button */
 @Composable
-fun EditProfileCard(
+fun AddProfileCard(isTablet: Boolean, size: Dp, onClick: () -> Unit) {
+    val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
+    val plus = if (isTablet) 84.dp else 64.dp
+    val radius = if (isTablet) 28.dp else 22.dp
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val coroutineScope = rememberCoroutineScope()
+    val offset by animateDpAsState(if (pressed) 4.dp else 0.dp, label = "addPress")
+    val dash = LessonTheme.primary.copy(alpha = 0.55f)
+
+    Box(
+        modifier = Modifier
+            .padding(bottom = if (isTablet) 8.dp else 6.dp) // same footprint as the raised cards' lip
+            .size(size)
+            .background(LessonTheme.sky.copy(alpha = 0.65f), RoundedCornerShape(radius))
+            .drawBehind {
+                drawRoundRect(
+                    color = dash,
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius.toPx()),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 2.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))
+                    )
+                )
+            }
+            .clickable(interactionSource = interaction, indication = null) {
+                coroutineScope.launch {
+                    delay(100)
+                    onClick()
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(modifier = Modifier.size(plus).padding(bottom = 4.dp)) {
+                Box(Modifier.matchParentSize().offset(y = 4.dp).background(LessonTheme.primaryEdge, CircleShape))
+                Box(
+                    Modifier.matchParentSize().offset(y = offset).background(LessonTheme.primary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("+", color = Color.White, fontSize = (plus.value * 0.62f).sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Text(
+                text = "Add profile",
+                fontFamily = alifbaFontBold,
+                fontWeight = FontWeight.Bold,
+                fontSize = if (isTablet) 26.sp else 22.sp,
+                color = LessonTheme.primaryEdge,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/** Edit / Done pill (top right): white face with a lip, primary pencil and label */
+@Composable
+fun EditProfileButton(
     isEditMode: Boolean,
     isTablet: Boolean,
     onClick: () -> Unit
 ) {
     val alifbaFontBold = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
+    val height = if (isTablet) 56.dp else 46.dp
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { 
-            android.util.Log.d("EditProfileCard", "Card clicked!")
-            onClick() 
-        }
-    ) {
-        // Edit Profile Square
-        Box(
-            modifier = Modifier
-                .size(if (isTablet) 240.dp else 156.dp)
-                .padding(if (isTablet) 12.dp else 8.dp)
-                .clip(RoundedCornerShape(if (isTablet) 20.dp else 16.dp))
-                .background(white),
-            contentAlignment = Alignment.Center
+    ProfileChrome(
+        width = if (isTablet) 132.dp else 112.dp,
+        height = height,
+        radius = height / 2,
+        lip = 5.dp,
+        onClick = onClick
+    ) { _ ->
+        Row(
+            modifier = Modifier.align(Alignment.Center),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (isEditMode) {
-                Text(
-                    text = "✓",
-                    color = darkBlue,
-                    fontSize = if (isTablet) 72.sp else 48.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("\u2713", color = LessonTheme.primaryEdge, fontSize = if (isTablet) 22.sp else 18.sp, fontWeight = FontWeight.Bold)
             } else {
                 Image(
                     painter = painterResource(id = R.drawable.pencil),
-                    contentDescription = "Edit Profiles",
-                    modifier = Modifier.size(if (isTablet) 96.dp else 60.dp)
+                    contentDescription = "Edit profiles",
+                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(LessonTheme.primaryEdge),
+                    modifier = Modifier.size(if (isTablet) 22.dp else 18.dp)
                 )
             }
+            Text(
+                text = if (isEditMode) "Done" else "Edit",
+                fontFamily = alifbaFontBold,
+                fontWeight = FontWeight.Bold,
+                fontSize = if (isTablet) 24.sp else 20.sp,
+                color = LessonTheme.primaryEdge
+            )
         }
-
-        Spacer(modifier = Modifier.height(if (isTablet) 16.dp else 12.dp))
-
-        Text(
-            text = if (isEditMode) "Done" else "Edit",
-            fontFamily = alifbaFontBold,
-            fontSize = if (isTablet) 30.sp else 20.sp,
-            color = darkBlue,
-            textAlign = TextAlign.Center
-        )
     }
 }
 

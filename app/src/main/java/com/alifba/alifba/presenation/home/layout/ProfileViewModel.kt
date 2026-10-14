@@ -473,6 +473,111 @@ class ProfileViewModel @Inject constructor(
     }
 
     /**
+     * Updates the active child's name and/or age in one write (two back-to-back writes would each
+     * start from the same stale profile list and the second would undo the first).
+     */
+    fun updateChildDetails(newName: String?, newAge: Int?) {
+        val trimmedName = newName?.trim()
+        if (trimmedName != null && trimmedName.isEmpty()) return
+        if (trimmedName == null && newAge == null) return
+
+        viewModelScope.launch {
+            val userId = dataStoreManager.userId.first()
+            if (userId.isNullOrEmpty()) return@launch
+
+            try {
+                val currentParent = _parentAccountState.value
+                if (currentParent == null || currentParent.profiles.isEmpty()) return@launch
+                val activeIndex = currentParent.activeProfileIndex
+                if (activeIndex !in currentParent.profiles.indices) return@launch
+
+                val updatedProfiles = currentParent.profiles.toMutableList()
+                val updatedProfile = updatedProfiles[activeIndex].copy(
+                    childName = trimmedName ?: updatedProfiles[activeIndex].childName,
+                    age = newAge ?: updatedProfiles[activeIndex].age
+                )
+                updatedProfiles[activeIndex] = updatedProfile
+
+                val updatedParent = currentParent.copy(
+                    profiles = updatedProfiles,
+                    lastUpdated = System.currentTimeMillis()
+                )
+
+                fireStore.collection("users").document(userId)
+                    .update(
+                        "profiles",
+                        updatedProfiles.map { it.toMap() },
+                        "lastUpdated",
+                        updatedParent.lastUpdated
+                    ).await()
+
+                _parentAccountState.value = updatedParent
+                _currentChildProfile.value = updatedProfile
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error updating child details: ${e.localizedMessage}")
+                fetchUserProfile()
+            }
+        }
+    }
+
+    /**
+     * Removes the active child's profile. The first remaining profile becomes the active one on
+     * this device. Does nothing when it is the only profile.
+     */
+    fun removeActiveChildProfile() {
+        viewModelScope.launch {
+            val userId = dataStoreManager.userId.first()
+            if (userId.isNullOrEmpty()) return@launch
+
+            try {
+                val currentParent = _parentAccountState.value ?: return@launch
+                val activeIndex = currentParent.activeProfileIndex
+                if (currentParent.profiles.size < 2 || activeIndex !in currentParent.profiles.indices) return@launch
+
+                val updatedProfiles = currentParent.profiles.toMutableList()
+                val removed = updatedProfiles.removeAt(activeIndex)
+                val newActive = updatedProfiles.first()
+
+                val updatedParent = currentParent.copy(
+                    profiles = updatedProfiles,
+                    activeProfileIndex = 0,
+                    lastUpdated = System.currentTimeMillis()
+                )
+
+                fireStore.collection("users").document(userId)
+                    .update(
+                        "profiles",
+                        updatedProfiles.map { it.toMap() },
+                        "lastUpdated",
+                        updatedParent.lastUpdated
+                    ).await()
+
+                // This device now opens on the first remaining profile
+                fireStore.collection("users")
+                    .document(userId)
+                    .collection("devices")
+                    .document(dataStoreManager.getOrCreateDeviceId())
+                    .set(
+                        mapOf(
+                            "activeProfileId" to newActive.profileId,
+                            "platform" to "Android",
+                            "lastSeen" to System.currentTimeMillis()
+                        ),
+                        com.google.firebase.firestore.SetOptions.merge()
+                    ).await()
+
+                _parentAccountState.value = updatedParent
+                _currentChildProfile.value = newActive
+                fetchEarnedBadges(newActive.earnedBadges)
+                Log.d("ProfileViewModel", "Removed profile: ${removed.childName}")
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error removing profile: ${e.localizedMessage}")
+                fetchUserProfile()
+            }
+        }
+    }
+
+    /**
      * Updates the child's avatar in Firestore, then refreshes the user profile.
      */
     fun updateAvatar(newAvatarName: String) {

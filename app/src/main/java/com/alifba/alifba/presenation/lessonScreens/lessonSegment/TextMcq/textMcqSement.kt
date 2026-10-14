@@ -1,59 +1,29 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment.TextMcq
 
-import android.content.Context
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.rememberImagePainter
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.LessonSegment
-import com.alifba.alifba.data.models.TextMcqItem
-import com.alifba.alifba.ui_components.widgets.buttons.CommonButton
-import com.alifba.alifba.ui_components.widgets.buttons.MCQChoiceButton
+import com.alifba.alifba.presenation.main.logScreenView
+import com.alifba.alifba.ui_components.widgets.*
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
-import com.alifba.alifba.ui_components.dialogs.LottieAnimationDialog
-import com.alifba.alifba.ui_components.theme.darkCandyGreen
-import com.alifba.alifba.ui_components.theme.darkPink
-import com.alifba.alifba.ui_components.theme.darkPurple
-import com.alifba.alifba.ui_components.theme.darkRed
-import com.alifba.alifba.ui_components.theme.darkSkyBlue
-import com.alifba.alifba.ui_components.theme.darkYellow
-import com.alifba.alifba.ui_components.theme.lightCandyGreen
-import com.alifba.alifba.ui_components.theme.lightNavyBlue
-import com.alifba.alifba.ui_components.theme.lightPink
-import com.alifba.alifba.ui_components.theme.lightPurple
-import com.alifba.alifba.ui_components.theme.lightRed
-import com.alifba.alifba.ui_components.theme.lightSkyBlue
-import com.alifba.alifba.ui_components.theme.lightYellow
-import com.alifba.alifba.ui_components.theme.mediumpurple
-import com.alifba.alifba.ui_components.theme.navyBlue
-import com.alifba.alifba.ui_components.theme.white
-import com.alifba.alifba.ui_components.widgets.texts.CommonExplanationText
-import kotlinx.coroutines.delay
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 
 @Composable
 fun TextMcqSegment(
@@ -61,152 +31,78 @@ fun TextMcqSegment(
     onNextClicked: () -> Unit,
     isLastSegment: Boolean = false,
 ) {
-    val hasAnswered = remember { mutableStateOf(false) }  // New state to track if user has answered
-    val showNextButton = remember { mutableStateOf(false) }
-    val showDialog = remember { mutableStateOf(false) }
-    val showWrongDialog = remember { mutableStateOf(false) }
-    val animationFinished = remember { mutableStateOf(false) }
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    var phase by remember { mutableStateOf(AnswerPhase.Answering) }
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val isTablet = configuration.screenWidthDp > 600
+    val isTablet = LessonTheme.isTablet()
 
-    LaunchedEffect(Unit) {
-        SoundEffectManager.initialize(context)
+    LaunchedEffect(Unit) { SoundEffectManager.initialize(context) }
+
+    fun stateFor(index: Int) = when {
+        selectedIndex != index -> AnswerState.Normal
+        phase == AnswerPhase.Answering -> AnswerState.Selected
+        phase == AnswerPhase.Correct -> AnswerState.Correct
+        else -> AnswerState.Wrong
     }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(if (isTablet) 24.dp else 16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = if (hasAnswered.value && showNextButton.value && animationFinished.value) (if (isTablet) 100.dp else 80.dp) else 0.dp)
-        ) {
-            CommonExplanationText(
-                text = segment.question,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(
-                        top = if (isTablet) 64.dp else 32.dp,
-                        bottom = if (isTablet) 20.dp else 16.dp
-                    )
-            )
-            Spacer(Modifier.height(if (isTablet) 32.dp else 16.dp))
 
-            segment.choices.forEachIndexed { index, choice ->
-                val (mainColor, shadowColor) = getButtonColors(index)
-                MCQChoiceButton(
-                    onClick = {
-                        if (choice.answer) {
-                            hasAnswered.value = true
-                            SoundEffectManager.playCorrectSound()
-                            showDialog.value = true
-                        } else {
-                            // Just vibrate for wrong answer
-                            SoundEffectManager.playWrongSound()
-                            showWrongDialog.value = true
-                            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-                            } else {
-                                @Suppress("DEPRECATION")
-                                vibrator.vibrate(100)
-                            }
-                        }
-                    },
-                    buttonText = choice.choice,
-                    mainColor = mainColor,
-                    shadowColor = shadowColor,
-                    isTablet = isTablet
+    fun check() {
+        val index = selectedIndex ?: return
+        val choice = segment.choices.getOrNull(index) ?: return
+        if (choice.answer) {
+            SoundEffectManager.playCorrectSound()
+            phase = AnswerPhase.Correct
+        } else {
+            SoundEffectManager.playWrongSound()
+            phase = AnswerPhase.Wrong
+            SoundEffectManager.wrongAnswerHaptic()
+        }
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        LessonPage(
+            bottom = {
+                LessonPrimaryButton(
+                    title = "Check",
+                    kind = if (selectedIndex == null) LessonButtonKind.Disabled else LessonButtonKind.Primary,
+                    onClick = ::check
                 )
             }
-
-            Spacer(Modifier.height(if (isTablet) 20.dp else 16.dp))
-
-//            Image(
-//                painter = painterResource(R.drawable.qna),
-//                contentDescription = "QnA Image",
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .clip(RoundedCornerShape(32.dp)),
-//                contentScale = ContentScale.FillWidth
-//            )
-        }
-
-        // Only show next button if user has answered correctly
-        if (isLastSegment && hasAnswered.value && showNextButton.value && animationFinished.value) {
-            CommonButton(
-                onClick = onNextClicked,
-                buttonText = "Next",
-                mainColor = lightNavyBlue,
-                shadowColor = navyBlue,
-                textColor = white,
+        ) {
+            Text(
+                text = segment.question,
+                style = LessonTheme.question(),
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp)
+                    .fillMaxWidth()
+                    .padding(top = if (isTablet) 56.dp else 32.dp, bottom = if (isTablet) 32.dp else 24.dp)
             )
+            segment.choices.forEachIndexed { index, choice ->
+                val state = stateFor(index)
+                AnswerCard(
+                    state = state,
+                    enabled = phase == AnswerPhase.Answering,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = (64 * LessonTheme.scale()).dp),
+                    onClick = { selectedIndex = index }
+                ) { label ->
+                    Text(
+                        text = choice.choice,
+                        style = LessonTheme.answer().copy(color = label),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                    )
+                }
+                Spacer(Modifier.height(11.dp))
+            }
         }
-    }
-
-    if (showDialog.value) {
-        LottieAnimationDialog(showDialog = showDialog, lottieFileRes = R.raw.tick, durationMs = 2000)
-        LaunchedEffect(showDialog.value) {
-            delay(2000)
-            showDialog.value = false
-            if (isLastSegment) {
-                showNextButton.value = true
-                animationFinished.value = true
-            } else {
+        LessonFeedbackSheet(
+            visible = phase != AnswerPhase.Answering,
+            correct = phase == AnswerPhase.Correct
+        ) {
+            if (phase == AnswerPhase.Correct) {
                 onNextClicked()
+            } else {
+                // Try again: back to answering with nothing selected
+                selectedIndex = null
+                phase = AnswerPhase.Answering
             }
         }
     }
-
-    if (showWrongDialog.value) {
-        LottieAnimationDialog(showDialog = showWrongDialog, lottieFileRes = R.raw.error, durationMs = 1000)
-        LaunchedEffect(showWrongDialog.value) {
-            delay(1000)
-            showWrongDialog.value = false
-        }
-    }
-}
-fun getButtonColors(index: Int): Pair<Color, Color> {
-    return when (index) {
-        0 -> Pair(lightRed, darkRed)
-        1 -> Pair(lightCandyGreen, darkCandyGreen)
-        2 -> Pair(lightPurple, mediumpurple)
-        else -> Pair(lightPink, darkPink)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TextMcqSegmentPreview() {
-    val dummySegment = LessonSegment.TextMcqLesson(
-        question = "What is the capital of France?",
-        choices = listOf(
-            TextMcqItem(choice = "Paris", answer = true),
-            TextMcqItem(choice = "London", answer = false),
-            TextMcqItem(choice = "Berlin", answer = false),
-            TextMcqItem(choice = "Madrid", answer = false)
-        )
-    )
-    TextMcqSegment(segment = dummySegment, onNextClicked = {})
-}
-
-@Preview(showBackground = true, device = "spec:width=800dp,height=1280dp,dpi=240")
-@Composable
-fun TextMcqSegmentTabletPreview() {
-    val dummySegment = LessonSegment.TextMcqLesson(
-        question = "What is the capital of France?",
-        choices = listOf(
-            TextMcqItem(choice = "Paris", answer = true),
-            TextMcqItem(choice = "London", answer = false),
-            TextMcqItem(choice = "Berlin", answer = false),
-            TextMcqItem(choice = "Madrid", answer = false)
-        )
-    )
-    TextMcqSegment(segment = dummySegment, onNextClicked = {})
 }

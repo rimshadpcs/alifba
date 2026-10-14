@@ -5,6 +5,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.disk.DiskCache
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import com.google.firebase.FirebaseApp
 import com.onesignal.OneSignal
@@ -22,7 +25,23 @@ import java.util.Locale
 import java.util.TimeZone
 
 @HiltAndroidApp
-class AlifbaApp : Application() {
+class AlifbaApp : Application(), ImageLoaderFactory {
+
+    // Firebase Storage serves files with `cache-control: private, max-age=0`, which made Coil
+    // re-check (and show its placeholder for) every image on every screen. Ignoring those headers
+    // and keeping a 200MB disk cache means an image is downloaded once.
+    override fun newImageLoader(): ImageLoader =
+        ImageLoader.Builder(this)
+            .respectCacheHeaders(false)
+            .crossfade(true)
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("image_cache"))
+                    .maxSizeBytes(200L * 1024 * 1024)
+                    .build()
+            }
+            .build()
+
 
     private val oneSignalAppId = "1e41357a-fa51-49ce-9470-af0fefbb69b9"
     override fun onCreate() {

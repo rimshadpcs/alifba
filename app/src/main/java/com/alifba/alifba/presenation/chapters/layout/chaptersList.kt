@@ -29,6 +29,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -105,7 +109,18 @@ fun LazyChapterColumn(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     // OLD: val itemSpacingDp = if (isTablet) 48.dp else 32.dp
-    val itemSpacingDp = if (isTablet) 12.dp else 8.dp
+    // Each row is node + 24 frame + 8 padding, so with this gap a node lands every 110dp on phone
+    // and every 143dp (110 x trailScale) on tablet: the grid the meadow trail tile is drawn for.
+    val itemSpacingDp = if (isTablet) 11.dp else 8.dp
+    val nodeSizeDp = if (isTablet) 100.dp else 70.dp
+    val bottomSpacerDp = 60.dp
+    var viewportHeightPx by remember { mutableStateOf(0) }
+
+    // Real center position of each node, relative to the scrollable content Box below — captured
+    // via onGloballyPositioned as each item lays out. Node 0's center anchors the meadow trail;
+    // the current lesson's centers the auto-scroll.
+    val itemCenters = remember { mutableStateMapOf<Int, Offset>() }
+    var scrollContainerCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     // Auto-scroll to the current (first incomplete-and-unlocked) lesson on load. Items are laid
     // out top-to-bottom in REVERSE index order (see displayOrder below), so index 0 sits at the
@@ -121,10 +136,15 @@ fun LazyChapterColumn(
             if (targetIndex != -1) {
                 Log.d("ChapterScroll", "Starting smooth scroll to target index: $targetIndex")
                 try {
+                    // Centre the current lesson on screen (same as iOS's scrollTo anchor .center),
+                    // from its measured position; the node grid is only the fallback
                     val itemStepPx = with(density) { chapterItemStepDp(isTablet).toPx() }
                     val topDownPosition = lessons.size - 1 - targetIndex
-                    val targetScrollPx = (topDownPosition * itemStepPx).roundToInt()
-                        .coerceIn(0, scrollState.maxValue)
+                    val measuredCenter = itemCenters[targetIndex]?.y
+                    val targetScrollPx = (
+                        if (measuredCenter != null) measuredCenter - viewportHeightPx / 2f
+                        else topDownPosition * itemStepPx
+                    ).roundToInt().coerceIn(0, scrollState.maxValue)
 
                     scrollState.animateScrollTo(
                         value = targetScrollPx,
@@ -142,15 +162,10 @@ fun LazyChapterColumn(
         }
     }
 
-    // Real center position of each node, relative to the scrollable content Box below — captured
-    // via onGloballyPositioned as each item lays out. Since this is a plain (non-lazy) Column,
-    // every item is always composed, so every index's true position is always available once
-    // layout settles; nothing here is approximated or windowed.
-    val itemCenters = remember { mutableStateMapOf<Int, Offset>() }
-    var scrollContainerCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .onSizeChanged { viewportHeightPx = it.height },
         contentAlignment = Alignment.TopCenter
     ) {
         Box(
@@ -159,19 +174,16 @@ fun LazyChapterColumn(
                 .verticalScroll(scrollState)
                 .onGloballyPositioned { scrollContainerCoordinates = it }
         ) {
-            // Background sized via matchParentSize to exactly match the real, measured height
-            // of the Column below (not an approximation) — since both are children of the same
-            // Box, this is pixel-exact rather than estimated from itemStepPx.
-            ChapterPathBackgroundStatic(
-                itemCount = lessons.size,
-                isTablet = isTablet,
-                modifier = Modifier.matchParentSize()
-            )
-
-            // Dotted connecting path, drawn from the real captured node centers above — sits
-            // above the grass, below the actual node composables (Column below paints over it).
-            ChapterPathDots(
-                itemCenters = itemCenters,
+            // Grass + sandy trail, sized via matchParentSize to the real Column height and
+            // anchored on the first chapter's measured center so the trail's bends sit exactly
+            // under the nodes.
+            val trailScale = if (isTablet) 1.3f else 1f
+            MeadowPathBackground(
+                trailAnchorY = itemCenters[0]?.y,
+                fallbackAnchorFromBottomPx = with(density) {
+                    (bottomSpacerDp + itemSpacingDp + (nodeSizeDp + 32.dp) / 2).toPx()
+                },
+                trailScale = trailScale,
                 modifier = Modifier.matchParentSize()
             )
 
@@ -185,6 +197,13 @@ fun LazyChapterColumn(
                 modifier = constrainedModifier.align(Alignment.TopCenter),
                 verticalArrangement = Arrangement.spacedBy(itemSpacingDp)
             ) {
+                // Clears the status bar now that the meadow runs edge to edge (iOS: 30 + safe area)
+                Spacer(
+                    modifier = Modifier
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .height(30.dp)
+                )
+
                 // Display order is reversed so index 0 ends up at the bottom, matching the old
                 // reverseLayout = true visual (index 0 = first/bottom-most chapter).
                 val displayOrder = lessons.asReversed()
@@ -224,7 +243,7 @@ fun LazyChapterColumn(
                 // bottom reaches the true screen edge, which is behind the bar. That leaves the
                 // first chapter's node permanently clipped by the bar with no way to scroll it
                 // clear.
-                Spacer(modifier = Modifier.height(60.dp))
+                Spacer(modifier = Modifier.height(bottomSpacerDp))
             }
         }
     }
@@ -260,7 +279,7 @@ fun PulsingStartIndicator(
  * Kept as a separate helper (rather than editing the existing inline literals)
  * so the background layer and the scroll animation can't silently drift apart.
  */
-private fun chapterItemStepDp(isTablet: Boolean) = if (isTablet) 396.dp else 280.dp
+private fun chapterItemStepDp(isTablet: Boolean) = if (isTablet) 143.dp else 110.dp
 
 /**
  * Single source of truth for the horizontal offset applied to each lesson node. Used by
@@ -273,7 +292,8 @@ private fun chapterItemStepDp(isTablet: Boolean) = if (isTablet) 396.dp else 280
  * dead-center, 1 swings left, 2 back to center, 3 swings right, then repeats from 4.
  */
 fun chapterHorizontalOffsetPx(index: Int, isTablet: Boolean, density: Density): Float {
-    val baseOffsetPx = with(density) { (if (isTablet) 120.dp else 80.dp).toPx() }
+    // 80 x the meadow trail's scale (1.3 on tablet), so nodes sit on the trail's bends
+    val baseOffsetPx = with(density) { (if (isTablet) 104.dp else 80.dp).toPx() }
     return when (index % 4) {
         1 -> -baseOffsetPx
         3 -> baseOffsetPx
@@ -490,85 +510,74 @@ fun ChapterPathBackground(
     }
 }
 
+// One meadow tile in dp (iOS points), before the tablet scale-up
+private const val GRASS_TILE_DP = 768f
+private const val TRAIL_TILE_WIDTH_DP = 390f
+private const val MEADOW_FALLBACK = 0xFF7CC77A
+
 /**
- * OLD/unused: [ChapterPathBackground] above was built for the LazyColumn + independently-tracked
- * scroll-offset architecture. Now that [LazyChapterColumn] uses a single Modifier.verticalScroll
- * container for both the background and the nodes, none of that scroll-offset math is needed —
- * this draws the grass/lamp-posts ONCE, statically, sized exactly to match the real Column height
- * via Modifier.matchParentSize() at the call site. It scrolls "for free" because it's a sibling
- * inside the same scrollable Box as the Column, not because anything here tracks scroll position.
+ * The meadow grass: one seamless 768dp tile repeated both ways. Shared by the chapter path below
+ * and Home's loading/empty background, so there is a single definition of how grass looks.
+ * [anchoredToBottom] tiles from the bottom edge (the chapter path, where lesson 1 sits).
  */
 @Composable
-fun ChapterPathBackgroundStatic(
-    itemCount: Int,
-    isTablet: Boolean,
+fun MeadowGrass(modifier: Modifier = Modifier, anchoredToBottom: Boolean = false) {
+    val grass = ImageBitmap.imageResource(id = R.drawable.meadow_grass_tile)
+    val paint = remember(grass) {
+        android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply {
+            shader = BitmapShader(grass.asAndroidBitmap(), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
+        }
+    }
+    Canvas(modifier = modifier) {
+        drawRect(Color(MEADOW_FALLBACK))
+        // The bitmap comes from a density bucket, so scale it to exactly 768dp per tile
+        val scale = GRASS_TILE_DP.dp.toPx() / grass.width
+        paint.shader.setLocalMatrix(android.graphics.Matrix().apply {
+            setScale(scale, scale)
+            if (anchoredToBottom) postTranslate(0f, size.height)
+        })
+        drawContext.canvas.nativeCanvas.drawRect(0f, 0f, size.width, size.height, paint)
+    }
+}
+
+/**
+ * The meadow behind the chapter path: grass plus the sandy trail, both tiled from the BOTTOM of
+ * the content (the first lesson) so adding lessons at the top never shifts the art, and scrolling
+ * up just shows more of it. The trail tile is drawn for the node grid: one node every 110dp
+ * (x [trailScale]), the first one exactly on a tile's bottom edge, swinging 0, -80, 0, +80 from the
+ * centre line, the same 4-step zigzag as [chapterHorizontalOffsetPx].
+ */
+@Composable
+fun MeadowPathBackground(
+    /** Centre of the first chapter's node, measured; null until the first layout pass */
+    trailAnchorY: Float?,
+    /** Where that centre sits from the bottom of the content, used until it is measured */
+    fallbackAnchorFromBottomPx: Float,
+    trailScale: Float,
     modifier: Modifier = Modifier
 ) {
-    if (itemCount == 0) return
-
-    val density = LocalDensity.current
-    val itemStepPx = with(density) { chapterItemStepDp(isTablet).toPx() }
-
-    // Single seamless-tiling texture — replaces the old alternating grass_tile_v1/v2 pair (which
-    // had visible flower/clover motifs that created an obvious seam wherever the same tile
-    // repeated) and the per-block draw loop that alternated between them. This tile has no
-    // strong directional pattern, so one BitmapShader-repeated rect across the whole canvas
-    // covers it with no seam to hide in the first place.
-    val grassTile = ImageBitmap.imageResource(id = R.drawable.grass_tile)
-    val lampPost = ImageBitmap.imageResource(id = R.drawable.lamp_post)
-
-    val grassPaint = remember(grassTile) {
-        Paint().apply {
-            asFrameworkPaint().shader =
-                BitmapShader(grassTile.asAndroidBitmap(), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
+    val trail = ImageBitmap.imageResource(id = R.drawable.meadow_trail_tile)
+    val trailPaint = remember(trail) {
+        android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply {
+            shader = BitmapShader(trail.asAndroidBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.REPEAT)
         }
     }
 
-    Canvas(modifier = modifier) {
-        // Canvas height here is the REAL, exact Column height (matchParentSize), not an
-        // itemStepPx estimate.
-        val canvasHeightPx = size.height
+    Box(modifier = modifier) {
+        MeadowGrass(modifier = Modifier.matchParentSize(), anchoredToBottom = true)
 
-        drawContext.canvas.nativeCanvas.drawRect(
-            0f, 0f, size.width, canvasHeightPx,
-            grassPaint.asFrameworkPaint()
-        )
-
-        // Subtle depth gradient over the tiled grass texture — the grass tiles are opaque baked
-        // PNGs (flowers/clovers painted directly into the pixels, no separate layer to dim), so
-        // this is a translucent color wash on top rather than a true background replacement.
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFFC7E9A0).copy(alpha = 0.35f), Color(0xFF91D17A).copy(alpha = 0.35f)),
-                startY = 0f,
-                endY = canvasHeightPx
-            ),
-            size = Size(size.width, canvasHeightPx)
-        )
-
-        val marginPx = with(density) { 24.dp.toPx() }
-        val nativeLampWidthPx = lampPost.width.toFloat()
-        val nativeLampHeightPx = lampPost.height.toFloat()
-        val lampAspect = nativeLampWidthPx / nativeLampHeightPx
-        val maxLampWidthPx = size.width - marginPx * 2f
-        val lampWidthPx = min(nativeLampWidthPx, maxLampWidthPx)
-        val lampHeightPx = lampWidthPx / lampAspect
-
-        var boundaryEnd = 10
-        while (boundaryEnd <= itemCount) {
-            val cBoundary = boundaryEnd * itemStepPx
-            val yBoundary = canvasHeightPx - cBoundary
-
-            val lampLeft = (size.width - lampWidthPx) / 2f
-            val lampTop = yBoundary - lampHeightPx / 2f
-
-            drawImage(
-                image = lampPost,
-                dstOffset = IntOffset(lampLeft.roundToInt(), lampTop.roundToInt()),
-                dstSize = IntSize(lampWidthPx.roundToInt(), lampHeightPx.roundToInt())
-            )
-
-            boundaryEnd += 10
+        Canvas(modifier = Modifier.matchParentSize()) {
+            val tileWidth = TRAIL_TILE_WIDTH_DP.dp.toPx() * trailScale
+            // nodpi @3x art, so scale from its real pixel width
+            val scale = tileWidth / trail.width
+            val left = (size.width - tileWidth) / 2f
+            val anchor = trailAnchorY ?: (size.height - fallbackAnchorFromBottomPx)
+            trailPaint.shader.setLocalMatrix(android.graphics.Matrix().apply {
+                setScale(scale, scale)
+                // A tile edge (a centre-line node) exactly on the first chapter
+                postTranslate(left, anchor)
+            })
+            drawContext.canvas.nativeCanvas.drawRect(left, 0f, left + tileWidth, size.height, trailPaint)
         }
     }
 }

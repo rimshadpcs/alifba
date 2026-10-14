@@ -2,6 +2,7 @@ package com.alifba.alifba.ui_components.widgets.buttons
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -29,7 +30,7 @@ import com.alifba.alifba.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 @Composable
-fun OptionButton(onClick: () -> Unit, buttonText: String, isTablet: Boolean = false) {
+fun OptionButton(onClick: () -> Unit, buttonText: String, isTablet: Boolean = false, soft: Boolean = false) {
     val configuration = LocalConfiguration.current
     val actualIsTablet = isTablet || (configuration.screenWidthDp > 600)
     
@@ -48,7 +49,11 @@ fun OptionButton(onClick: () -> Unit, buttonText: String, isTablet: Boolean = fa
         modifier = Modifier
             .padding(if (actualIsTablet) 12.dp else 8.dp)
             .clip(RoundedCornerShape(if (actualIsTablet) 12.dp else 8.dp))
-            .background(Color(0xFF525252)) // Button face color
+            // Default: flat dark face with white text. soft = true (fill-in-the-blanks lesson): a
+            // soft blue tint with a navy-tinted border and dark text, same recipe as the profile
+            // stat tiles, so the chips read as tappable rather than disabled.
+            .background(if (soft) Color(0xFFEAEEFE) else Color(0xFF525252)) // Button face color
+            .then(if (soft) Modifier.border(2.dp, Color(0xFF97A9FA), RoundedCornerShape(if (actualIsTablet) 12.dp else 8.dp)) else Modifier)
             .clickable(
                 onClick = {
                     coroutineScope.launch {
@@ -70,7 +75,7 @@ fun OptionButton(onClick: () -> Unit, buttonText: String, isTablet: Boolean = fa
             text = buttonText,
             fontFamily = alifbaFont,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = if (soft) Color(0xFF33333A) else Color.White,
             fontSize = if (actualIsTablet) 22.sp else 17.sp,
             letterSpacing = if (actualIsTablet) 0.8.sp else 0.6.sp,
             maxLines = 1,

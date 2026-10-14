@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,7 +27,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.unit.sp
+import com.alifba.alifba.ui_components.widgets.LessonTheme
+import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -84,6 +91,11 @@ fun ChapterPathItems(
         targetValue = if (isPressed) 0.95f else 1f,
         label = "Scale"
     )
+    // The current (unlocked, not completed) lesson — the one the Moon stands on — is drawn 1.2x
+    // larger so the eye lands on it. Paint-only (graphicsLayer scale around the node's own
+    // centre): layout size, the zigzag and the dotted connector (which reads the layout centre)
+    // are all unchanged.
+    val currentScale = if (shapeType == ChapterNodeShapeType.CIRCLE && !lesson.isLocked && !lesson.isCompleted) 1.2f else 1f
     val offsetY by animateDpAsState(
         targetValue = if (isPressed) 0.dp else 5.dp, // This creates the "press down" effect
         label = "OffsetY"
@@ -104,7 +116,7 @@ fun ChapterPathItems(
                 .size(imageSize + 24.dp) // Overall clickable area
                 .offset(x = horizontalOffset)
                 .then(modifier)
-                .scale(scale)
+                .scale(scale * currentScale)
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null, // No ripple effect
@@ -135,54 +147,16 @@ fun ChapterPathItems(
             } else {
                 Box(
                     modifier = Modifier
-                        .size(imageSize + 16.dp) // Size of the main image container
-                        .offset(y = offsetY)  // animate up/down on press. When not pressed, it's 5.dp down.
-                        // When pressed, it moves to 0.dp (up by 5.dp)
-                        .padding(4.dp), // Inner padding, if needed
+                        .size(imageSize + 16.dp)
+                        // Sinks 3dp while pressed, like iOS
+                        .offset(y = (5.dp - offsetY) * 0.6f),
                     contentAlignment = Alignment.Center
-                )
-                {
-                    // Current (unlocked, not completed) story node gets a coral pedestal disc +
-                    // white border behind the artwork, matching the circle node's "standing on a
-                    // button" treatment — "Warm Coral" from the new palette experiment.
-                    if (!lesson.isLocked && !lesson.isCompleted) {
-                        Box(
-                            modifier = Modifier
-                                .size(imageSize)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFF786A))
-                                .border(3.dp, Color.White, CircleShape)
-                        )
-                    }
-                    Image(
-                        painter = painterResource(id = R.drawable.story),
-                        contentDescription = "Story",
-                        modifier = Modifier.size(imageSize),
-                        colorFilter = if (lesson.isLocked) {
-                            ColorFilter.tint(Color(0xFFD2C4B3))
-                        } else {
-                            null
-                        }
+                ) {
+                    BookNode(
+                        isLocked = lesson.isLocked,
+                        isCompleted = lesson.isCompleted,
+                        modifier = Modifier.requiredSize(imageSize * 1.14f)
                     )
-                    // Locked -> padlock; completed -> checkmark; current -> nothing (story/book
-                    // nodes don't get a play mark, per request — only lesson/circle nodes do).
-                    if (lesson.isLocked) {
-                        Image(
-                            painter = painterResource(id = R.drawable.padlock),
-                            contentDescription = "Locked",
-                            modifier = Modifier.size(imageSize * 0.45f),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    } else if (lesson.isCompleted) {
-                        Canvas(modifier = Modifier.size(imageSize)) {
-                            drawCircle(
-                                color = completedMain,
-                                radius = size.width * 0.32f,
-                                center = Offset(size.width * 0.50f, size.height * 0.48f)
-                            )
-                            drawCheckmarkMark(color = Color.White)
-                        }
-                    }
                 }
             }
 
@@ -191,6 +165,18 @@ fun ChapterPathItems(
             // padlock (large, centered, drawn straight into the node's own Canvas). See the
             // `isCompleted`/`isLocked` branches inside PressableCircleNode (circle/lesson) and
             // the book branch above (Canvas + drawCheckmarkMark) for where these now live.
+        }
+
+        // "Start" beside the current chapter, on the open side: right of a left node, left of a
+        // right node, and for a centre node on the side the trail leaves from below
+        if (!lesson.isLocked && !lesson.isCompleted) {
+            val side = if (index % 4 <= 1) 1f else -1f
+            val pillWidth = (74 * LessonTheme.scale()).dp
+            StartPill(
+                width = pillWidth,
+                onClick = onClick,
+                modifier = Modifier.offset(x = horizontalOffset + (imageSize + pillWidth / 2) * side)
+            )
         }
     }
 }
@@ -325,11 +311,174 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCheckmarkMark(c
     )
 }
 
+// Same colours on iOS (ChapterPathItem.swift)
 private val currentMain = Color(0xff789fdf)
 private val currentShadow = Color(0xFF4673B0)
 private val completedMain = Color(0xFFFDEA60)
 private val completedShadow = Color(0xFFF0BB47)
+private val lockedMain = Color(0xFFD9CFC3)
+private val lockedShadow = Color(0xFFBFB2A3)
+private val bookCover = Color(0xFFF2545B)
+private val bookEdge = Color(0xFFC93A41)
+private val bookPagesShadow = Color(0xFFE6D9D9)
+private val bookmarkBlue = Color(0xFF5B7BF5)
 
+
+/** Rounded check mark drawn in this square (same points as iOS's NodeCheckShape) */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeCheck(strokeWidth: Float, color: Color = Color.White) {
+    val w = size.width
+    val h = size.height
+    val path = Path().apply {
+        moveTo(w * 0.30f, h * 0.52f)
+        lineTo(w * 0.44f, h * 0.66f)
+        lineTo(w * 0.70f, h * 0.38f)
+    }
+    drawPath(
+        path = path,
+        color = color,
+        style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    )
+}
+
+/** Outline padlock drawn in this square: rounded body, shackle arching over (same as iOS's NodeLockShape) */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawNodeLock(strokeWidth: Float, color: Color = Color.White) {
+    val w = size.width
+    val h = size.height
+    val stroke = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(w * 0.28f, h * 0.45f),
+        size = Size(w * 0.44f, h * 0.33f),
+        cornerRadius = CornerRadius(w * 0.08f),
+        style = stroke
+    )
+    val radius = w * 0.14f
+    val cx = w * 0.5f
+    val cy = h * 0.34f
+    val shackle = Path().apply {
+        moveTo(cx - radius, h * 0.45f)
+        lineTo(cx - radius, cy)
+        arcTo(
+            rect = androidx.compose.ui.geometry.Rect(cx - radius, cy - radius, cx + radius, cy + radius),
+            startAngleDegrees = 180f,
+            sweepAngleDegrees = 180f,
+            forceMoveTo = false
+        )
+        lineTo(cx + radius, h * 0.45f)
+    }
+    drawPath(path = shackle, color = color, style = stroke)
+}
+
+/**
+ * Book-shaped node for story (and any other non-lesson) chapters, drawn so it matches iOS exactly:
+ * a slightly tilted cover on a darker 3D edge, a white pages strip, a blue bookmark and a round
+ * badge (yellow with a check when completed, a soft white disc with a lock when locked; the current
+ * story shows the plain cover, with the Start pill beside it).
+ */
+@Composable
+fun BookNode(isLocked: Boolean, isCompleted: Boolean, modifier: Modifier = Modifier) {
+    val cover = if (isLocked) lockedMain else bookCover
+    val edge = if (isLocked) lockedShadow else bookEdge
+    Canvas(modifier = modifier.rotate(-5f)) {
+        val w = size.width
+        val top = w * 0.02f
+        val faceHeight = w * 0.8f
+        val radius = CornerRadius(w * 0.14f)
+        val pagesRadius = CornerRadius(w * 0.14f * 0.85f)
+
+        // Pages: grey line under a white strip, peeking out below the edge
+        drawRoundRect(bookPagesShadow, Offset(w * 0.06f, top + w * 0.10f), Size(w * 0.88f, faceHeight), pagesRadius)
+        drawRoundRect(Color.White, Offset(w * 0.06f, top + w * 0.08f), Size(w * 0.88f, faceHeight), pagesRadius)
+        // 3D edge, then the cover
+        drawRoundRect(edge, Offset(0f, top + w * 0.05f), Size(w, faceHeight), radius)
+        drawRoundRect(cover, Offset(0f, top), Size(w, faceHeight), radius)
+
+        // Bookmark ribbon with a V notch
+        val bx = w * 0.25f
+        val bw = w * 0.13f
+        val by = w * 0.66f
+        val bh = w * 0.32f
+        drawPath(
+            Path().apply {
+                moveTo(bx, by)
+                lineTo(bx + bw, by)
+                lineTo(bx + bw, by + bh)
+                lineTo(bx + bw / 2f, by + bh - bw * 0.4f)
+                lineTo(bx, by + bh)
+                close()
+            },
+            bookmarkBlue
+        )
+
+        if (isLocked || isCompleted) {
+            val badge = w * 0.58f
+            val center = Offset(w / 2f, top + faceHeight / 2f)
+            drawCircle(
+                color = if (isLocked) Color.White.copy(alpha = 0.3f) else completedMain,
+                radius = badge / 2f,
+                center = center
+            )
+            if (isLocked) {
+                val box = badge * 0.72f
+                translate(center.x - box / 2f, center.y - box / 2f) {
+                    scaleDraw(box) { drawNodeLock(strokeWidth = badge * 0.08f) }
+                }
+            } else {
+                translate(center.x - badge / 2f, center.y - badge / 2f) {
+                    scaleDraw(badge) { drawNodeCheck(strokeWidth = badge * 0.09f) }
+                }
+            }
+        }
+    }
+}
+
+/** Runs [block] with the draw size set to a [side] x [side] square at the current origin */
+private inline fun androidx.compose.ui.graphics.drawscope.DrawScope.scaleDraw(
+    side: Float,
+    block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit
+) {
+    val previous = drawContext.size
+    drawContext.size = Size(side, side)
+    block()
+    drawContext.size = previous
+}
+
+/** White "Start" pill beside the current chapter */
+@Composable
+fun StartPill(width: Dp, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val k = LessonTheme.scale()
+    val height = (36 * k).dp
+    val shape = RoundedCornerShape(50)
+    Box(
+        modifier = modifier
+            .size(width, height + 3.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                SoundEffectManager.playClickSound()
+                onClick()
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width, height)
+                .offset(y = 3.dp)
+                .background(LessonTheme.lineEdge, shape)
+        )
+        Box(
+            modifier = Modifier
+                .size(width, height)
+                .background(Color.White, shape),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.material3.Text(
+                text = "Start",
+                style = LessonTheme.answer().copy(fontSize = (18 * k).sp, color = LessonTheme.primaryEdge)
+            )
+        }
+    }
+}
 
 @Composable
 fun PressableCircleNode(
@@ -340,8 +489,7 @@ fun PressableCircleNode(
     modifier: Modifier = Modifier
 ) {
     val (mainColor, shadowColor) = when {
-        // "Warm Sandstone" from the new palette experiment.
-        isLocked -> Color(0xFFD2C4B3) to Color(0xFFA89A89)
+        isLocked -> lockedMain to lockedShadow
         isCompleted -> completedMain to completedShadow
         else -> currentMain to currentShadow // current (unlocked, not completed)
     }
@@ -366,16 +514,13 @@ fun PressableCircleNode(
         ) {
             when {
                 isLocked -> {
-                    Image(
-                        painter = painterResource(id = R.drawable.padlock),
-                        contentDescription = "Locked",
-                        modifier = Modifier.fillMaxSize(0.45f),
-                        colorFilter = ColorFilter.tint(Color.White)
-                    )
+                    Canvas(modifier = Modifier.fillMaxSize(0.6f)) {
+                        drawNodeLock(strokeWidth = size.width / 0.6f * 0.055f)
+                    }
                 }
                 isCompleted -> {
-                    Canvas(modifier = Modifier.matchParentSize()) {
-                        drawCheckmarkMark(color = shadowColor)
+                    Canvas(modifier = Modifier.fillMaxSize(0.7f)) {
+                        drawNodeCheck(strokeWidth = size.width / 0.7f * 0.065f, color = shadowColor)
                     }
                 }
                 // isCurrent: pedestal renders empty — the mascot (below) stands on top of it,

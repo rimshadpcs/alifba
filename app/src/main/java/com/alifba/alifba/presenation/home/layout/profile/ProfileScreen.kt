@@ -58,6 +58,18 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.alifba.alifba.R
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Delete
+import com.alifba.alifba.ui_components.widgets.LessonTheme
+import com.alifba.alifba.ui_components.widgets.AnswerCard
+import com.alifba.alifba.ui_components.widgets.AnswerState
+import com.alifba.alifba.ui_components.widgets.AuthTextField
+import com.alifba.alifba.ui_components.widgets.AuthTheme
+import com.alifba.alifba.ui_components.widgets.ConfirmSheet
+import com.alifba.alifba.ui_components.widgets.ConfirmSheetIcon
+import com.alifba.alifba.ui_components.widgets.LessonCircleButton
+import com.alifba.alifba.ui_components.widgets.LessonPrimaryButton
 import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.ui_components.dialogs.ParentGate
 import com.alifba.alifba.presenation.login.ChildProfile
@@ -112,12 +124,15 @@ fun ProfileScreenWithoutTopBar(
     var showEditProfileSheet by remember { mutableStateOf(false) }
     var editedName by remember { mutableStateOf("") }
     var nameError by remember { mutableStateOf<String?>(null) }
+    var editedAge by remember { mutableStateOf<Int?>(null) }
+    var showRemoveGate by remember { mutableStateOf(false) }
+    var showRemoveConfirm by remember { mutableStateOf(false) }
     
     // Scroll state for collapsing header effect
     val scrollState = rememberLazyListState()
     
     // Animation parameters matching Swift code exactly
-    val baseHeaderHeight = if (isTablet) 200.dp else 160.dp
+    val baseHeaderHeight = if (isTablet) 290.dp else 218.dp
     val collapsedHeaderHeight = if (isTablet) 100.dp else 80.dp
     val collapseRange = baseHeaderHeight - collapsedHeaderHeight
     
@@ -142,7 +157,7 @@ fun ProfileScreenWithoutTopBar(
     
     val avatarSize by remember {
         derivedStateOf {
-            val baseSize = if (isTablet) 140.dp else 100.dp
+            val baseSize = if (isTablet) 150.dp else 108.dp
             val collapsedSize = if (isTablet) 90.dp else 60.dp
             baseSize - (collapseProgress.value * (baseSize.value - collapsedSize.value)).dp
         }
@@ -420,6 +435,7 @@ fun ProfileScreenWithoutTopBar(
                     alpha = headerAlpha,
                     onAvatarClick = {
                         editedName = currentChildProfile?.childName.orEmpty()
+                        editedAge = currentChildProfile?.age?.takeIf { it > 0 }
                         nameError = null
                         showEditProfileSheet = true
                     },
@@ -436,6 +452,7 @@ fun ProfileScreenWithoutTopBar(
                     alpha = collapsedHeaderAlpha,
                     onAvatarClick = {
                         editedName = currentChildProfile?.childName.orEmpty()
+                        editedAge = currentChildProfile?.age?.takeIf { it > 0 }
                         nameError = null
                         showEditProfileSheet = true
                     },
@@ -448,54 +465,94 @@ fun ProfileScreenWithoutTopBar(
             }
         }
 
-        // Edit Profile bottom sheet
+        // Edit profile bottom sheet
         if (showEditProfileSheet) {
-            val sheetState = rememberModalBottomSheetState()
-            fun commitName(): Boolean {
+            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            val originalAge = currentChildProfile?.age?.takeIf { it > 0 }
+            val canRemove = (parentAccount?.profiles?.size ?: 0) > 1
+
+            // Writes the name and age that changed; the name must not be empty
+            fun commitChanges(): Boolean {
                 val original = currentChildProfile?.childName.orEmpty()
                 val trimmed = editedName.trim()
                 if (trimmed.isEmpty()) {
                     nameError = "Please enter a name"
                     return false
                 }
-                if (trimmed.length > 24) {
-                    nameError = "Name is too long"
-                    return false
-                }
-                if (trimmed != original) {
-                    profileViewModel.updateChildName(trimmed)
+                val nameChanged = trimmed != original
+                val ageChanged = editedAge != null && editedAge != originalAge
+                if (nameChanged || ageChanged) {
+                    profileViewModel.updateChildDetails(
+                        newName = if (nameChanged) trimmed else null,
+                        newAge = if (ageChanged) editedAge else null
+                    )
                 }
                 nameError = null
                 return true
             }
+
             ModalBottomSheet(
                 onDismissRequest = { showEditProfileSheet = false },
                 sheetState = sheetState,
                 containerColor = white
             ) {
-                EditProfileBottomSheetContent(
+                EditProfileSheetContent(
+                    avatar = currentChildProfile?.avatar,
                     name = editedName,
                     onNameChange = {
-                        editedName = it
+                        editedName = it.take(20)
                         nameError = null
                     },
                     nameError = nameError,
-                    onSave = {
-                        if (commitName()) {
-                            showEditProfileSheet = false
-                        }
-                    },
-                    onCommitName = { commitName() },
-                    onChangeAvatar = {
-                        if (commitName()) {
+                    age = editedAge,
+                    onAgeChange = { editedAge = it },
+                    canRemove = canRemove,
+                    onChangeBuddy = {
+                        if (commitChanges()) {
                             showEditProfileSheet = false
                             navController.navigate("changeAvatar")
                         }
                     },
-                    onCancel = {
-                        showEditProfileSheet = false
+                    onSave = {
+                        if (commitChanges()) {
+                            showEditProfileSheet = false
+                        }
                     },
+                    onClose = { showEditProfileSheet = false },
+                    onRemove = { showRemoveGate = true },
                     isTablet = isTablet
+                )
+            }
+
+            if (showRemoveGate) {
+                ParentGate(
+                    onVerified = {
+                        showRemoveGate = false
+                        showRemoveConfirm = true
+                    },
+                    onDismiss = { showRemoveGate = false }
+                )
+            }
+
+            if (showRemoveConfirm) {
+                ConfirmSheet(
+                    title = "Remove ${currentChildProfile?.childName.orEmpty()}\u2019s profile?",
+                    message = "This deletes their progress, badges and streak for good. It can\u2019t be undone.",
+                    primaryTitle = "Keep this profile",
+                    destructiveTitle = "Yes, remove it",
+                    onPrimary = { showRemoveConfirm = false },
+                    onDestructive = {
+                        showRemoveConfirm = false
+                        showEditProfileSheet = false
+                        profileViewModel.removeActiveChildProfile()
+                    },
+                    icon = {
+                        ConfirmSheetIcon(
+                            imageVector = androidx.compose.material.icons.Icons.Outlined.Delete,
+                            tint = LessonTheme.wrongEdge,
+                            face = Color(0xFFFCEAEA)
+                        )
+                    }
                 )
             }
         }
@@ -503,98 +560,220 @@ fun ProfileScreenWithoutTopBar(
     }
 }
 
+/** The ages a child can be set to; the last one reads "13+" */
+private val EditProfileAges = (4..13).toList()
+
 @Composable
-private fun EditProfileBottomSheetContent(
+private fun EditProfileSheetContent(
+    avatar: String?,
     name: String,
     onNameChange: (String) -> Unit,
     nameError: String?,
+    age: Int?,
+    onAgeChange: (Int) -> Unit,
+    canRemove: Boolean,
+    onChangeBuddy: () -> Unit,
     onSave: () -> Unit,
-    onCommitName: () -> Unit,
-    onChangeAvatar: () -> Unit,
-    onCancel: () -> Unit,
+    onClose: () -> Unit,
+    onRemove: () -> Unit,
     isTablet: Boolean
 ) {
-    val alifbaFont = FontFamily(Font(R.font.vag_round, FontWeight.Bold))
-    // Captured here because inside the text field's label slot LocalContentColor is the label's own
-    // (grey/primary) colour, not the sheet's.
-    val textBlack = LocalContentColor.current
+    val k = LessonTheme.scale()
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(if (isTablet) 24.dp else 16.dp),
+            .fillMaxHeight()
+            .navigationBarsPadding()
+            .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Edit Profile",
-            fontSize = if (isTablet) 24.sp else 20.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = alifbaFont,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
-
-        var hadFocus by remember { mutableStateOf(false) }
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
-            label = { Text("Child's name", color = textBlack) },
-            singleLine = true,
-            isError = nameError != null,
+        // Title centred, round close button on the right
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .onFocusChanged { state ->
-                    if (hadFocus && !state.isFocused) {
-                        onCommitName()
-                    }
-                    hadFocus = state.isFocused
-                }
-        )
-
-        if (nameError != null) {
-            Spacer(modifier = Modifier.height(4.dp))
+                .padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 12.dp)
+        ) {
             Text(
-                text = nameError,
-                color = lightRed,
-                fontSize = 14.sp,
-                fontFamily = alifbaFont
+                text = "Edit profile",
+                style = LessonTheme.question().copy(fontSize = (28 * k).sp),
+                modifier = Modifier.align(Alignment.Center)
             )
+            LessonCircleButton(
+                modifier = Modifier.align(Alignment.CenterEnd),
+                onClick = onClose
+            ) {
+                androidx.compose.material3.Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Filled.Close,
+                    contentDescription = "Close",
+                    tint = LessonTheme.primary,
+                    modifier = Modifier.size((20 * k).dp)
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
-
-        CommonButton(
-            buttonText = "Change Avatar",
-            mainColor = lightNavyBlue,
-            shadowColor = navyBlue,
-            textColor = white,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onChangeAvatar
-        )
-
-        Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
-
-        CommonButton(
-            buttonText = "Save",
-            mainColor = navyBlue,
-            shadowColor = black,
-            textColor = white,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onSave
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Cancel",
-            fontFamily = alifbaFont,
-            color = navyBlue,
+        Column(
             modifier = Modifier
-                .padding(top = 4.dp)
-                .clickable { onCancel() }
+                .weight(1f)
+                .widthIn(max = 560.dp)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = LessonTheme.margin)
+                .padding(top = 8.dp, bottom = 16.dp)
+        ) {
+            // Avatar and "Change buddy" both open the avatar picker
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ProfileAvatar(
+                    avatar = avatar,
+                    size = (120 * k).dp,
+                    ringWidth = if (isTablet) 8.dp else 5.dp,
+                    badgeSize = (40 * k).dp,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        SoundEffectManager.playClickSound()
+                        onChangeBuddy()
+                    }
+                )
+                Text(
+                    text = "Change buddy",
+                    style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.primaryEdge),
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            SoundEffectManager.playClickSound()
+                            onChangeBuddy()
+                        }
+                )
+            }
+
+            AuthTextField(
+                value = name,
+                onValueChange = onNameChange,
+                placeholder = "Enter name",
+                icon = null,
+                modifier = Modifier.padding(top = 24.dp),
+                label = "Child\u2019s name",
+                hint = nameError,
+                hintStyle = com.alifba.alifba.ui_components.widgets.AuthHintStyle.Bad,
+                isError = nameError != null,
+                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words,
+                imeAction = androidx.compose.ui.text.input.ImeAction.Done,
+                focusHalo = true
+            )
+
+            Text(
+                text = "Age",
+                style = LessonTheme.answer().copy(fontSize = (17 * k).sp),
+                modifier = Modifier.padding(start = 4.dp, top = 24.dp, bottom = 8.dp)
+            )
+
+            // Two rows of five
+            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                EditProfileAges.chunked(5).forEach { rowAges ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        rowAges.forEach { value ->
+                            Box(modifier = Modifier.weight(1f)) {
+                                AnswerCard(
+                                    state = if (age == value) AnswerState.Selected else AnswerState.Normal,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((52 * k).dp),
+                                    onClick = { onAgeChange(value) }
+                                ) { labelColor ->
+                                    Text(
+                                        text = if (value == EditProfileAges.last()) "$value+" else "$value",
+                                        style = LessonTheme.answer().copy(fontSize = (22 * k).sp, color = labelColor)
+                                    )
+                                }
+                            }
+                        }
+                        repeat(5 - rowAges.size) { Spacer(modifier = Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .widthIn(max = 560.dp)
+                .fillMaxWidth()
+                .padding(horizontal = LessonTheme.margin)
+                .padding(top = 8.dp, bottom = if (canRemove) 4.dp else 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            LessonPrimaryButton(title = "Save", onClick = onSave)
+
+            if (canRemove) {
+                Text(
+                    text = "Remove this profile",
+                    style = LessonTheme.answer().copy(fontSize = (17 * k).sp, color = LessonTheme.wrongEdge),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 44.dp)
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            SoundEffectManager.playClickSound()
+                            onRemove()
+                        }
+                        .wrapContentHeight(Alignment.CenterVertically)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The child's avatar in a black ring with the blue pencil badge; the profile header and the Edit
+ * profile sheet share it.
+ */
+@Composable
+private fun ProfileAvatar(
+    avatar: String?,
+    size: Dp,
+    ringWidth: Dp,
+    badgeSize: Dp,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier.size(size)) {
+        Image(
+            painter = painterResource(
+                id = if (avatar != null) getAvatarHeadShots(avatar) else R.drawable.avatar9
+            ),
+            contentDescription = "User Avatar",
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(white)
+                .border(ringWidth, black, CircleShape),
+            contentScale = ContentScale.Crop
         )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 2.dp, y = 6.dp)
+                .size(badgeSize)
+                .background(LessonTheme.primary, CircleShape)
+                .border(3.dp, Color.White, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.material3.Icon(
+                imageVector = androidx.compose.material.icons.Icons.Filled.Edit,
+                contentDescription = "Edit profile",
+                tint = Color.White,
+                modifier = Modifier.size(badgeSize * 0.5f)
+            )
+        }
     }
 }
 
@@ -1113,79 +1292,60 @@ fun ExpandedHeader(
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp.dp > 600.dp
     
-    Row(
+    // Avatar centred with the name and age under it; the settings button stays in the top-right
+    // corner.
+    val headerNameSize = if (isTablet) 42.sp else 32.sp
+    val headerAgeSize = if (isTablet) 26.sp else 19.sp
+    val badgeSize = avatarSize * 0.35f
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(
                 horizontal = if (isTablet) 32.dp else 16.dp,
-                vertical = if (isTablet) 20.dp else 8.dp
+                vertical = if (isTablet) 20.dp else 4.dp
             )
-            .graphicsLayer(alpha = alpha),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .graphicsLayer(alpha = alpha)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Avatar with edit button
-            Box(
-                modifier = Modifier
-                    .size(avatarSize)
-                    .clickable { onAvatarClick() }
-            ) {
-                // Avatar Image
-                Image(
-                    painter = if (childProfile != null) {
-                        painterResource(id = getAvatarHeadShots(childProfile?.avatar ?: ""))
-                    } else {
-                        painterResource(id = R.drawable.avatar9)
-                    },
-                    contentDescription = "User Avatar",
-                    modifier = Modifier
-                        .size(avatarSize)
-                        .clip(CircleShape)
-                        .background(white)
-                        .border(5.dp, black, CircleShape),
-                    contentScale = ContentScale.Crop
-                )
+            // Avatar with the black ring and the blue edit badge
+            ProfileAvatar(
+                avatar = childProfile?.avatar,
+                size = avatarSize,
+                ringWidth = if (isTablet) 8.dp else 5.dp,
+                badgeSize = badgeSize,
+                modifier = Modifier.clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { onAvatarClick() }
+            )
 
-                // Pencil Icon - scales with avatar
-                Image(
-                    painter = painterResource(id = R.drawable.pencil),
-                    contentDescription = "Edit Avatar",
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(avatarSize * 0.24f)
-                        .background(white, CircleShape)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(if (isTablet) 24.dp else 16.dp))
-
-            // Child name + age
-            val headerNameSize = if (isTablet) 48.sp else nameTextSize
-            val headerAgeSize = if (isTablet) 36.sp else 18.sp
-
-            Column {
+            Text(
+                text = childProfile?.childName ?: "Loading...",
+                style = LessonTheme.question().copy(fontSize = headerNameSize),
+                modifier = Modifier.padding(top = 10.dp)
+            )
+            val age = childProfile?.age
+            if (age != null && age.toString() != "0") {
                 Text(
-                    text = childProfile?.childName ?: "Loading...",
-                    fontSize = headerNameSize,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = alifbaFont
-                )
-                Text(
-                    text = "Age: ${childProfile?.age ?: "--"}",
-                    fontSize = headerAgeSize,
-                    fontFamily = alifbaFont
+                    text = "Age $age",
+                    style = LessonTheme.answer().copy(fontSize = headerAgeSize, color = AuthTheme.secondaryText)
                 )
             }
         }
-        
-        // Settings button aligned with profile picture
-        SettingsButton(
-            buttonSize = if (isTablet) 72.dp else 48.dp,
-            onClick = onSettingsClick
-        )
+
+        // Settings button, top-right
+        Box(modifier = Modifier.align(Alignment.TopEnd)) {
+            SettingsButton(
+                buttonSize = if (isTablet) 72.dp else 48.dp,
+                onClick = onSettingsClick
+            )
+        }
     }
 }
 

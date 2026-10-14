@@ -1,5 +1,6 @@
 package com.alifba.alifba.presenation.login
 
+import com.alifba.alifba.utils.PremiumAccess
 import android.app.Activity
 import android.content.Context
 import android.util.Log
@@ -822,7 +823,7 @@ class AuthViewModel @Inject constructor(
                 appUserId,
                 object : LogInCallback {
                     override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {
-                        val isPro = customerInfo.entitlements.active.containsKey("Alifba Pro")
+                        val isPro = PremiumAccess.isPremium(customerInfo)
                         viewModelScope.launch {
                             dataStoreManager.setPremium(isPro)
                         }
@@ -1287,7 +1288,7 @@ class AuthViewModel @Inject constructor(
                     Log.e("PostHog", "Failed to fetch subscription status: ${error.message}")
                 },
                 onSuccess = { customerInfo ->
-                    val isPro = customerInfo.entitlements.active.containsKey("Alifba Pro")
+                    val isPro = PremiumAccess.isPremium(customerInfo)
                     viewModelScope.launch {
                         dataStoreManager.setPremium(isPro)
                     }

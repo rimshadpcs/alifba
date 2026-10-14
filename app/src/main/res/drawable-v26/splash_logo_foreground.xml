@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The splash logo in the adaptive icon's square. The splash masks its icon to a circle two
+     thirds of the square wide, so the wide logo sits 58% wide in the middle, clear of the
+     circle's edge; the insets keep the logo's 763:256 shape. The bitmap is no-dpi so it's drawn
+     from the full-size image rather than stretched up from a small one. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/splash_logo"
+    android:insetLeft="21%"
+    android:insetRight="21%"
+    android:insetTop="40.27%"
+    android:insetBottom="40.27%" />

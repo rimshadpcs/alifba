@@ -1,5 +1,7 @@
 package com.alifba.alifba.data.gifts
 
+import com.revenuecat.purchases.awaitCustomerInfo
+import com.alifba.alifba.utils.PremiumAccess
 import android.util.Log
 import com.alifba.alifba.features.authentication.DataStoreManager
 import com.google.firebase.auth.FirebaseAuth
@@ -81,7 +83,19 @@ class GiftCodeRepository @Inject constructor(
                 val premiumExpiresDate: Date? = premiumExpiresAtMillis?.let { Date(it) }
 
                 val isPremium = premiumStatus == "LIFETIME" || premiumStatus == "TEMPORARY"
-                dataStoreManager.setPremium(isPremium)
+                // The backend grants the gift in RevenueCat, so save what RevenueCat says. The gift
+                // record is only the fallback when RevenueCat can't be reached; the next app
+                // resume re-checks RevenueCat either way.
+                val fromRevenueCat = try {
+                    PremiumAccess.isPremium(
+                        com.revenuecat.purchases.Purchases.sharedInstance
+                            .awaitCustomerInfo(com.revenuecat.purchases.CacheFetchPolicy.FETCH_CURRENT)
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "RevenueCat refresh after redeem failed: ${e.message}")
+                    null
+                }
+                dataStoreManager.setPremium(fromRevenueCat ?: isPremium)
 
                 RedeemResult.Success(
                     planType = parsed.planType,

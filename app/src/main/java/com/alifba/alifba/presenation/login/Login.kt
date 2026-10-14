@@ -74,6 +74,33 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.widgets.DotLottieView
+import com.alifba.alifba.ui_components.widgets.AuthBadge
+import com.alifba.alifba.ui_components.widgets.AuthBanner
+import com.alifba.alifba.ui_components.widgets.AuthCard
+import com.alifba.alifba.ui_components.widgets.AuthOrDivider
+import com.alifba.alifba.ui_components.widgets.AuthPillButton
+import com.alifba.alifba.ui_components.widgets.AuthPillKind
+import com.alifba.alifba.ui_components.widgets.AuthHintStyle
+import com.alifba.alifba.ui_components.widgets.AuthSwitchPill
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.alifba.alifba.ui_components.widgets.AuthTextField
+import com.alifba.alifba.ui_components.widgets.AuthTheme
+import com.alifba.alifba.ui_components.widgets.LessonCircleButton
+import com.alifba.alifba.ui_components.widgets.LessonPrimaryButton
+import com.alifba.alifba.ui_components.widgets.LessonSecondaryButton
+import com.alifba.alifba.ui_components.widgets.LessonTheme
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.em
 import com.alifba.alifba.ui_components.widgets.textFields.CustomInputField
 import com.alifba.alifba.ui_components.widgets.textFields.PasswordInputField
 import com.alifba.alifba.ui_components.widgets.textFields.GoogleAndAppleSignInButtons
@@ -92,140 +119,52 @@ enum class LoginEntryMode {
     SignIn
 }
 
-private val LandingTextSecondary = Color(0xFF6D6A63)
-private val LandingLinkBackdrop = Color(0xE6FFF8EC)
-
-// Bold rounded white greeting with a navy outline and soft drop shadow (mirrored by OutlineText on
-// iOS). The stroked copy sits behind the white fill, so only its outer half shows as the outline.
-@Composable
-private fun OutlinedGreeting(
-    isTablet: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val density = LocalDensity.current
-    val fontFamily = FontFamily(Font(R.font.vag_round_boldd, FontWeight.Bold))
-    val fontSize = if (isTablet) 38.sp else 32.sp
-    val outlinePx = with(density) { (if (isTablet) 2.dp else 1.dp).toPx() }
-    val shadow = with(density) {
-        Shadow(
-            color = Color.Black.copy(alpha = 0.3f),
-            offset = Offset(1.dp.toPx(), 1.dp.toPx()),
-            blurRadius = 2.dp.toPx()
-        )
-    }
-    Box(modifier = modifier) {
-        Text(
-            text = "Assalamu Alaikkum",
-            fontSize = fontSize,
-            fontFamily = fontFamily,
-            color = navyBlue,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-            style = TextStyle(
-                drawStyle = Stroke(width = outlinePx * 2, join = StrokeJoin.Round),
-                shadow = shadow
-            )
-        )
-        Text(
-            text = "Assalamu Alaikkum",
-            fontSize = fontSize,
-            fontFamily = fontFamily,
-            color = white,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
 @Composable
 private fun LandingContent(
     isTablet: Boolean,
-    onGetStarted: () -> Unit
+    onGetStarted: () -> Unit,
+    onLogIn: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
+    val k = LessonTheme.scale()
     // Scales the hero down on short phones so the CTA never gets pushed off-screen.
     val mascotSize = if (isTablet) 320.dp else (configuration.screenHeightDp * 0.27f).dp.coerceIn(150.dp, 240.dp)
 
-    // Lifts the whole block above the vertical centre. Bottom padding on a centred column only
-    // moves the content up by half its size, hence the doubling.
-    val lift = (configuration.screenHeightDp * if (isTablet) 0.05f else 0.07f).dp
-
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = if (isTablet) 560.dp else 380.dp)
-            .padding(bottom = (configuration.screenHeightDp * if (isTablet) 0.06f else 0.08f).dp + lift * 2),
+            .fillMaxSize()
+            .padding(top = (configuration.screenHeightDp * if (isTablet) 0.1f else 0.06f).dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        DotLottieView(
-            name = "moonwave",
-            modifier = Modifier.size(mascotSize)
-        )
-        Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 4.dp))
-        Image(
-            painter = painterResource(id = R.drawable.alifba_wordmark),
-            contentDescription = "Alifba",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.width(if (isTablet) 340.dp else 210.dp)
-        )
-        OutlinedGreeting(
-            isTablet = isTablet,
-            modifier = Modifier.padding(top = if (isTablet) 10.dp else 6.dp)
-        )
-        Spacer(modifier = Modifier.height(if (isTablet) 44.dp else 28.dp))
-        CommonButton(
-            onClick = onGetStarted,
-            buttonText = "Get Started",
-            shadowColor = navyBlue,
-            mainColor = lightNavyBlue,
-            textColor = white,
+        Column(
             modifier = Modifier
+                .widthIn(max = 520.dp)
                 .fillMaxWidth()
-                .then(
-                    if (isTablet) Modifier.height(80.dp)
-                    else Modifier
-                )
-        )
-    }
-}
-
-@Composable
-private fun LandingLoginLink(
-    isTablet: Boolean,
-    onLogIn: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val alifbaFont = FontFamily(
-        Font(R.font.vag_round, FontWeight.Normal),
-        Font(R.font.vag_round_boldd, FontWeight.Bold)
-    )
-    // Pinned to the bottom, on the grass, so it reads as a secondary action well clear of the CTA.
-    // The backdrop keeps it legible over the grass and the background's bees/butterflies.
-    Row(
-        modifier = modifier
-            .navigationBarsPadding()
-            .padding(bottom = if (isTablet) 40.dp else 28.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(LandingLinkBackdrop)
-            .clickable(onClick = onLogIn)
-            .padding(horizontal = 16.dp, vertical = if (isTablet) 14.dp else 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Already have an account?",
-            fontFamily = alifbaFont,
-            fontWeight = FontWeight.Normal,
-            fontSize = if (isTablet) 20.sp else 15.sp,
-            color = LandingTextSecondary
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = "Log in",
-            fontFamily = alifbaFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (isTablet) 20.sp else 15.sp,
-            color = navyBlue
-        )
+                .padding(horizontal = LessonTheme.margin),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // The waving Moon stays a Lottie animation
+            DotLottieView(
+                name = "moonwave",
+                modifier = Modifier.size(mascotSize)
+            )
+            Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 4.dp))
+            Image(
+                painter = painterResource(id = R.drawable.alifba_wordmark),
+                contentDescription = "Alifba",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.width(if (isTablet) 340.dp else 210.dp)
+            )
+            Text(
+                text = "Assalamu alaikum!",
+                style = LessonTheme.question().copy(fontSize = (28 * k).sp, textAlign = TextAlign.Center),
+                modifier = Modifier.padding(top = 14.dp)
+            )
+            Spacer(modifier = Modifier.height(34.dp))
+            LessonPrimaryButton(title = "Get started", onClick = onGetStarted)
+            Spacer(modifier = Modifier.height(12.dp))
+            LessonSecondaryButton(title = "I already have an account", onClick = onLogIn)
+        }
     }
 }
 
@@ -252,6 +191,22 @@ fun LoginScreen(
     var resendCooldownSeconds by remember { mutableStateOf(0) }
     var contactEmailInput by remember { mutableStateOf("") }
     var pendingNavigation by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    // Dismissable banner (replaces the system toast): the id re-arms the auto-dismiss timer when
+    // the same message is shown twice in a row.
+    var banner by remember { mutableStateOf<Pair<Int, String>?>(null) }
+    var lastBannerText by remember { mutableStateOf("") }
+    val showBanner: (String) -> Unit = { text -> banner = Pair((banner?.first ?: 0) + 1, text) }
+    val cancelledMessage = "Sign-in was cancelled. Try again, or pick another option."
+    val showAuthError: (String) -> Unit = { text ->
+        showBanner(if (text.contains("cancel", ignoreCase = true)) cancelledMessage else text)
+    }
+    LaunchedEffect(banner?.first) {
+        if (banner != null) {
+            delay(4500)
+            banner = null
+        }
+    }
 
     val authState by viewModel.authState.collectAsState()
     val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsState(initial = false)
@@ -349,16 +304,21 @@ fun LoginScreen(
                     onResult = handleOAuthSignInResult,
                     onError = { error ->
                         isLoading = false
-                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                        showAuthError(error)
                     }
                 )
             } else {
                 isLoading = false
-                Toast.makeText(context, "Google sign-in failed: missing token.", Toast.LENGTH_SHORT).show()
+                showBanner("Google sign-in failed: missing token.")
             }
         } catch (e: ApiException) {
             isLoading = false
-            Toast.makeText(context, "Google sign-in failed: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            // 12501 = the user closed the Google sheet
+            if (e.statusCode == 12501) {
+                showBanner(cancelledMessage)
+            } else {
+                showBanner("Google sign-in failed: ${e.localizedMessage}")
+            }
         }
     }
 
@@ -382,7 +342,7 @@ fun LoginScreen(
                                 onSignInResult = handleSignInResult,
                                 onSignUpVerified = handleSignUpVerified,
                                 onError = { error ->
-                                    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                                    showBanner(error)
                                 }
                             )
                         },
@@ -406,14 +366,30 @@ fun LoginScreen(
         }
     }
 
-    // Define animation specs for smoother transitions
-    val fadeInSpec = fadeIn(animationSpec = tween(durationMillis = 500))
-    val fadeOutSpec = fadeOut(animationSpec = tween(durationMillis = 300))
+    val startAppleSignIn: () -> Unit = {
+        if (activity == null) {
+            showBanner("Unable to start Apple sign-in.")
+        } else {
+            viewModel.clearProviderSuggestion()
+            isLoading = true
+            viewModel.signInWithApple(
+                activity = activity,
+                onResult = handleOAuthSignInResult,
+                onError = { error ->
+                    isLoading = false
+                    showAuthError(error)
+                }
+            )
+        }
+    }
+    val startGoogleSignIn: () -> Unit = {
+        viewModel.clearProviderSuggestion()
+        isLoading = true
+        googleLauncher.launch(googleSignInClient.signInIntent)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-            // Background image — no dulling overlay: the "Assalamu Alaikkum" text already
-            // carries its own drop shadow for contrast, and the buttons below have solid
-            // backgrounds, so nothing here depends on a scrim for legibility.
+        Box(modifier = Modifier.fillMaxSize()) {
             Image(
                 painter = painterResource(id = R.drawable.login_background),
                 contentDescription = "background",
@@ -421,341 +397,370 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // App logo at the top
-//            Box(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(top = if (isTablet) 64.dp else 32.dp),
-//                contentAlignment = Alignment.TopCenter
-//            ) {
-//                Image(
-//                    painter = painterResource(id = R.drawable.alifba_logo_transparent),
-//                    contentDescription = "Alifba Logo",
-//                    modifier = Modifier
-//                        .size(if (isTablet) 160.dp else 120.dp)
-//                        .padding(8.dp)
-//                )
-//            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (entryMode == LoginEntryMode.Landing) {
-                    LandingContent(
-                        isTablet = isTablet,
-                        onGetStarted = {
-                            navController.navigate(
-                                if (hasCompletedOnboarding) "authOptions/signup" else "onboarding"
-                            )
-                        }
-                    )
-                } else {
-                    Spacer(modifier = Modifier.height(if (isTablet) 60.dp else 40.dp)) // Reduced space for better centering
-
-                    OutlinedGreeting(
-                        isTablet = isTablet,
+            if (entryMode == LoginEntryMode.Landing) {
+                LandingContent(
+                    isTablet = isTablet,
+                    onGetStarted = {
+                        navController.navigate(
+                            if (hasCompletedOnboarding) "authOptions/signup" else "onboarding"
+                        )
+                    },
+                    onLogIn = { navController.navigate("authOptions/login") }
+                )
+            } else {
+                val k = LessonTheme.scale()
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = if (isTablet) 24.dp else 16.dp)
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = showAuthOptions,
-                    enter = fadeInSpec + expandVertically(),
-                    exit = fadeOutSpec + shrinkVertically()
-                ) {
-                    Card(
-                        modifier = Modifier
-                            .then(
-                                if (isTablet) {
-                                    Modifier
-                                        .widthIn(max = 500.dp)
-                                        .fillMaxWidth(0.8f)
-                                } else {
-                                    Modifier.fillMaxWidth()
-                                }
-                            )
-                            .padding(horizontal = if (isTablet) 32.dp else 16.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = white.copy(alpha = 0.95f)
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 6.dp
-                        )
+                            .padding(start = 20.dp, end = 20.dp, top = 12.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(if (isTablet) 32.dp else 24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            AnimatedVisibility(
-                                visible = !showEmailForm,
-                                enter = fadeInSpec + expandVertically(),
-                                exit = fadeOutSpec + shrinkVertically()
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    GoogleAndAppleSignInButtons(
-                                        onGoogleClick = {
-                                            viewModel.clearProviderSuggestion()
-                                            isLoading = true
-                                            googleLauncher.launch(googleSignInClient.signInIntent)
-                                        },
-                                        onAppleClick = {
-                                            if (activity == null) {
-                                                Toast.makeText(context, "Unable to start Apple sign-in.", Toast.LENGTH_SHORT).show()
-                                                return@GoogleAndAppleSignInButtons
-                                            }
-                                            viewModel.clearProviderSuggestion()
-                                            isLoading = true
-                                            viewModel.signInWithApple(
-                                                activity = activity,
-                                                onResult = handleOAuthSignInResult,
-                                                onError = { error ->
-                                                    isLoading = false
-                                                    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                                                }
-                                            )
-                                        }
-                                    )
-
-                                    Spacer(modifier = Modifier.height(if (isTablet) 16.dp else 12.dp))
-
-                                    CommonButton(
-                                        onClick = {
-                                            viewModel.clearProviderSuggestion()
-                                            showEmailForm = true
-                                        },
-                                        buttonText = "Email and password",
-                                        shadowColor = navyBlue,
-                                        mainColor = lightNavyBlue,
-                                        textColor = white,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .then(
-                                                if (isTablet) Modifier.height(72.dp)
-                                                else Modifier
-                                            )
-                                    )
-                                }
-                            }
-
-                            AnimatedVisibility(
-                                visible = showEmailForm,
-                                enter = fadeInSpec + expandVertically(),
-                                exit = fadeOutSpec + shrinkVertically()
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = if (isTablet) 24.dp else 16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = if (isSignUpVisible) "Sign Up" else "Log In",
-                                        fontSize = if (isTablet) 30.sp else 24.sp,
-                                        color = navyBlue,
-                                        fontFamily = FontFamily(
-                                            Font(
-                                                R.font.vag_round,
-                                                FontWeight.Bold
-                                            )
-                                        ),
-                                        modifier = Modifier.padding(bottom = if (isTablet) 20.dp else 16.dp)
-                                    )
-
-                                    CustomInputField(
-                                        value = email,
-                                        onValueChange = {
-                                            email = it
-                                            viewModel.clearProviderSuggestion()
-                                        },
-                                        labelText = "Email Address",
-                                        textColor = black,
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Default.Email,
-                                                contentDescription = "Email",
-                                                tint = navyBlue
-                                            )
-                                        },
-                                        keyboardType = KeyboardType.Email
-                                    )
-
-                                    Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 8.dp))
-
-                                    PasswordInputField(
-                                        value = password,
-                                        onValueChange = { password = it },
-                                        labelText = "Password",
-                                        textColor = black
-                                    )
-
-                                    if (isLoginVisible) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "Forgot Password?",
-                                            color = navyBlue,
-                                            modifier = Modifier
-                                                .clickable { navController.navigate("forgotPassword") }
-                                                .align(Alignment.End)
-                                        )
-                                    }
-
-                                    if (isSignUpVisible) {
-                                        Spacer(modifier = Modifier.height(if (isTablet) 12.dp else 8.dp))
-                                        PasswordInputField(
-                                            value = repeatPassword,
-                                            onValueChange = { repeatPassword = it },
-                                            labelText = "Confirm Password",
-                                            textColor = black,
-                                            imeAction = androidx.compose.ui.text.input.ImeAction.Done
-                                        )
-                                    }
-
-                                    errorMessage?.let {
-                                        Text(
-                                            text = it,
-                                            color = MaterialTheme.colorScheme.error,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.padding(top = 8.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Form Action Buttons
-                AnimatedVisibility(
-                    visible = showEmailForm,
-                    enter = fadeInSpec,
-                    exit = fadeOutSpec
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .then(
-                                if (isTablet) {
-                                    Modifier
-                                        .widthIn(max = 400.dp)
-                                        .fillMaxWidth(0.7f)
-                                } else {
-                                    Modifier
-                                        .widthIn(max = 300.dp)
-                                        .fillMaxWidth(0.85f)
-                                }
-                            )
-                            .padding(bottom = if (isTablet) 16.dp else 12.dp, top = if (isTablet) 24.dp else 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CommonButton(
-                            onClick = {
-                                isLoading = true
-                                if (isSignUpVisible) {
-                                    if (password == repeatPassword) {
-                                        viewModel.signUp(email, password,
-                                            onSuccess = {
-                                                isLoading = false
-                                            },
-                                            onError = { error ->
-                                                isLoading = false
-                                                Toast.makeText(
-                                                    context,
-                                                    "Sign Up Failed: $error",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                        )
-                                    } else {
-                                        isLoading = false
-                                        Toast.makeText(
-                                            context,
-                                            "Passwords do not match",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                } else {
-                                    viewModel.signIn(email, password,
-                                        onResult = handleSignInResult,
-                                        onError = { error ->
-                                            isLoading = false
-                                            Toast.makeText(
-                                                context,
-                                                "Login Failed: $error",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    )
-                                }
-                            },
-                            buttonText = if (isSignUpVisible) "Sign Up" else "Log In",
-                            shadowColor = navyBlue,
-                            mainColor = lightNavyBlue,
-                            textColor = white,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(if (isTablet) 16.dp else 12.dp))
-
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = showAuthOptions,
-                    enter = fadeInSpec,
-                    exit = fadeOutSpec
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .then(
-                                if (isTablet) {
-                                    Modifier
-                                        .widthIn(max = 500.dp)
-                                        .fillMaxWidth(0.8f)
-                                } else {
-                                    Modifier
-                                        .widthIn(max = 300.dp)
-                                        .fillMaxWidth(0.85f)
-                                }
-                            )
-                            .padding(bottom = if (isTablet) 16.dp else 12.dp, top = if (isTablet) 16.dp else 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CommonButton(
+                        LessonCircleButton(
+                            iconRes = R.drawable.backarrow,
+                            contentDescription = "Back",
                             onClick = {
                                 if (showEmailForm) {
                                     showEmailForm = false
                                 } else {
                                     navController.popBackStack()
                                 }
-                            },
-                            buttonText = "Back",
-                            shadowColor = navyBlue,
-                            mainColor = white,
-                            textColor = navyBlue,
-                            modifier = Modifier
-                                .fillMaxWidth()
+                            }
                         )
                     }
+
+                    // The waving Moon stays a Lottie animation
+                    DotLottieView(
+                        name = "moonwave",
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .size(if (isTablet) 150.dp else 110.dp)
+                    )
+
+                    AuthCard(
+                        modifier = Modifier
+                            .widthIn(max = 560.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 17.dp)
+                    ) {
+                        if (isLoginVisible) {
+                            Text(
+                                text = "Welcome back",
+                                style = LessonTheme.question().copy(fontSize = (28 * k).sp, textAlign = TextAlign.Center),
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+
+                            AuthTextField(
+                                value = email,
+                                onValueChange = {
+                                    email = it
+                                    viewModel.clearProviderSuggestion()
+                                },
+                                label = "Email",
+                                placeholder = "you@example.com",
+                                icon = Icons.Outlined.Email,
+                                keyboardType = KeyboardType.Email
+                            )
+
+                            AuthTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = "Password",
+                                placeholder = "Your password",
+                                icon = Icons.Outlined.Lock,
+                                isPassword = true,
+                                imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                            )
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                Text(
+                                    text = "Forgot password?",
+                                    style = LessonTheme.answer().copy(
+                                        fontSize = (17 * k).sp,
+                                        color = LessonTheme.primaryEdge
+                                    ),
+                                    modifier = Modifier.clickable { navController.navigate("forgotPassword") }
+                                )
+                            }
+
+                            LessonPrimaryButton(
+                                title = "Log in",
+                                onClick = {
+                                    isLoading = true
+                                    viewModel.signIn(email, password,
+                                        onResult = handleSignInResult,
+                                        onError = { error ->
+                                            isLoading = false
+                                            showBanner("Login Failed: $error")
+                                        }
+                                    )
+                                }
+                            )
+
+                            AuthOrDivider(text = "or log in with")
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                AuthPillButton(
+                                    title = "Apple",
+                                    kind = AuthPillKind.Apple,
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !isLoading,
+                                    onClick = startAppleSignIn
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.apple),
+                                        contentDescription = null,
+                                        modifier = Modifier.size((22 * k).dp)
+                                    )
+                                }
+                                AuthPillButton(
+                                    title = "Google",
+                                    kind = AuthPillKind.Light,
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !isLoading,
+                                    onClick = startGoogleSignIn
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.google),
+                                        contentDescription = null,
+                                        modifier = Modifier.size((22 * k).dp)
+                                    )
+                                }
+                            }
+                        } else if (!showEmailForm) {
+                            Text(
+                                text = if (isSignUpVisible) "Create a parent account" else "Welcome back",
+                                style = LessonTheme.question().copy(fontSize = (28 * k).sp, textAlign = TextAlign.Center)
+                            )
+                            Text(
+                                text = if (isSignUpVisible) {
+                                    "Save your children's progress and use Alifba on all your devices."
+                                } else {
+                                    "Log in to pick up where your children left off."
+                                },
+                                style = LessonTheme.story().copy(
+                                    fontSize = (19 * k).sp,
+                                    color = AuthTheme.secondaryText,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 1.3.em
+                                ),
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+
+                            AuthPillButton(
+                                title = "Continue with Apple",
+                                kind = AuthPillKind.Apple,
+                                enabled = !isLoading,
+                                onClick = startAppleSignIn
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.apple),
+                                    contentDescription = null,
+                                    modifier = Modifier.size((22 * k).dp)
+                                )
+                            }
+
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                AuthPillButton(
+                                    title = "Continue with Google",
+                                    kind = AuthPillKind.Light,
+                                    enabled = !isLoading,
+                                    onClick = startGoogleSignIn
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.google),
+                                        contentDescription = null,
+                                        modifier = Modifier.size((22 * k).dp)
+                                    )
+                                }
+                                if (isSignUpVisible) {
+                                    AuthBadge(
+                                        text = "Best for multiple devices",
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .offset(x = 4.dp, y = (-10).dp)
+                                    )
+                                }
+                            }
+
+                            AuthOrDivider()
+
+                            AuthPillButton(
+                                title = "Continue with email",
+                                kind = AuthPillKind.Light,
+                                onClick = {
+                                    viewModel.clearProviderSuggestion()
+                                    showEmailForm = true
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Email,
+                                    contentDescription = null,
+                                    tint = LessonTheme.primary,
+                                    modifier = Modifier.size((22 * k).dp)
+                                )
+                            }
+
+                            val linkStyle = TextLinkStyles(
+                                SpanStyle(
+                                    color = LessonTheme.primaryEdge,
+                                    textDecoration = TextDecoration.Underline
+                                )
+                            )
+                            Text(
+                                text = buildAnnotatedString {
+                                    append("By continuing you agree to our ")
+                                    withLink(LinkAnnotation.Url("https://alifba.xyz/terms-of-service", linkStyle)) {
+                                        append("Terms")
+                                    }
+                                    append(" and ")
+                                    withLink(LinkAnnotation.Url("https://alifba.xyz/privacy-policy", linkStyle)) {
+                                        append("Privacy Policy")
+                                    }
+                                    append(".")
+                                },
+                                style = LessonTheme.story().copy(
+                                    fontSize = (14 * k).sp,
+                                    color = AuthTheme.secondaryText,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 1.3.em
+                                ),
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Create your account",
+                                style = LessonTheme.question().copy(fontSize = (26 * k).sp, textAlign = TextAlign.Center),
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+
+                            AuthTextField(
+                                value = email,
+                                onValueChange = {
+                                    email = it
+                                    viewModel.clearProviderSuggestion()
+                                },
+                                label = "Email",
+                                placeholder = "you@example.com",
+                                icon = Icons.Outlined.Email,
+                                keyboardType = KeyboardType.Email
+                            )
+
+                            AuthTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = "Password",
+                                placeholder = "Create a password",
+                                icon = Icons.Outlined.Lock,
+                                isPassword = true,
+                                hint = "At least 8 characters",
+                                hintStyle = if (password.length >= 8) AuthHintStyle.Good else AuthHintStyle.Neutral
+                            )
+
+                            val passwordsMismatch = repeatPassword.isNotEmpty() && repeatPassword != password
+                            AuthTextField(
+                                value = repeatPassword,
+                                onValueChange = { repeatPassword = it },
+                                label = "Confirm password",
+                                placeholder = "Type it again",
+                                icon = Icons.Outlined.Lock,
+                                isPassword = true,
+                                isError = passwordsMismatch,
+                                hint = if (passwordsMismatch) "Passwords don't match yet" else null,
+                                hintStyle = AuthHintStyle.Bad,
+                                imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                            )
+
+                            LessonPrimaryButton(
+                                title = "Create account",
+                                modifier = Modifier.padding(top = 4.dp),
+                                onClick = {
+                                    when {
+                                        email.isBlank() || password.isEmpty() || repeatPassword.isEmpty() ->
+                                            showBanner("Please fill all fields")
+                                        password.length < 8 ->
+                                            showBanner("Password must be at least 8 characters")
+                                        password != repeatPassword ->
+                                            showBanner("Passwords don't match yet")
+                                        else -> {
+                                            isLoading = true
+                                            viewModel.signUp(email, password,
+                                                onSuccess = {
+                                                    isLoading = false
+                                                },
+                                                onError = { error ->
+                                                    isLoading = false
+                                                    showBanner("Sign Up Failed: $error")
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+
+                            val linkStyle = TextLinkStyles(
+                                SpanStyle(
+                                    color = LessonTheme.primaryEdge,
+                                    textDecoration = TextDecoration.Underline
+                                )
+                            )
+                            Text(
+                                text = buildAnnotatedString {
+                                    append("By continuing you agree to our ")
+                                    withLink(LinkAnnotation.Url("https://alifba.xyz/terms-of-service", linkStyle)) {
+                                        append("Terms")
+                                    }
+                                    append(" and ")
+                                    withLink(LinkAnnotation.Url("https://alifba.xyz/privacy-policy", linkStyle)) {
+                                        append("Privacy Policy")
+                                    }
+                                    append(".")
+                                },
+                                style = LessonTheme.story().copy(
+                                    fontSize = (14 * k).sp,
+                                    color = AuthTheme.secondaryText,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 1.3.em
+                                )
+                            )
+                        }
+                    }
+
+                    // On the grass: switch between creating an account and logging in
+                    if (isLoginVisible) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        AuthSwitchPill(
+                            prefix = "New to Alifba?",
+                            link = "Create an account",
+                            onClick = {
+                                navController.navigate("authOptions/signup") {
+                                    popUpTo("authOptions/login") { inclusive = true }
+                                }
+                            }
+                        )
+                    } else if (showEmailForm) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        AuthSwitchPill(
+                            prefix = "Already have an account?",
+                            link = "Log in",
+                            onClick = {
+                                navController.navigate("authOptions/login") {
+                                    popUpTo("authOptions/signup") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
-
-            if (entryMode == LoginEntryMode.Landing) {
-                LandingLoginLink(
-                    isTablet = isTablet,
-                    onLogIn = { navController.navigate("authOptions/login") },
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
-    }
+        }
 
     if (isLoading) {
         LottieAnimationLoading(
@@ -805,7 +810,7 @@ fun LoginScreen(
                         }
                         viewModel.updateContactEmail(contactEmailInput.trim()) { success ->
                             if (!success) {
-                                Toast.makeText(context, "Failed to save email. You can try again later.", Toast.LENGTH_SHORT).show()
+                                showBanner("Failed to save email. You can try again later.")
                             }
                             pendingNavigation?.invoke()
                             pendingNavigation = null
@@ -843,16 +848,12 @@ fun LoginScreen(
                             onSignInResult = handleSignInResult,
                             onSignUpVerified = handleSignUpVerified,
                             onError = { error ->
-                                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                                showBanner(error)
                             }
                         )
                     },
                     onNotVerified = {
-                        Toast.makeText(
-                            context,
-                            "Not verified yet. Please check your email.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showBanner("Not verified yet. Please check your email.")
                     }
                 )
             },
@@ -863,18 +864,10 @@ fun LoginScreen(
                 resendCooldownSeconds = 60
                 viewModel.resendVerificationEmail(
                     onSuccess = {
-                        Toast.makeText(
-                            context,
-                            "Verification email resent.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showBanner("Verification email resent.")
                     },
                     onError = { error ->
-                        Toast.makeText(
-                            context,
-                            "Failed to resend: $error",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showBanner("Failed to resend: $error")
                     }
                 )
             },
@@ -885,6 +878,27 @@ fun LoginScreen(
                 viewModel.logout()
             }
         )
+    }
+
+        // Banner sits above everything, including the email-verification overlay
+        banner?.let { lastBannerText = it.second }
+        AnimatedVisibility(
+            visible = banner != null,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut()
+        ) {
+            AuthBanner(
+                message = lastBannerText,
+                modifier = Modifier
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 17.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 96.dp),
+                onClose = { banner = null }
+            )
+        }
     }
 }
 

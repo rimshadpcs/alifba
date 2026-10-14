@@ -1,5 +1,6 @@
 package com.alifba.alifba.presenation.stories
 
+import com.alifba.alifba.utils.PremiumAccess
 import android.app.Activity
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.infiniteRepeatable
@@ -214,7 +215,7 @@ fun AnnualDiscount35Paywall(
     }
 
     fun handleEntitlementResult(info: CustomerInfo) {
-        if (info.entitlements.active.containsKey(PREMIUM_ENTITLEMENT_ID)) {
+        if (PremiumAccess.isPremium(info)) {
             subscriptionViewModel.setPremium(true)
             onSuccess()
         }

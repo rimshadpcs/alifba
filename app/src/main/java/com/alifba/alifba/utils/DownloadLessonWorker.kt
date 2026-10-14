@@ -50,6 +50,10 @@ class DownloadLessonWorker(
 
             Log.d("DownloadLessonWorker", "Extracted URLs - Image: $imageUrl, Audio: $audioUrl")
 
+            // Fetch every image and audio file the lesson uses (not just the first of each), so the
+            // lesson screens never wait on the network. A failure here must not fail the download.
+            runCatching { LessonMediaCache.prefetch(applicationContext, chapterDoc) }
+
             val imagePath = imageUrl?.let { downloadFile(it, "chapter_image_$chapterId.jpg") }
             val audioPath = audioUrl?.let { downloadFile(it, "chapter_audio_$chapterId.mp3") }
             Log.d("DownloadLessonWorker", "Downloaded imagePath: $imagePath, audioPath: $audioPath")
