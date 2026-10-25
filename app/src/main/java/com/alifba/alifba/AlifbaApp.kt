@@ -15,6 +15,7 @@ import com.alifba.alifba.BuildConfig
 import com.onesignal.debug.LogLevel as OneSignalLogLevel
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
+import com.alifba.alifba.utils.QaMode
 import com.revenuecat.purchases.LogLevel as RevenueCatLogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
@@ -58,7 +59,10 @@ class AlifbaApp : Application(), ImageLoaderFactory {
             postHogConfig.flushAt = 1
             postHogConfig.flushIntervalSeconds = 1
         }
-        PostHogAndroid.setup(this, postHogConfig)
+        // The QA build stays out of production analytics; PostHog calls before setup are no-ops
+        if (!QaMode.enabled) {
+            PostHogAndroid.setup(this, postHogConfig)
+        }
         ensureInstallDate()
         OneSignal.Debug.logLevel = OneSignalLogLevel.VERBOSE
 

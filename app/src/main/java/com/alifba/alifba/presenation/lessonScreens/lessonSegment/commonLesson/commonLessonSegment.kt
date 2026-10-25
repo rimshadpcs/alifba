@@ -1,5 +1,6 @@
 package com.alifba.alifba.presenation.lessonScreens.lessonSegment.commonLesson
 
+import com.alifba.alifba.utils.QaMode
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -49,6 +50,9 @@ fun CommonLessonSegment(
                 contentAlignment = Alignment.Center
             ) {
                 when {
+                    // QA build: skip ahead without waiting for the narration (leaving the
+                    // segment stops its audio, see LessonScreen's DisposableEffect)
+                    QaMode.enabled -> LessonPrimaryButton(title = "Continue", onClick = onNextClicked)
                     isAudioPlaying -> SpeechAnimation()
                     showNextButton -> LessonPrimaryButton(title = "Continue", onClick = onNextClicked)
                 }

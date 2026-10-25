@@ -7,6 +7,7 @@ import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.features.authentication.DataStoreManager
 import com.alifba.alifba.presenation.login.ParentAccount
 import com.alifba.alifba.presenation.login.ChildProfile
+import com.alifba.alifba.utils.QaMode
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,6 +52,10 @@ class ProfileViewModel @Inject constructor(
      * from Firestore and updates the multi-profile state.
      */
     private fun fetchUserProfile() {
+        if (QaMode.enabled) {
+            useQaProfile()
+            return
+        }
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first()
             if (!userId.isNullOrEmpty()) {
@@ -202,7 +207,28 @@ class ProfileViewModel @Inject constructor(
             _earnedBadges.value = emptyList()
         }
     }
+    // QA build: one child profile held in memory, nothing read from or written to users/
+    private fun useQaProfile() {
+        val profile = ChildProfile(
+            profileId = QaMode.PROFILE_ID,
+            childName = QaMode.CHILD_NAME,
+            age = 6,
+            avatar = "Deenasaur"
+        )
+        _currentChildProfile.value = profile
+        _parentAccountState.value = ParentAccount(
+            parentName = QaMode.CHILD_NAME,
+            userId = QaMode.USER_ID,
+            profiles = listOf(profile)
+        )
+        _isLoading.value = false
+    }
+
     fun startProfileListener() {
+        if (QaMode.enabled) {
+            useQaProfile()
+            return
+        }
         viewModelScope.launch {
             val userId = dataStoreManager.userId.first()
             if (!userId.isNullOrEmpty()) {
@@ -403,6 +429,7 @@ class ProfileViewModel @Inject constructor(
      * Returns current daily lesson status for gating without consuming a slot.
      */
     suspend fun getDailyLessonStatus(): DataStoreManager.DailyLessonResult? {
+        if (QaMode.enabled) return null // no daily lesson limit in the QA build
         val currentProfile = _currentChildProfile.value ?: return null
         val baseLimit = dataStoreManager.getEffectiveDailyLessonLimit()
         val limitedCompleted = getLifetimeLimitedCompletedCount(currentProfile)

@@ -10,7 +10,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import com.alifba.alifba.utils.QaMode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -64,9 +66,14 @@ class DataStoreManager @Inject constructor(
         .map { preferences -> preferences[PreferencesKeys.EMAIL] }
         .stateIn(coroutineScope, SharingStarted.Eagerly, null)
 
-    val isPremium: StateFlow<Boolean> = dataStore.data
-        .map { preferences -> preferences[PreferencesKeys.IS_PREMIUM] ?: false }
-        .stateIn(coroutineScope, SharingStarted.Eagerly, false)
+    // The QA build is always premium: a constant, so no RevenueCat refresh can switch it off
+    val isPremium: StateFlow<Boolean> = if (QaMode.enabled) {
+        MutableStateFlow(true)
+    } else {
+        dataStore.data
+            .map { preferences -> preferences[PreferencesKeys.IS_PREMIUM] ?: false }
+            .stateIn(coroutineScope, SharingStarted.Eagerly, false)
+    }
 
     val appOpenCount: StateFlow<Int> = dataStore.data
         .map { preferences -> preferences[PreferencesKeys.APP_OPEN_COUNT] ?: 0 }
@@ -93,6 +100,7 @@ class DataStoreManager @Inject constructor(
         .stateIn(coroutineScope, SharingStarted.Eagerly, 0)
 
     suspend fun setPremium(enabled: Boolean) {
+        if (QaMode.enabled) return
         dataStore.edit { preferences ->
             val wasPremium = preferences[PreferencesKeys.IS_PREMIUM] ?: false
 

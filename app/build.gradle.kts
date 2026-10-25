@@ -60,7 +60,8 @@ android {
             useSupportLibrary = true
         }
 
-
+        // Only the qa build type below turns this on (see QaMode.kt)
+        buildConfigField("boolean", "QA_MODE", "false")
     }
     sourceSets {
         //getByName("main").java.srcDirs("build/generated/source/kapt/main")
@@ -86,6 +87,16 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+        }
+        // Internal test build, never uploaded to Play (CI only ever builds bundleRelease): installs
+        // next to the store app as "Alifba QA", needs no sign-in and unlocks all content.
+        // Build it with ./gradlew assembleQa. Its google-services.json lives in src/qa/.
+        create("qa") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+            buildConfigField("boolean", "QA_MODE", "true")
+            matchingFallbacks += listOf("debug")
         }
     }
     kapt {

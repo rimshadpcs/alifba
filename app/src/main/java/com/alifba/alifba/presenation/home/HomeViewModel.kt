@@ -1,6 +1,7 @@
 package com.alifba.alifba.presenation.home
 
 import android.util.Log
+import com.alifba.alifba.utils.QaMode
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -82,6 +83,13 @@ open class HomeViewModel @Inject constructor(
     
     fun listenForChapterUpdates(levelId: String = "level1", retryCount: Int = 0) {
         // levelId kept only for backwards compatibility; chapters are now top-level
+        if (QaMode.enabled) {
+            // No user document in the QA build: progress is this run's in-memory completions
+            viewModelScope.launch {
+                QaMode.completedChapterIds.collect { completed -> loadChapters(completed.toList()) }
+            }
+            return
+        }
         viewModelScope.launch {
             // dataStoreManager.userId is a StateFlow reactively backed by DataStore itself, so
             // rather than grabbing whatever's there right now (which right after onboarding can
@@ -206,6 +214,7 @@ open class HomeViewModel @Inject constructor(
         return chapters.mapIndexed { index, chapter ->
             val isCompleted = completedChapters.contains(chapter.id.toString())
             val isLocked = when {
+                QaMode.enabled -> false // QA build: every chapter open, in any order
                 index == 0 -> false
                 completedChapters.contains(chapters[index - 1].id.toString()) -> false
                 else -> true

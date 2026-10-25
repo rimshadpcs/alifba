@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.alifba.alifba.R
 import com.alifba.alifba.data.models.Badge
 import com.alifba.alifba.features.authentication.DataStoreManager
+import com.alifba.alifba.utils.QaMode
 import com.alifba.alifba.presenation.chapters.models.Chapter
 import com.alifba.alifba.presenation.lessonScreens.domain.repository.LessonCacheRepository
 import com.alifba.alifba.utils.ReviewPromptMilestone
@@ -255,6 +256,11 @@ class ChaptersViewModel @Inject constructor(
         earnedXP: Int,
         chapterType: String
     ): List<Badge> {
+        if (QaMode.enabled) {
+            // QA build: mark it done for this run only (Home shows the tick), no Firestore writes
+            QaMode.markChapterCompleted(chapterId)
+            return emptyList()
+        }
         return try {
             val userId = dataStoreManager.userId.first()
             if (userId.isNullOrEmpty()) return emptyList()

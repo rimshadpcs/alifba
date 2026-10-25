@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.sp
 import com.alifba.alifba.ui_components.widgets.LessonTheme
+import com.alifba.alifba.utils.QaMode
 import com.alifba.alifba.ui_components.widgets.buttons.SoundEffectManager
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -95,7 +96,10 @@ fun ChapterPathItems(
     // larger so the eye lands on it. Paint-only (graphicsLayer scale around the node's own
     // centre): layout size, the zigzag and the dotted connector (which reads the layout centre)
     // are all unchanged.
-    val currentScale = if (shapeType == ChapterNodeShapeType.CIRCLE && !lesson.isLocked && !lesson.isCompleted) 1.2f else 1f
+    val currentScale = if (!QaMode.enabled && shapeType == ChapterNodeShapeType.CIRCLE && !lesson.isLocked && !lesson.isCompleted) 1.2f else 1f
+    // QA build: every node is unlocked, so instead of a waving Moon and a Start pill on all of
+    // them, each node shows its place in the path (lessons and stories counted together)
+    val qaNumber = if (QaMode.enabled) index + 1 else null
     val offsetY by animateDpAsState(
         targetValue = if (isPressed) 0.dp else 5.dp, // This creates the "press down" effect
         label = "OffsetY"
@@ -141,6 +145,7 @@ fun ChapterPathItems(
                         isLocked = lesson.isLocked,
                         isCompleted = lesson.isCompleted,
                         offsetY = offsetY,
+                        number = qaNumber,
                         modifier = Modifier.size(imageSize)
                     )
                 }
@@ -154,9 +159,19 @@ fun ChapterPathItems(
                 ) {
                     BookNode(
                         isLocked = lesson.isLocked,
-                        isCompleted = lesson.isCompleted,
+                        // QA: the number badge below stands in for the tick
+                        isCompleted = lesson.isCompleted && qaNumber == null,
                         modifier = Modifier.requiredSize(imageSize * 1.14f)
                     )
+                    if (qaNumber != null) {
+                        NodeNumberBadge(
+                            number = qaNumber,
+                            isCompleted = lesson.isCompleted,
+                            modifier = Modifier
+                                .size(imageSize * 0.6f)
+                                .offset(y = (-imageSize * 0.08f))
+                        )
+                    }
                 }
             }
 
@@ -169,7 +184,7 @@ fun ChapterPathItems(
 
         // "Start" beside the current chapter, on the open side: right of a left node, left of a
         // right node, and for a centre node on the side the trail leaves from below
-        if (!lesson.isLocked && !lesson.isCompleted) {
+        if (qaNumber == null && !lesson.isLocked && !lesson.isCompleted) {
             val side = if (index % 4 <= 1) 1f else -1f
             val pillWidth = (74 * LessonTheme.scale()).dp
             StartPill(
@@ -432,6 +447,25 @@ fun BookNode(isLocked: Boolean, isCompleted: Boolean, modifier: Modifier = Modif
     }
 }
 
+/** QA build only: a story's place in the path, as a round badge on the book cover */
+@Composable
+fun NodeNumberBadge(number: Int, isCompleted: Boolean, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(if (isCompleted) completedMain else Color.White),
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.material3.Text(
+            text = number.toString(),
+            style = LessonTheme.answer().copy(
+                fontSize = (22 * LessonTheme.scale()).sp,
+                color = if (isCompleted) LessonTheme.ink else bookEdge
+            )
+        )
+    }
+}
+
 /** Runs [block] with the draw size set to a [side] x [side] square at the current origin */
 private inline fun androidx.compose.ui.graphics.drawscope.DrawScope.scaleDraw(
     side: Float,
@@ -486,6 +520,8 @@ fun PressableCircleNode(
     offsetY: Dp,
     // Two fixed states only now — no type-based or position-cycled color logic.
     isCompleted: Boolean = false,
+    // QA build only: the node's place in the path, drawn instead of the mascot, lock or tick
+    number: Int? = null,
     modifier: Modifier = Modifier
 ) {
     val (mainColor, shadowColor) = when {
@@ -513,6 +549,15 @@ fun PressableCircleNode(
             contentAlignment = Alignment.Center
         ) {
             when {
+                number != null -> {
+                    androidx.compose.material3.Text(
+                        text = number.toString(),
+                        style = LessonTheme.answer().copy(
+                            fontSize = (28 * LessonTheme.scale()).sp,
+                            color = if (isCompleted) LessonTheme.ink else Color.White
+                        )
+                    )
+                }
                 isLocked -> {
                     Canvas(modifier = Modifier.fillMaxSize(0.6f)) {
                         drawNodeLock(strokeWidth = size.width / 0.6f * 0.055f)
@@ -528,7 +573,7 @@ fun PressableCircleNode(
             }
         }
 
-        if (isCurrent) {
+        if (isCurrent && number == null) {
             // Looping waving-mascot animation, standing on the pedestal — see DotLottieView
             // (ui_components/widgets/) for how assets/moonwave/ is wired up and why.
             DotLottieView(

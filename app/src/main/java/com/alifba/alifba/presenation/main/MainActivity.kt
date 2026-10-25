@@ -59,6 +59,7 @@ import com.alifba.alifba.presenation.stories.DiscountPaywallEntryTransition
 import com.alifba.alifba.presenation.SubscriptionViewModel
 import com.alifba.alifba.ui_components.dialogs.LottieAnimationLoading
 import com.alifba.alifba.ui_components.theme.AlifbaTheme
+import com.alifba.alifba.utils.QaMode
 import com.google.firebase.auth.FirebaseAuth
 import com.posthog.PostHog
 import com.alifba.alifba.BuildConfig
@@ -126,8 +127,13 @@ class MainActivity : ComponentActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         val onboardingDataStore = OnboardingDataStoreManager(applicationContext)
         trackNotificationIfNeeded(intent)
-        val isFreshInstall = enforceFreshInstallLogout()
+        // QA build: no sign-in at all, so no fresh-install logout and straight to Home
+        val isFreshInstall = if (QaMode.enabled) false else enforceFreshInstallLogout()
         lifecycleScope.launch {
+            if (QaMode.enabled) {
+                startDestination = "homeScreen"
+                return@launch
+            }
             val destination = withTimeoutOrNull(7000L) { // 7-second timeout for safety
                 try {
                     if (isFreshInstall) {

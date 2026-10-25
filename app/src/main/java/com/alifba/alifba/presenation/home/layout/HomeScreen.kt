@@ -86,6 +86,7 @@ import com.alifba.alifba.presenation.home.layout.ProfileViewModel
 import com.alifba.alifba.presenation.stories.AudioPlayerViewModel
 import com.alifba.alifba.ui_components.dialogs.DailyLessonLimitDialog
 import com.alifba.alifba.utils.ReminderPreferences
+import com.alifba.alifba.utils.QaMode
 import kotlinx.coroutines.launch
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alifba.alifba.presenation.SubscriptionViewModel
@@ -131,13 +132,13 @@ fun HomeScreenGate(
     // BEFORE SHIPPING. Short-circuits the whole gating LaunchedEffect below so showPaywall
     // always resolves to false (i.e. straight to HomeScreen), without touching the real logic.
     LaunchedEffect(Unit) {
-        if (DEV_DISABLE_PAYWALL_AND_GATE) {
+        if (DEV_DISABLE_PAYWALL_AND_GATE || QaMode.enabled) {
             showPaywall = false
         }
     }
 
     LaunchedEffect(appOpenCount, isPremium, hasShownHomePaywall, lastPaywallOpenCount) {
-        if (DEV_DISABLE_PAYWALL_AND_GATE) return@LaunchedEffect
+        if (DEV_DISABLE_PAYWALL_AND_GATE || QaMode.enabled) return@LaunchedEffect
         if (isPremium) {
             showPaywall = false
             return@LaunchedEffect
@@ -224,7 +225,7 @@ fun HomeScreen(
 
     // Show the reminder dialog only if notifications haven't been "handled" yet.
     var showReminderDialog by remember {
-        mutableStateOf(!ReminderPreferences.isNotificationPermissionHandled(context))
+        mutableStateOf(!QaMode.enabled && !ReminderPreferences.isNotificationPermissionHandled(context))
     }
 
     // If the dialog should show, display it. The user decides to skip or enable.
