@@ -1,0 +1,12 @@
+{
+  "name": "alifba-firestore-rules-tests",
+  "private": true,
+  "description": "Checks ../firestore.rules against the iOS and Android apps' real Firestore access",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-alifba-rules 'node --test rules.test.mjs'"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^10.14.1"
+  }
+}

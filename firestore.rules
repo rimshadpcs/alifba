@@ -1,0 +1,71 @@
+rules_version = '2';
+
+// Firestore rules for the alifba-app project, used by the iOS app, the Android app and the
+// Android QA build. Deploy with: firebase deploy --only firestore:rules --project alifba-app
+// (the --project flag matters: .firebaserc's default points at a different project).
+//
+// Content is public to read and only ever written from the Firebase console or admin tools
+// (Cloud Functions / the backend use admin access, which these rules don't apply to). People's
+// data is only reachable by the signed-in parent it belongs to.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // A parent whose login uses the email stored on the account. iOS email login finds the
+    // account by email, and 19 parents have two accounts under one email, so the one it finds
+    // isn't always named after their current login. Safe because Firebase Auth allows only one
+    // login per email (allowDuplicateEmails is off). Not limited to verified emails: iOS runs
+    // the lookup right after a parent verifies, while its ID token still says unverified.
+    // Can be dropped once iOS looks accounts up by uid (planned for 3.0.2).
+    function ownsAccountEmail() {
+      return signedIn()
+        && request.auth.token.email is string
+        && resource.data.email is string
+        && resource.data.email.lower() == request.auth.token.email.lower();
+    }
+
+    // Collections holding people's data. Anything NOT listed here is treated as content and is
+    // readable by anyone, so add a collection here BEFORE storing personal data in it.
+    function isPrivate(collection) {
+      return collection in ['users', 'activity_feedback', 'devices', 'progress', 'children', 'gifts'];
+    }
+
+    // Content (chapters, lessons, badges and all story collections, plus any new ones): anyone
+    // can read, so onboarding, signed-out screens and the QA build work. Nobody writes from an app.
+    match /{collection}/{document=**} {
+      allow read: if !isPrivate(collection);
+      allow write: if false;
+    }
+
+    // A parent's account and everything under it (devices, progress, children, ...)
+    match /users/{uid} {
+      allow get: if isOwner(uid) || ownsAccountEmail();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || ownsAccountEmail();
+      allow delete: if isOwner(uid);
+      // iOS email login: where("email", "==", typedEmail). Only returns accounts carrying the
+      // signed-in parent's own login email. Exact match on purpose: Firestore checks a query
+      // against its filter, which can't be proven through lower() (no stored email differs from
+      // its login email by case today).
+      allow list: if signedIn()
+        && request.auth.token.email is string
+        && resource.data.email == request.auth.token.email;
+
+      match /{sub=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // "Which activity did you like" feedback, one document per user
+    match /activity_feedback/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+  }
+}

@@ -12,5 +12,8 @@
     "pubsub": {
       "port": 8085
     }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
