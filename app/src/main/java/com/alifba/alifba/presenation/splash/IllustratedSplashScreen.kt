@@ -50,9 +50,12 @@ fun IllustratedSplashScreen(
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        // res/drawable/splash_background.png (phone) vs res/drawable-sw600dp/splash_background.png
-        // (tablet) — same resource name, resolved automatically by the OS per device, same
-        // sw600dp breakpoint this app already uses everywhere else for isTablet.
+        // res/drawable-nodpi/splash_background.png (phone) vs
+        // res/drawable-sw600dp-nodpi/splash_background.png (tablet) — same resource name, resolved
+        // automatically by the OS per device, same sw600dp breakpoint this app already uses
+        // everywhere else for isTablet. Must stay in a -nodpi folder: in plain drawable/ the OS
+        // treats it as mdpi and upscales it 3x on xxhdpi phones to a ~145 MB bitmap, which
+        // Canvas refuses to draw (crash on launch, ALIFBA-ANDROID-4).
         Image(
             painter = painterResource(id = R.drawable.splash_background),
             contentDescription = null,
