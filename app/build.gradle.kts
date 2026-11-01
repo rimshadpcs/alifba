@@ -81,7 +81,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 shrinks, optimises and obfuscates the code (Google Play flags 0% obfuscation).
+            // Name-based reflection needs keep rules in proguard-rules.pro.
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

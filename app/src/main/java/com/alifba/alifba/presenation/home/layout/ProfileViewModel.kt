@@ -480,8 +480,14 @@ class ProfileViewModel @Inject constructor(
                                 lastUpdated = System.currentTimeMillis()
                             )
 
-                            // Persist to Firestore
-                            userRef.set(updatedParent).await()
+                            // Persist to Firestore. Only the changed fields, as plain maps: a full
+                            // set(updatedParent) wiped fields this class doesn't hold (premium
+                            // status, time zone) and would write scrambled names once R8 renames
+                            // ParentAccount's fields in release builds.
+                            userRef.update(
+                                "profiles", updatedProfiles.map { it.toMap() },
+                                "lastUpdated", updatedParent.lastUpdated
+                            ).await()
 
                             // Update local state
                             _parentAccountState.value = updatedParent
