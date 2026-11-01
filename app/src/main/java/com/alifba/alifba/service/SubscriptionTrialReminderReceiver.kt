@@ -17,7 +17,7 @@ class SubscriptionTrialReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(TAG, "onReceive triggered")
         val message = intent.getStringExtra(EXTRA_MESSAGE)
-            ?: "We hope you keep learning! Your subscription starts soon. If you change your mind, you can manage it directly in the App Store."
+            ?: "We hope you keep learning! Your subscription starts soon. If you change your mind, you can manage it in Google Play."
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Trial Reminder"
         val planType = intent.getStringExtra(EXTRA_PLAN_TYPE) ?: "unknown"
         val action = intent.getStringExtra(EXTRA_ACTION)
@@ -139,20 +139,37 @@ class SubscriptionTrialReminderReceiver : BroadcastReceiver() {
                 requestCode = REQUEST_CODE_MONTHLY,
                 daysFromNow = 2,
                 title = "Trial Reminder",
-                message = "We hope you keep learning! Your subscription starts in 1 day. If you change your mind, you can manage it directly in the App Store.",
+                message = "We hope you keep learning! Your subscription starts in 1 day. If you change your mind, you can manage it in Google Play.",
                 planType = "monthly",
                 testDelayMillis = testDelayMillis
             )
             cancelReminder(context, REQUEST_CODE_ANNUAL)
         }
 
-        fun scheduleAnnualReminder(context: Context, testDelayMillis: Long? = null) {
+        /**
+         * How many days before a free trial ends its reminder fires: 1 for short trials (Day 2 of
+         * a 3-day trial), 2 for longer ones (Day 5 of 7). Same rule as iOS
+         * (PaywallTrackingView.reminderLeadDays), so both apps and both paywalls agree.
+         */
+        fun trialReminderLeadDays(trialDays: Int): Int = if (trialDays <= 3) 1 else 2
+
+        /** The trial day the reminder lands on, as shown in the paywall's "We remind you" step */
+        fun trialReminderDay(trialDays: Int): Int =
+            maxOf(1, trialDays - trialReminderLeadDays(trialDays))
+
+        /**
+         * Reminder for an annual plan's free trial, timed from the trial length the store
+         * actually gave (read from the Play offer), so changing the trial in Play Console needs
+         * no code change. Fires at 20:00 on the reminder day.
+         */
+        fun scheduleAnnualReminder(context: Context, trialDays: Int, testDelayMillis: Long? = null) {
+            val endsIn = if (trialReminderLeadDays(trialDays) == 1) "tomorrow" else "in 2 days"
             scheduleReminder(
                 context = context,
                 requestCode = REQUEST_CODE_ANNUAL,
-                daysFromNow = 3,
+                daysFromNow = trialReminderDay(trialDays),
                 title = "Trial Reminder",
-                message = "We hope you keep learning! Your subscription starts in 2 days. If you change your mind, you can manage it directly in the App Store.",
+                message = "We hope you keep learning! Your free trial ends $endsIn and your yearly plan starts. If you change your mind, you can cancel anytime in Google Play.",
                 planType = "annual",
                 testDelayMillis = testDelayMillis
             )

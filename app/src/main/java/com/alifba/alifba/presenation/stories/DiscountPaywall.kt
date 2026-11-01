@@ -262,6 +262,11 @@ fun DiscountPaywall(
                                 if (PremiumAccess.isPremium(info)) {
                                     subscriptionViewModel.setPremium(true)
                                     SubscriptionTrialReminderReceiver.cancelDiscountReminder(context)
+                                    // The timeline above promises a reminder, so schedule it, timed
+                                    // from the trial this discounted plan actually has
+                                    annualTrialDays(pkg)?.let { trialDays ->
+                                        SubscriptionTrialReminderReceiver.scheduleAnnualReminder(context, trialDays)
+                                    }
                                     onSuccess()
                                 }
                             }
@@ -349,7 +354,7 @@ fun DiscountPaywallContent(
         formatter.format(amount)
     } ?: "$3.33"
     // The offer has always promised 7 days free; use the store's trial length when it has one
-    val trialDays = selectedPackage?.let { annualTrialDays(it) } ?: 7
+    val trialDays = selectedPackage?.let { annualTrialDays(it) } ?: 3 // 3 = the configured trial, until the product loads
 
     // Hours and minutes, or minutes and seconds in the last hour
     val hours = timeRemaining / 3600
@@ -484,7 +489,7 @@ fun DiscountPaywallContent(
                         title = "$trialDays days free, no payment now",
                         steps = listOf(
                             Triple("Today", "Full access, free", TimelineMarker.CHECK),
-                            Triple("Day ${maxOf(1, trialDays - 2)}", "We remind you", TimelineMarker.BELL),
+                            Triple("Day ${SubscriptionTrialReminderReceiver.trialReminderDay(trialDays)}", "We remind you", TimelineMarker.BELL),
                             Triple("Day $trialDays", "Plan starts", TimelineMarker.SUBSCRIPTION)
                         ),
                         modifier = Modifier.padding(top = 22.dp)

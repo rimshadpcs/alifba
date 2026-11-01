@@ -411,9 +411,16 @@ fun RevenueCatPaywall(
                                     SubscriptionTrialReminderReceiver.cancelDiscountReminder(context)
                                     when (packageToPurchase.packageType) {
                                         PackageType.ANNUAL -> {
-                                            SubscriptionTrialReminderReceiver.scheduleAnnualReminder(
-                                                context
-                                            )
+                                            // Timed from the trial the store gave; no trial, no reminder
+                                            val trialDays = annualTrialDays(packageToPurchase)
+                                            if (trialDays != null) {
+                                                SubscriptionTrialReminderReceiver.scheduleAnnualReminder(
+                                                    context,
+                                                    trialDays
+                                                )
+                                            } else {
+                                                SubscriptionTrialReminderReceiver.cancelAll(context)
+                                            }
                                         }
                                         else -> {
                                             SubscriptionTrialReminderReceiver.cancelAll(context)
@@ -462,7 +469,7 @@ fun RevenueCatPaywall(
     val annual = availablePackages.firstOrNull { it.packageType == PackageType.ANNUAL }
     val monthly = availablePackages.firstOrNull { it.packageType == PackageType.MONTHLY }
     val lifetime = availablePackages.firstOrNull { it.packageType == PackageType.LIFETIME }
-    val trialDays = annual?.let { annualTrialDays(it) } ?: 7
+    val trialDays = annual?.let { annualTrialDays(it) } ?: 3 // 3 = the configured trial, until the product loads
 
     val planTiles = listOfNotNull(
         monthly?.let {
@@ -501,11 +508,12 @@ fun RevenueCatPaywall(
         PackageType.LIFETIME -> "Pay once."
         else -> "Billed today."
     }
-    // The annual reminder is scheduled 3 days in (SubscriptionTrialReminderReceiver)
+    // Same day SubscriptionTrialReminderReceiver.scheduleAnnualReminder fires on
+    val reminderDay = SubscriptionTrialReminderReceiver.trialReminderDay(trialDays)
     val trialSteps = if (selectedPackage?.packageType == PackageType.ANNUAL) {
         listOf(
             Triple("Today", "Full access, free", TimelineMarker.CHECK),
-            Triple("Day 3", "We remind you", TimelineMarker.BELL),
+            Triple("Day $reminderDay", "We remind you", TimelineMarker.BELL),
             Triple("Day $trialDays", "Plan starts", TimelineMarker.SUBSCRIPTION)
         )
     } else emptyList()
@@ -1380,7 +1388,7 @@ private fun PaywallLayoutPreview(selected: String) {
         selectedId = selected,
         trialSteps = if (selected == "annual") listOf(
             Triple("Today", "Full access, free", TimelineMarker.CHECK),
-            Triple("Day 3", "We remind you", TimelineMarker.BELL),
+            Triple("Day 5", "We remind you", TimelineMarker.BELL),
             Triple("Day 7", "Plan starts", TimelineMarker.SUBSCRIPTION)
         ) else emptyList(),
         ctaTitle = if (selected == "annual") "Start 7-day free trial" else "Start monthly plan",
